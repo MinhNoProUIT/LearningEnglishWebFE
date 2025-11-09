@@ -1,0 +1,259 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.dark {
+  --background-color: #141a21;
+  --text-color: #fafafa;
+  --border-color: #333e47;
+  --header-maim-color: #141a21dc;
+  --text-gray-color: #4b5563;
+  --hover-color: rgba(145, 158, 171, 0.08);
+  --selected-menu-left-color: #122527;
+  --selected-color: #005e6c;
+  --selected-menu-text-color: #5be49b;
+  --menu-color: #272727;
+  --text-role-color: #cf0202;
+  --filter-color: drop-shadow(0px 2px 8px rgba(255, 255, 255, 0.12));
+  --skeleton-color: #363434;
+  --scrollbar-color: #363434;
+  --hover-color-table: #121212;
+  --selected-color-checkbox: #00ddff;
+  --header-color-table: #09343d;
+  --hover-color-permission: #144e57;
+  --alert-color: #474747;
+  --button-alert-color: #6b6b6b;
+  --button-alert-hover-color: #909090;
+  --text-header-color: #d07e7e;
+  --background-after-color: #141a21;
+  --button-color: #005e6c;
+  --filter-color: #03d794;
+  --text-label-color: #919eab;
+  --hover-button-color: #03d794;
+  --border-alert-color: #3e3e3e;
+  --selected-tab: #00b7ff;
+  --icon-delete-chip-color: #e5e7eb;
+  --hover-icon-delete-chip-color: #8f8f8f;
+  --search-color: #272e36;
+  --color-text-dashboard: #dadada;
+  --header-table-dashboard: #28323d;
+  --background-item: #1c252e;
+  --background-selected-item: rgba(145, 158, 171, 0.16);
+  --bg-danger-color: #ff5630;
+  --bg-warning-color: #fbff00;
+  --bg-success-color: #22c55e;
+  --text-danger-color: #ffffff;
+  --text-warning-color: #000000;
+  --text-success-color: #ffffff;
+  --placeholder-color: #a5bed4;
+  --hover-field-color: #c9c9c9;
+  --selected-field-color: #d4d4d4;
+  --divider-color: #333e47;
+  --created-date-color: #637381;
+  --sub-title-color: #919eab;
+  --chip-bg-color: rgba(145, 158, 171, 0.16);
+  --text-button-reject: #f9a87f;
+  --bg-button-reject: #402d2f;
+  --text-button-accept: #1c252e;
+  --bg-button-accept: #ffffff;
+  --bg-button-accept-hover: #c4cdd5;
+  --bg-button-reject-hover: #65352e;
+  --text-closed-color: #ffffff;
+  --bg-closed-color: rgb(0, 190, 224);
+  --text-closed-color1: #03c4e6;
+  --bg-closed-color1: rgba(0, 153, 224, 0.404);
+  --error-color: #ff5630;
+  --hover-box-color: #03214772;
+  --bg-danger-color1: rgba(255, 22, 22, 0.356);
+  --bg-warning-color1: rgba(255, 171, 0, 0.16);
+  --text-warning-color1: #ffd666;
+  --bg-success-color1: rgba(2, 177, 90, 0.2);
+  --text-danger-color1: #ff7650;
+  --text-success-color1: #00ff77;
+
+  --bg-insurance-color1: rgba(48, 255, 189, 0.277);
+  --bg-holiday-color1: rgba(247, 63, 170, 0.219);
+  --bg-attendance-color1: rgba(8, 182, 72, 0.295);
+  --bg-discipline-color1: rgba(197, 99, 34, 0.236);
+  --text-insurance-color1: #10d4ad;
+  --text-holiday-color1: #d41d88;
+  --text-attendance-color1: #10b56e;
+  --text-discipline-color1: #e06924;
+
+  --bg-insurance-color: #04c59f;
+  --bg-holiday-color: #d41d88;
+  --bg-attendance-color: #10b56e;
+  --bg-discipline-color: #e06924;
+  --text-insurance-color: #fff;
+  --text-holiday-color: #fff;
+  --text-attendance-color: #fff;
+  --text-discipline-color: #fff;
+
+  --text-all-color1: #1c252e;
+  --bg-all-color1: #ffffff;
+  --text-rejected-color1: #919eab;
+  --bg-rejected-color1: rgba(145, 158, 171, 0.16);
+  --background-dialog: #28323d;
+  --header-dialog: #1c252e;
+  --border-dialog: #3d4853;
+  --background-switch: #5a6672;
+  --today-color: #39424a;
+  --reward-title-color: #131215;
+  --rank-1-color: #343e49;
+  --title-color: #028224;
+  --bg-item-attendance: #28323d;
+  --box-shadow-paper: 0 0 2px 0 rgba(0 0 0 / 0.2),
+    0 12px 24px -4px rgba(0 0 0 / 0.12);
+  --palette-background-defaultChannel: rgba(20, 26, 33, 0.92);
+  --attendance-bg1: #1c252e;
+  --attendance-bg2: #2d3945;
+  --attendance-bg3: #3f5060;
+  --loader0: #132025;
+  --loader1: #0f3132;
+  --roles: rgb(255, 255, 255);
+  --hover-ellipsis: #223341;
+}
+
+.light {
+  --background-color: #fff;
+  --text-color: #09090b;
+  --border-color: #e4e4e7;
+  --text-gray-color: #4b5563;
+  --hover-color: rgba(117, 126, 136, 0.08);
+  --selected-menu-text-color: #00a76f;
+  --selected-menu-left-color: #ebf8f4;
+  --header-maim-color: #ffffffc1;
+  --selected-color: #bcd7ff;
+  --menu-color: #fff;
+  --text-role-color: #ed0000;
+  --selected-tab: #0000ff;
+  --filter-color: drop-shadow(0px 2px 8px rgba(0, 0, 0, 0.32));
+  --skeleton-color: #e7e7e7;
+  --scrollbar-color: #e4e4e7;
+  --hover-color-table: #f8f8fa;
+  --selected-color-checkbox: #00b049;
+  --header-color-table: #9affb3;
+  --hover-color-permission: #9affb3;
+  --alert-color: #e0e0e0;
+  --button-alert-color: #c9c9c9;
+  --button-alert-hover-color: rgb(166, 166, 166);
+  --text-header-color: #ce7373;
+  --background-after-color: #fff;
+  --button-color: #03d794;
+  --filter-color: #03d794;
+  --text-label-color: #637381;
+  --hover-button-color: #02b97f;
+  --border-alert-color: #e5e5e5;
+  --icon-delete-chip-color: #bdbdbd;
+  --hover-icon-delete-chip-color: #888888;
+  --search-color: #f0f2f5;
+  --color-text-dashboard: #606060;
+  --header-table-dashboard: #f1f4f9;
+  --background-item: #fff;
+  --background-selected-item: rgba(145, 158, 171, 0.16);
+  --bg-danger-color1: rgba(255, 86, 48, 0.277);
+  --bg-warning-color1: rgba(255, 204, 0, 0.219);
+  --bg-success-color1: rgba(34, 197, 94, 0.236);
+  --text-danger-color1: #d41610;
+  --text-warning-color1: #d68b01;
+  --text-success-color1: #118d57;
+
+  --bg-insurance-color1: rgba(48, 255, 189, 0.277);
+  --bg-holiday-color1: rgba(247, 63, 170, 0.219);
+  --bg-attendance-color1: rgba(8, 182, 72, 0.295);
+  --bg-discipline-color1: rgba(197, 99, 34, 0.236);
+  --text-insurance-color1: #10d4ad;
+  --text-holiday-color1: #d6017d;
+  --text-attendance-color1: #10b56e;
+  --text-discipline-color1: #8d3f11;
+
+  --bg-insurance-color: #19ddb6;
+  --bg-holiday-color: #f2219b;
+  --bg-attendance-color: #22d889;
+  --bg-discipline-color: #f8782e;
+  --text-insurance-color: #fff;
+  --text-holiday-color: #fff;
+  --text-attendance-color: #fff;
+  --text-discipline-color: #fff;
+
+  --placeholder-color: #a5bed4;
+  --placeholder-color: #a5bed4;
+  --hover-field-color: #1c252e;
+  --selected-field-color: #1c252e;
+  --divider-color: #e4e4e7;
+  --created-date-color: #919eab;
+  --sub-title-color: #637381;
+  --chip-bg-color: rgba(145, 158, 171, 0.16);
+  --text-button-reject: #b71d18;
+  --bg-button-reject: #ffe4de;
+  --text-button-accept: #ffffff;
+  --bg-button-accept: #1c252e;
+  --bg-button-accept-hover: #454f5b;
+  --bg-button-reject-hover: #ffc9bc;
+  --error-color: #ff5630;
+  --hover-box-color: #57575709;
+  --text-closed-color: #ffffff;
+  --bg-closed-color: rgba(0, 190, 224, 0.846);
+  --text-closed-color1: #03c4e6;
+  --bg-closed-color1: rgba(60, 193, 255, 0.36);
+  --bg-danger-color: #ff5630;
+  --bg-warning-color: #ffd900;
+  --bg-success-color: #22c55e;
+  --text-danger-color: #ffffff;
+  --text-warning-color: #000000;
+  --text-success-color: #ffffff;
+  --text-all-color1: #ffffff;
+  --bg-all-color1: #1c252e;
+  --text-rejected-color1: #637381;
+  --bg-rejected-color1: rgba(145, 158, 171, 0.16);
+  --background-dialog: #f4f6f8;
+  --header-dialog: #ffffff;
+  --border-dialog: #e0e5e8;
+  --background-switch: #c4ccd3;
+  --today-color: #dae1ec;
+  --reward-title-color: #131215;
+  --rank-1-color: #dfe2e8;
+  --title-color: #03d794;
+  --bg-item-attendance: #f1f4f982;
+  --box-shadow-paper: 0 0 2px 0 rgba(145 158 171 / 0.2),
+    0 12px 24px -4px rgba(145 158 171 / 0.12);
+  --palette-background-defaultChannel: rgba(255, 255, 255, 0.92);
+  --attendance-bg1: #fff;
+  /* #f3fffc;*/
+  --attendance-bg2: #d9fef1;
+  --attendance-bg3: #a0ffde;
+  --loader0: #cdf0ed;
+  --loader1: #9aebdf;
+  --roles: rgb(134, 90, 200);
+  --hover-ellipsis: #f0f2f5;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}

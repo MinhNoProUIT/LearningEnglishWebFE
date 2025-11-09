@@ -1,0 +1,922 @@
+{
+  "COMMON": {
+    "VIEW_DETAILS": "Xem chi tiết thông tin của ",
+    "FILTER": "Bộ lọc",
+    "FROM_DATE": "Từ ngày",
+    "TO_DATE": "Đến ngày",
+    "ACTION": "Hành động",
+    "ORDER_NUMBER": "#",
+    "SEARCH": "Tìm kiếm",
+    "SEARCH_ANYTHING": "Tìm kiếm tất cả",
+    "PERMISSIONS": {
+      "TITLE": "Phân quyền",
+      "MANAGEMENT_PAGE": "Tên trang quản lý",
+      "ALL": "Tất cả",
+      "VIEW": "Chỉ xem",
+      "EDIT": "Chỉnh sửa",
+      "CREATE": "Thêm mới",
+      "PRINT": "In ấn",
+      "DELETE": "Xóa",
+      "SELECT_ALL": "Chọn hết",
+      "UNSELECT_ALL": "Bỏ hết",
+      "TABS": {
+        "PERMISSION_FOR_USER": "Phần quyền cho Người dùng",
+        "PERMISSION_FOR_ROLE": "Phân quyền cho Chức vụ"
+      },
+      "MESSAGE": {
+        "ERROR": {
+          "GET_PERMISSION": "Không thể lấy quyền",
+          "CREATE_PERMISSION": "Không thể tạo quyền",
+          "UPDATE_PERMISSION": "Không thể cập nhật quyền",
+          "DELETE_PERMISSION": "Không thể xóa quyền"
+        },
+        "SUCCESS": {
+          "CREATE_PERMISSION": "Tạo quyền thành công",
+          "UPDATE_PERMISSION": "Cập nhật quyền thành công",
+          "DELETE_PERMISSION": "Xóa quyền thành công"
+        }
+      }
+    },
+    "TABLE": {
+      "COMMON": {
+        "ID": "ID",
+        "ACTION": "Hành động"
+      },
+      "PERMISSION": {
+        "USER": {
+          "FULLNAME": "Họ và tên",
+          "ROLE": "Chức vụ"
+        },
+        "ROLE": {
+          "NAME": "Tên chức vụ"
+        },
+        "TITLE": "Danh sách Chức vụ Phân quyền",
+        "SEARCH": "Tìm kiếm theo Chức vụ"
+      }
+    },
+    "BUTTON": {
+      "REFRESH": "Làm mới",
+      "SAVE": "Lưu",
+      "SAVE_AND_CLOSE": "Lưu và Đóng",
+      "CANCEL": "Hủy",
+      "CREATE": "Thêm mới",
+      "SAVE_CHANGES": "Lưu thay đổi",
+      "EDIT": "Cập nhật",
+      "UPDATING": "Đang cập nhật",
+      "DELETE": "Xóa",
+      "AFTER": "Sau",
+      "BEFORE": "Trước",
+      "VIEW_DETAIL": "Xem chi tiết",
+      "CLOSE": "Đóng",
+      "SELECT": "Chọn hết",
+      "UNSELECT": "Bỏ hết"
+    },
+    "TEXTFIELD": {
+      "SEARCH": "Tìm kiếm",
+      "REQUIRED": "Không được trống*"
+    },
+    "NOTIFICATION_TYPE": {
+      "PUBLIC": "Chung",
+      "BENEFIT": "Lợi ích",
+      "SALARY": "Lương",
+      "REWARD": "Thưởng",
+      "INSURANCE": "Bảo hiểm",
+      "DISCIPLINE": "Kỉ luật",
+      "EVENT": "Sự kiện",
+      "ATTENDANCE": "Bảng công"
+    },
+    "NOTIFICATION": {
+      "HIGH_SCORE": "Điểm cao",
+      "LOW_SCORE": "Điểm thấp",
+      "NOTE_NOT_READ": "Những người chưa đọc lần nào sẽ không hiện",
+      "AMOUNT": "Số lượng",
+      "TITLE": "Thông báo",
+      "BUTTON": {
+        "ALL": "Tất cả",
+        "UNREAD": "Chưa đọc",
+        "MARK_ALL_AS_READ": "Đánh dấu tất cả đã đọc"
+      },
+      "MESSAGES": {
+        "NO_NOTIFICATION": "Bạn không có thông báo nào"
+      },
+      "MENU": {
+        "MARK_AS_UNREAD": "Đánh dấu là chưa đọc",
+        "MARK_AS_READ": "Đánh dấu là đã đọc",
+        "DELETE": "Xóa thông báo này"
+      },
+      "MESSAGE": {
+        "SUCCESS": {
+          "CREATE_NOTIFICATION": "Tạo thông báo thành công!",
+          "UPDATE_NOTIFICATION": "Cập nhật thông báo thành công!",
+          "DELETE_NOTIFICATION": "Xoá thông báo thành công!"
+        },
+        "ERROR": {
+          "GET_NOTIFICATION": "Không thể lấy thông báo",
+          "MARK_AS_READ": "Không thể đánh dấu đã đọc",
+          "MARK_AS_UNREAD": "Không thể đánh dấu chưa đọc",
+          "DELETE_NOTIFICATION": "Không thể xóa thông báo"
+        }
+      },
+      "GET_NOTIFICATION_BY_ID": {
+        "TITLE": "Thông báo bởi ",
+        "NOT_FOUND": "Không tìm thấy thông báo"
+      },
+      "ELLIPSIS": {
+        "MARK_ALL_AS_READ": "Đánh dấu tất cả đã đọc",
+        "OPEN_NOTIFICATION": "Mở thông báo"
+      }
+    },
+    "SIDEBAR": {
+      "ACCOUNT": "Tài khoản",
+      "DASHBOARD": "Bảng điều khiển",
+      "HOME": "Trang chủ",
+      "HUMAN_RESOURCES": "Nhân sự",
+      "ORGANIZATION_DESIGN": "Thiết kế tổ chức",
+      "REGULATIONS_AND_POLICIES": "Quy định & Chính sách",
+      "EMPLOYEE": "Nhân viên",
+      "NOTIFICATION": "Thông báo",
+      "TIMEKEEPING": "Thống kê",
+      "PERMISSION": "Phân quyền",
+      "SALARY": "Test",
+      "HOLIDAY": "Nghỉ lễ",
+      "CONTRACT": "Hợp đồng",
+      "TIME_OFF": "Nghỉ phép",
+      "DEPARTMENT": "Phòng ban",
+      "ROLE": "Chức vụ",
+      "ORG_STRUCTURE": "Cấu trúc tổ chức",
+      "WORK_REGULATIONS": "Quy chế làm việc",
+      "INSURANCE": "Bảo hiểm",
+      "REWARD": "Thưởng",
+      "BENEFIT": "Lợi ích",
+      "DISCIPLINE": "Kỉ luật",
+      "SETTING": "Cài đặt",
+      "STATISTICS": "Thống kê",
+      "CONFIGURATION": "Cấu hình",
+      "SCHEDULAR": "Lịch làm việc",
+      "WORK_SHIFT": "Ca làm việc",
+      "PERSONNEL": "Nhân sự",
+      "ATTENDANCE_SALARY": "Chấm công - Lương",
+      "EMPLOYEE-CONTRACT": "Test",
+      "TIMEOFF-ERRORREPORT": "Test",
+      "BENEFITS": "Test",
+      "REWARDS_DISCIPLINE": "Test",
+      "NOTIFICATIONS_EVENTS": "Test",
+      "REPORTS_SYSTEM": "Báo cáo - Hệ thống",
+      "POST": "Bài đăng",
+      "WORKHISTORY": "Lịch sử công tác",
+      "CREATETASKS": "Tạo công tác",
+      "TOTAL_POST": "Tổng bài đăng",
+      "COURSE": "Khóa học",
+      "LEARNING": "Học tập",
+      "LEARNING_CONTENT": "Nội dung học tập",
+      "TOPIC": "Chủ đề",
+      "VOCABULARY": "Từ vựng"
+    },
+    "MODE": {
+      "LIGHT": "Sáng",
+      "DARK": "Tối",
+      "SYSTEM": "Hệ thống"
+    },
+    "LANGUAGE": {
+      "VI": "Tiếng Việt",
+      "EN": "Tiếng Anh"
+    },
+    "AVATAR_MENU": {
+      "PROFILE": "Thông tin cá nhân",
+      "SETTINGS": "Cài đặt",
+      "LOGOUT": "Đăng xuất",
+      "PERSONAL": "Trang cá nhân",
+      "CHECK_OUT": "Kết thúc ca làm",
+      "TIMEKEEPING": "Chấm công",
+      "CALENDAR": "Lịch",
+      "LOGIN_HISTORY": "Lịch sử đăng nhập",
+      "HELP": "Trợ giúp",
+      "CREATE_NOTIFICATION": "Tạo thông báo",
+      "CHANGE_PASSWORD": "Đổi mật khẩu",
+      "PAGE_ADMIN": "Trang quản lý"
+    },
+    "TIME_DIFFERENCE": {
+      "SECONDS_AGO": "{{seconds}} giây trước",
+      "MINUTES_AGO": "{{minutes}} phút trước",
+      "HOURS_AGO": "{{hours}} giờ trước",
+      "DAYS_AGO": "{{days}} ngày trước",
+      "WEEKS_AGO": "{{weeks}} tuần trước",
+      "MONTHS_AGO": "{{months}} tháng trước",
+      "YEARS_AGO": "{{years}} năm trước"
+    },
+    "TIMEKEEPING": {
+      "FILTER_BY_ROLES": "Lọc theo Chức vụ",
+      "FILTER_BY_DEPARTMENTS": "Lọc theo Phòng ban",
+      "WORKING_DAYS": "Ngày làm việc",
+      "LATE": "Trễ",
+      "ABSENCES": "Vắng mặt",
+      "EMPLOYEES": "Nhân viên"
+    },
+    "ALERT": {
+      "NOTIFICATION_NEW": "Thông báo mới",
+      "ONE_MINUTE": "1 phút",
+      "ZERO_MINUTE_AGO": "0 phút trước"
+    },
+    "PAGINATION": {
+      "ROWS_PER_PAGE": "Số hàng mỗi trang:",
+      "FROM_TO": "{{from}} - {{to}} của {{totalRecords}}",
+      "ROWS": "Hàng"
+    },
+    "ALERT_DIALOG": {
+      "CONFIRM_DELETE": {
+        "TITLE": "Xác nhận",
+        "CONTENT": "Bạn có chắc chắn muốn xóa không?",
+        "CANCEL": "Hủy",
+        "DELETE": "Xóa"
+      }
+    },
+    "COUNT_ROWS_SELECTED": "Đã chọn {{countRows}} hàng",
+    "SYS_CONFIGURATION": {
+      "KEY": "Khóa",
+      "TYPE": "Loại",
+      "DESCRIPTION": "Mô Tả",
+      "VALUE": "Giá Trị",
+      "CREATED_DATE": "Ngày Tạo",
+      "CREATED_BY": "Người Tạo",
+      "ACTION": "Hành động",
+      "VIEW_DETAIL": "Xem chi tiết Cấu hình",
+      "PLACEHOLDER_SEARCH": "Tìm kiếm theo khóa, loại, giá trị...",
+      "ACTION_CONFIGURATION": {
+        "KEY": "Khóa*",
+        "TYPE": "Loại*",
+        "DESCRIPTION": "Mô Tả",
+        "VALUE": "Giá Trị*",
+        "TITLE": "Thêm một Cấu hình mới",
+        "CREATE_SUCCESS": "Tạo một Cấu hình mới thành công",
+        "UPDATE_SUCCESS": "Cập nhật Cấu hình thành công",
+        "DELETE_SUCCESS": "Xóa Cấu hình thành công",
+        "CREATE_ERROR": "Tạo Cấu hình thất bại",
+        "UPDATE_ERROR": "Cập nhật Cấu hình thất bại",
+        "DELETE_ERROR": "Xóa Cấu hình thất bại"
+      }
+    },
+    "HOLIDAY": {
+      "NAME": "Tên ngày lễ",
+      "START_DATE": "Ngày bắt đầu",
+      "END_DATE": "Ngày kết thúc",
+      "NOTE": "Mô tả ngày lễ",
+      "ACTION": "Hành động",
+      "TITLE": "Tạo một ngày nghỉ lễ",
+      "FROM": "bắt đầu nghỉ từ ngày ",
+      "TO": "đến ngày ",
+      "LEAVE": "leave on ",
+      "ACTION_HOLIDAY": {
+        "NAME": "Tên ngày lễ*",
+        "START_DATE": "Ngày bắt đầu*",
+        "END_DATE": "Ngày kết thúc*",
+        "CREATE_SUCCESS": "Tạo một Ngày lễ mới thành công",
+        "UPDATE_SUCCESS": "Cập nhật Ngày lễ thành công",
+        "DELETE_SUCCESS": "Xóa Ngày lễ thành công",
+        "CREATE_ERROR": "Tạo Ngày lễ thất bại",
+        "UPDATE_ERROR": "Cập nhật Ngày lễ thất bại",
+        "DELETE_ERROR": "Xóa Ngày lễ thất bại"
+      }
+    },
+    "SALARY": {
+      "NAME": "Tên nhân viên",
+      "EMPLOYEE_ID": "Mã nhân viên",
+      "DATE": "Ngày tạo",
+      "BASIC_SALARY": "Lương cơ bản",
+      "TIME_KEEPING": "Số ngày công",
+      "INSURANCE": "Mức đóng bảo hiểm",
+      "BENEFIT": "Tổng phúc lợi",
+      "REWARD": "Tiền thưởng",
+      "DISCIPLINE": "Tiền phạt",
+      "PI_TAX": "Thuế thu nhập cá nhân",
+      "TOTAL_SALARY": "Tổng lương",
+      "PAYROLL_PERIOD": "Kỳ hạn trả",
+      "PAYROLL_SCHEDULE": "Bảng lương định kỳ",
+      "OVERVIEW": "Tổng quan",
+      "PAYROLL_CYCLE": "Danh sách chu kì lương",
+      "TOTAL_INCOME": "Lương gộp năm ",
+      "TOTAL": "Lương ròng năm ",
+      "UNDER10": "Dưới 10",
+      "BETWEEN10AND20": "Từ 10 đến 20",
+      "BETWEEN20AND30": "Từ 20 đến 30",
+      "BETWEEN30AND40": "Từ 30 đến 40",
+      "GREATER40": "Trên 40",
+      "SALARY_LEVEL": "Mức lương (Triệu VND)",
+      "NUMBER_OF_EMPLOYEES": "Số lượng nhân viên",
+      "UNPAID": "Danh sách lương chưa trả",
+      "BIRTHDAY": "Sinh nhật",
+      "HIGHEST": "Nhân viên có lương cao nhất",
+      "LOWEST": "Nhân viên có lương thấp nhất",
+      "BILLION": "tỷ VND",
+      "MILLION": "triệu VND",
+      "THOUSAND": "trăm nghìn VND",
+      "VND": "VND",
+      "TOTAL_INSURANCE": "Tổng bảo hiểm",
+      "TOTAL_PITAX": "Tổng thuế thu nhập cá nhân",
+      "TOTAL_GROSS": "Tổng lương Gross",
+      "TOTAL_NET": "Tổng thực lĩnh",
+      "TOTAL_PERSONNEL": "Tổng nhân sự",
+      "PERSONNEL": "Nhân sự",
+      "GROSS_PAYROLL_TOTAL": "Tổng lương Gross",
+      "INCREASE": "Tăng ",
+      "COMPARE": " so với tháng trước",
+      "DECREASE": "Giảm ",
+      "TAKE_HOME": " lương thực nhận",
+      "NET_PAYROLL_TOTAL": "Tổng lương thực nhận",
+      "TOTAL_BASIC": "Tổng lương cơ bản",
+      "NOTIFY": "Gửi thông báo",
+      "VIEW_DETAIL": "Xem chi tiết",
+      "CREATE": "Tạo bảng lương",
+      "PAID": "Chi trả lương",
+      "SALARY_SUMMARY": "Salary summary",
+      "MONTH_SALARY": "November salary",
+      "B": "Tỷ",
+      "M": "Triệu",
+      "T": "Trăm nghìn",
+      "TB": "Nghìn tỷ",
+      "CYCLE": "Chu kỳ lương",
+      "WORKING_TIME": "Thời gian làm việc",
+      "COMPARE_TAKE_HOMES": "So sánh lương thực lĩnh qua các tháng",
+      "IS_PAID": "Đã trả",
+      "IS_UNPAID": "Chưa trả",
+      "SALARY_ANALYSIS_BY_GENDER": "Phân tích lương theo giới tính",
+      "MALE": "Nam",
+      "FEMALE": "Nữ",
+      "OTHER": "Khác",
+      "EMPLOYEE_SALARY_ANALYSIS": "Phân tích mức lương nhân viên",
+      "PAYROLL_REPORTS_OVER_MONTH": "Báo cáo bảng lương theo tháng",
+      "GROSS_TOTAL": "Tổng lương gộp",
+      "GROSS_TOTAL_BY_DEPARTMENTS": "Tổng lương gộp theo phòng ban",
+      "PAYROLL_SHARES_BY_DEPARTMENTS": "Tỷ lệ bảng lương theo phòng ban",
+      "PAYROLL_OF_DEPARTMENTS_OVERTIME": "Bảng lương của phòng ban theo thời gian",
+      "INCOME_STRUCTURE": "Cơ cấu thu nhập",
+      "TOTAL_INCOME_OVERTIME": "Tổng thu nhập theo thời gian",
+      "TOTAL_INCOME_BY_DEPARTMENTS": "Tổng thu nhập theo phòng ban",
+      "OVERVIEW_OF_THE_CYCLE": "Tổng quan về chu kỳ",
+      "OVERVIEW_OF_TAXES_AND_INSURANCE": "Tổng quan về thuế và bảo hiểm",
+      "OVERVIEW_OF_INCOME": "Tổng quan về thu nhập",
+      "DEPARTMENTAL_REPORT": "Báo cáo theo phòng ban",
+      "PAYROLL": "Chu kỳ",
+      "AVG_GROSS": "Lương Gross trung bình",
+      "AVG_NET": "Lương thực lĩnh trung bình",
+      "AVG_INSURANCE": "Bảo hiểm trung bình",
+      "AVG_PITAX": "Thuế trung bình",
+      "PAY": "Thanh toán"
+    },
+    "CREATE_NOTIFICATION": {
+      "TITLE_PAGE": "Tạo thông báo mới",
+      "TITLE*": "Tiêu đề*",
+      "CONTENT*": "Nội dung*",
+      "TYPE": "Loại*",
+      "TITLE": "Tiêu đề",
+      "CONTENT": "Nội dung",
+      "BY_ROLE": "Theo vai trò",
+      "EMPTY": "Trống",
+      "BY_DEPARTMENT": "Theo phòng ban",
+      "ALL_USERS": "Tất cả",
+      "NOT_FOUND": "Không tìm thấy kết quả nào",
+      "SEARCH_USERS": "Tìm kiếm người dùng",
+      "ADD_IMAGES_OR_FILES": "Thêm ảnh hoặc tệp tin",
+      "BY_DEPARTMENT_H": "Theo phòng ban: ",
+      "BY_ROLE_H:": "Theo vai trò: ",
+      "DEPARTMENT_AND_ROLE": "Theo Phòng ban và Vai trò",
+      "SPECIFIC_USERS": "Người dùng cụ thể",
+      "USERS_WILL_SEE_THE_POST": "Những người sẽ thấy bài viết",
+      "USERS_TO_NOTIFY": "Người nhận thông báo",
+      "CREATE_SUCCESS": "Tạo thông báo thành công",
+      "UPDATE_SUCCESS": "Cập nhật thông báo thành công",
+      "DELETE_SUCCESS": "Xóa thông báo thành công",
+      "CREATE_ERROR": "Tạo thông báo thất bại",
+      "UPDATE_ERROR": "Cập nhật thông báo thất bại",
+      "DELETE_ERROR": "Xóa thông báo thất bại"
+    },
+    "DASHBOARD": {
+      "TOTAL_EMPLOYEES": "Tổng số người dùng",
+      "TOTAL_NEW_EMPLOYEES": "Tổng số người dùng mới",
+      "TOTAL_LAYOFF_EMPLOYEES": "Số người dùng còn hoạt động",
+      "TOTAL_TIME_OFF": "Tổng số bài đăng",
+      "UP_FROM_LAST_MONTH": "Tổng số tiền thu vào",
+      "FROM_LAST_QUARTER": "so với quý trước",
+      "DOWN_FROM_LAST_MONTH": "so với tháng trước",
+      "LABOR_COSTS": "Chi phí nhân sự",
+      "INTERNAL_PROMOTIONS": "Số người dùng hoàn thành khóa học",
+      "CONTRACT_EXPIRING_SOON": "Hợp Đồng Sắp Hết Hạn",
+      "SEARCH_CONTRACT": "Tìm kiếm theo Tên của Nhân viên",
+      "FULLNAME": "Họ và tên nhân viên",
+      "CONTRACT_TYPE": "Loại hợp đồng",
+      "CONTRACT_NAME": "Tên hợp đồng",
+      "CONTRACT_START": "Ngày bắt đầu",
+      "CONTRACT_END": "Ngày kết thúc",
+      "CONTRACT_STATUS": "Trạng thái",
+      "MONTHS": "tháng",
+      "MEMBER_COUNT_OF_DEPT": "Tỉ lệ hoàn thành khóa học",
+      "EMPLOYEE_SALARY_BY_MONTH": "Biểu đồ thống kê số tiền thu vào",
+      "SUM_EMPLOYEE_BY_MONTH": "Số lượng người dùng đang học theo Tháng",
+      "DEPARTMENT": "Khóa học",
+      "AGE_OF_EMPLOYEE": "Độ tuổi của người dùng",
+      "AGE": "Độ tuổi",
+      "STAT_EVENT_BY_YEAR": "Thống kê Sự kiện theo năm",
+      "THAN_LAST_YEAR": "so với năm {{year}}",
+      "YEAR": "Năm",
+      "SUM": "Tổng",
+      "SUM_EMPLOYEE": "Tổng số người dùng:",
+      "SUM_EMPLOYEE_OVER_45": "Tổng số nhân viên trên 45 tuổi",
+      "SUM_EMPLOYEE_32_TO_45": "Tổng số nhân viên từ 32 đến 45 tuổi",
+      "SUM_EMPLOYEE_UNDER_32": "Tổng số nhân viên dưới 32 tuổi",
+      "NO_CHANGE": "Không thay đổi",
+      "POSTED": "Đã đăng",
+      "REASON": "Lý do",
+      "REQUESTS": "Yêu cầu",
+      "LEAVE_REQUESTS": "Đơn xin nghỉ phép",
+      "ROLES": "Vai trò",
+      "EMPLOYEE_ID": "Mã vai trò",
+      "REJECT": "Từ chối",
+      "ACCEPT": "Đồng ý",
+      "DESCRIPTION": "Mô Tả",
+      "TYPE": "Loại",
+      "STATUS": "Trạng thái"
+    },
+    "POST": {
+      "TOTAL_POST": "Tổng số lượng bài đăng",
+      "TITLE_CHART": " Thống kê số lượng bài đăng",
+      "TOTAL_USER_POST": "Tổng số người dùng đăng bài",
+      "TITLE_TABLE": "Danh sách bài đăng",
+      "FULL_NAME": "Họ và tên",
+      "COUNT_POST": "Số lượng bài đăng",
+      "COUNT_LIKE": "Số lượng thích",
+      "COUNT_SHARE": "Số lượng chia sẻ",
+      "TITLE_TOP_RANKING": "Bảng xếp hạng",
+      "COUNT_POSTS": "bài đăng",
+      "CHOOSE_TIME": "Chọn khoản thời gian",
+      "7_DAYS": "7 ngày",
+      "30_DAYS": "30 ngày",
+      "90_DAYS": "3 tháng",
+      "ALL": "Tất cả",
+      "LESS_THAN": "Nhỏ hơn 10",
+      "BETWEEN": "Từ 10 đến 30",
+      "MORE_THAN": "Lớn hơn 30"
+    },
+    "COURSE": {
+      "TOTAL_COURSE": "Tổng số gói học",
+      "PAID_COURSE": "Gói học trả phí",
+      "CONVERSION_RATE": "Tỉ lệ chuyển đổi",
+      "TITLE_CHART": "Doanh thu theo tháng",
+      "MONEY": "Số tiền",
+      "CONTENT": "Nội dung giao dịch",
+      "DATE_TRANSACTION": "Ngày giao dịch",
+      "TITLE_TABLE": "Danh sách giao dịch",
+      "FROM": "Từ ngày",
+      "TO": "Đến ngày",
+      "TITLE_REPORT": "Báo cáo vi phạm",
+      "TOTAL_REPORT": "báo cáo",
+      "POST_ID": "Mã bài viết",
+      "USER_ID": "Mã người dùng",
+      "TITLE_PAGE": "Quản lý khóa học"
+    },
+    "EMPLOYEE": {
+      "FULLNAME": "Họ và tên",
+      "EMAIL": "Email",
+      "PASSWORD": "Mật khẩu",
+      "NOTE": "Ghi chú",
+      "PHONENUMBER": "Số điện thoại",
+      "DEPARTMENTNAME": "Tên phòng ban",
+      "USERNAME": "Tên người dùng",
+      "ROLES": "Vai trò",
+      "CREATEDDATE": "Ngày tạo",
+      "BIRTHDAY": "Ngày sinh",
+      "GENDER": "Giới tính",
+      "ADDRESS": "Địa chỉ",
+      "CONTRACTNAME": "Tên hợp đồng",
+      "STARTDATE": "Ngày vào làm",
+      "STARTDATEWORK": "Ngày vào làm",
+      "CREATE": {
+        "CREATE_EMPLOYEE": "Thêm mới nhân viên",
+        "SUCCESS": {
+          "CREATE_EMPLOYEE": "Tạo nhân viên thành công"
+        },
+        "ERROR": {
+          "CREATE_EMPLOYEE": "Tạo nhân viên thất bại",
+          "ACCOUNT_EXISTS": "Tên tài khoản này đã tồn tại",
+          "PASSWORD_REQUIREMENTS": "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ cái và số",
+          "EMAIL_EXISTS": "Email đã tồn tại"
+        }
+      },
+      "UPDATE": {
+        "UPDATE_EMPLOYEE": "Cập nhật nhân viên",
+        "SUCCESS": {
+          "UPDATE_EMPLOYEE": "Cập nhật nhân viên thành công"
+        },
+        "ERROR": {
+          "UPDATE_EMPLOYEE": "Cập nhật nhân viên thất bại"
+        }
+      }
+    },
+    "JOBHISTORY": {
+      "STARTDATE": "Ngày bắt đầu",
+      "ENDDATE": "Ngày kết thúc",
+      "NOTE": "Ghi chú",
+      "JOBDESCRIPTION": "Mô tả công việc",
+      "WORKLOCATION": "Địa điểm làm việc",
+      "ALLOWANCE": "Phụ cấp",
+      "CREATE_NEW_JOB": "Tạo công tác mới",
+      "ASSIGNEE": "Người nhận công tác"
+    },
+    "TIMEOFF": {
+      "TIMEOFF": "Danh sách nghỉ phép",
+      "INFORMATION": "Thông tin nhân viên",
+      "FULLNAME": "Họ và tên",
+      "EMPLOYEEID": "Mã nhân viên",
+      "REASON": "Lý do nghỉ phép",
+      "CONTENT": "Nội dung nghỉ phép",
+      "ISACCEPTED": "Trạng thái",
+      "STARTDATE": "Ngày bắt đầu",
+      "ENDDATE": "Ngày kết thúc",
+      "PENDING": "Chưa giải quyết",
+      "AGREE": "Đồng ý",
+      "REFUSE": "Từ chối",
+      "CREATE": {
+        "CREATE_TIMEOFF": "Thêm mới thông tin nghỉ phép",
+        "SUCCESS": {
+          "CREATE_TIMEOFF": "Thêm mới thông tin nghỉ phép thành công"
+        },
+        "ERROR": {
+          "CREATE_TIMEOFF": "Thêm mới thông tin nghỉ phép thất bại"
+        }
+      },
+      "UPDATE": {
+        "UPDATE_TIMEOFF": "Cập nhật thông tin nghỉ phép",
+        "SUCCESS": {
+          "UPDATE_TIMEOFF": "Cập nhật thông tin nghỉ phép thành công"
+        },
+        "ERROR": {
+          "UPDATE_TIMEOFF": "Cập nhật thông tin nghỉ phép thất bại"
+        }
+      },
+      "ACCEPT": "Đồng ý",
+      "REPORT_ERROR": "Báo cáo sai sót"
+    },
+    "CONTRACT": {
+      "INFORMATION": "Thông tin nhân viên",
+      "INFORMATIONMANAGER": "Thông tin quản lí",
+      "FULLNAME": "Họ và tên",
+      "MANAGERFULLNAME": "Họ và tên quản lí",
+      "EMPLOYEEID": "Mã nhân viên",
+      "STARTDATE": "Ngày bắt đầu",
+      "ENDDATE": "Ngày kết thúc",
+      "CONTRACTNAME": "Tên hợp đồng",
+      "BASICSALARY": "Lương cơ bản",
+      "CLAUSE": "Điều khoản hợp đồng",
+      "PROBATIONPERIOD": "Số ngày thử việc",
+      "WORKINGHOURS": "Số giờ làm việc",
+      "TERMINATIONCLAUSE": "Điều khoản chấm dứt",
+      "TYPECONTRACT": "Chế độ làm việc",
+      "MANAGER": "Mã quản lí",
+      "APPENDIX": "Phụ lục của hợp đồng",
+      "CREATE": {
+        "CREATE_CONTRACT": "Tạo mới hợp đồng",
+        "SUCCESS": {
+          "CREATE_CONTRACT": "Tạo mới hợp đồng thành công"
+        },
+        "ERROR": {
+          "CREATE_CONTRACT": "Tạo mới hợp đồng thất bại"
+        }
+      },
+      "UPDATE": {
+        "UPDATE_CONTRACT": "Cập nhật hợp đồng",
+        "SUCCESS": {
+          "UPDATE_CONTRACT": "Cập nhật hợp đồng thành công"
+        },
+        "ERROR": {
+          "UPDATE_CONTRACT": "Cập nhật hợp đồng thất bại"
+        }
+      },
+      "ACCEPT": "Đồng ý",
+      "REPORT_ERROR": "Báo cáo sai sót"
+    },
+    "ERROR_REPORT": {
+      "ERROR_REPORT": "Điền thông tin báo lỗi",
+      "TITLE": "Danh sách báo cáo lỗi",
+      "ID": "ID",
+      "FULL_NAME_REPORTED": "Tên người báo cáo",
+      "AVATAR_REPORTED_PATH": "Đường dẫn ảnh đại diện người báo cáo",
+      "EMPLOYEE_ID_REPORTED": "Mã nhân viên người báo cáo",
+      "REPORTED_DATE": "Ngày báo cáo",
+      "TYPE": "Loại",
+      "TYPE_ID": "Mã loại",
+      "DESCRIPTION": "Mô tả",
+      "STATUS": "Trạng thái",
+      "AVATAR_RESOLVED_PATH": "Đường dẫn ảnh đại diện người xử lý",
+      "FULL_NAME_RESOLVED": "Tên người xử lý",
+      "RESOLVED_DATE": "Ngày xử lý",
+      "RESOLUTION_DETAILS": "Chi tiết xử lý",
+      "ACTION": "Hành động",
+      "SEARCH": "Tìm kiếm theo Tên",
+      "ALL": "Tất cả",
+      "PENDING": "Đang chờ",
+      "IN_PROGRESS": "Đang xử lý",
+      "RESOLVED": "Đã giải quyết",
+      "REJECTED": "Từ chối",
+      "CONSIDER": "Xem xét"
+    },
+    "CALENDAR": {
+      "CALENDAR": "Lịch làm việc",
+      "ADD_EVENT": "Thêm sự kiện",
+      "TITLE": "Tiêu đề",
+      "START_DATE": "Ngày bắt đầu",
+      "END_DATE": "Ngày kết thúc",
+      "DESCRIPTION": "Mô tả",
+      "ALL_DAY": "Cả ngày",
+      "MONTH": "Tháng",
+      "WEEK": "Tuần",
+      "DAY": "Ngày",
+      "TODAY": "Hôm nay",
+      "DELETE_EVENT": "Xóa sự kiện",
+      "NOTE": "Chú thích",
+      "HOLIDAY": "Ngày lễ"
+    },
+    "REWARD_DISCIPLINE": {
+      "LAST_MONTH": "tháng trước",
+      "LAST_QUARTER": "quý trước",
+      "RECEIVED": "Đã nhận",
+      "UNRECEIVED": "Chưa nhận",
+      "LIST_REWARD": "Danh sách Khen thưởng",
+      "LIST_DISCIPLINE": "Danh sách Kỷ luật",
+      "SUMMARY_REWARD": "Tổng số lần Khen thưởng",
+      "SUMMARY_DISCIPLINE": "Tổng số lần Kỷ luật",
+      "CHART_STATISTIC_REWARD_DISCIPLINE": "Biểu đồ thống kê Khen thưởng - Kỷ luật",
+      "PERCENT_REWARD_DISCIPLINE_IN_YEAR": "Tỉ lệ phần trăm Khen thưởng - Kỷ luật trong năm là",
+      "REWARD": "Khen thưởng",
+      "DISCIPLINE": "Kỷ luật",
+      "UNPROCESSED": "Chưa xử lý",
+      "PROCESSED": "Đã xử lý",
+      "REASON": "Lý do",
+      "FULLNAME": "Họ và tên",
+      "STATUS": "Trạng thái",
+      "MONEY_REWARD": "Số tiền thưởng",
+      "MONEY_DISCIPLINE": "Số tiền phạt",
+      "NOTE": "Ghi chú",
+      "PUNISHMENT": "Hình thức kỷ luật",
+      "DATE": "Ngày",
+      "VIEW_DETAIL": "Xem chi tiết",
+      "DEPARTMENT": "Phòng ban",
+      "TIMES": "lần",
+      "TOP_EMPLOYEE_BY_MONTH": "Top nhân viên theo tháng"
+    },
+    "STAT_NOTIFY": {
+      "CHART_TYPE_RATE": "Tổng số thông báo {{status}} {{x}}% so với năm {{year}}",
+      "CHART_TYPE": "Biểu đồ Thống kê các loại thông báo",
+      "LIST_NOTIFICATIONS": "Danh sách Thông báo",
+      "NUMBER_OF_RECIPIENTS": "Số người nhận",
+      "READ": "Số người đã đọc",
+      "TOTAL_NOTIFY": "Tổng số Thông báo",
+      "TOTAL_EVENTS": "Tổng số Sự kiện",
+      "READ_NOTIFY_RATE": "Tỉ lệ đọc Thông báo",
+      "INCREASED": "tăng",
+      "DECREASED": "giảm",
+      "LIST_EVENTS": "Danh sách Sự kiện",
+      "DELETE": "Xóa",
+      "VIEW": "Xem chi tiết",
+      "UPDATE": "Chỉnh sửa",
+      "SEARCH": "Tìm kiếm theo Tiêu đề thông báo",
+      "READ_NOTIFY_PER_EMPLOYEE": "Số thông báo đã đọc mỗi nhân viên",
+      "BY": "Theo",
+      "MONTH": "Tháng",
+      "YEAR": "Năm",
+      "TO": " đến ",
+      "COUNT_READ_NOTIFY": "Số thông báo đã đọc",
+      "HOLIDAY": "Ngày lễ"
+    },
+    "ATTENDANCE": {
+      "ON_TIME": "Số nhân viên đúng giờ",
+      "LATE": "Số nhân viên đi trễ",
+      "ABSENT": "Số nhân viên vắng mặt",
+      "MINUTES": "phút",
+      "LEAVE": "Số nhân viên nghỉ phép",
+      "EARLY": "Số nhân viên đi sớm",
+      "INVALID": "Số chấm công không hợp lệ",
+      "YESTERDAY": "so với hôm qua",
+      "CELL_VALUE": "Giá trị ô",
+      "EMPLOYEE_ATTENDANCE_BY_TIME": "Biểu đồ thể hiện Số nhân viên có mặt theo giờ",
+      "STATUS_ON_TIME": "Đúng giờ",
+      "STATUS_LATE": "Đi trễ",
+      "STATUS_EARLY": "Về sớm",
+      "ALL": "Tất cả",
+      "BY_DEPARTMENT": "Thống kê Chấm công theo Phòng ban",
+      "STATUS_INVALID": "Không hợp lệ",
+      "CHECK_IN_&_OUT": "Giờ vào & ra",
+      "OVERTIME": "Làm thêm giờ",
+      "STATUS": "Trạng thái",
+      "NOTE": "Ghi chú",
+      "CHECK_IN": "Giờ vào",
+      "CHECK_OUT": "Giờ ra",
+      "SEARCH": "Tìm kiếm theo Tên",
+      "JOIN": "Tham gia",
+      "STATUS_ABSENT": "Vắng mặt",
+      "MEMBER_ATTENDANCE": "Chấm công nhân viên",
+      "ATTENDANCE_PERCENT": "Tỉ lệ chấm công {{status}} {{x}}% so với hôm qua",
+      "DETAIL_EMPLOYEE": "Thông tin chi tiết nhân viên",
+      "DOWNLOAD_INFO": "Tải thông tin",
+      "LIST_ATTENDANCE": "Danh sách chấm công",
+      "ERROR_REPORT": "Báo lỗi",
+      "TOTAL_HOURS": "Tổng giờ làm"
+    },
+    "INSURANCE_BENEFIT": {
+      "LAST_MONTH": "tháng trước",
+      "LAST_QUARTER": "quý trước",
+      "LIST_INSURANCE": "Danh sách Bảo hiểm",
+      "LIST_BENEFIT": "Danh sách Phúc lợi",
+      "SUMMARY_BENEFIT": "Tổng số phúc lợi được cấp",
+      "SUMMARY_EMPLOYEE_BENEFIT": "Tổng số nhân viên được cấp phúc lợi",
+      "SUMMARY_EMPLOYEE_INSURANCE_IS_ACTIVE": "Tổng số nhân viên hoàn thành đóng bảo hiểm",
+      "CHART_STATISTIC_BENEFIT": "Biểu đồ thống kê Bảo hiểm",
+      "CHART_STATISTIC_INSURANCE": "Biểu đồ thống kê Phúc lợi",
+      "INSURANCE": "Bảo hiểm",
+      "BENEFIT": "Phúc lợi",
+      "WELARE_APPLICATION": "Đơn xin cấp phúc lợi",
+      "PRICE_REQUEST": "Số tiền yêu cầu:"
+    },
+    "LOGIN": {
+      "HI": "Xin chào, mừng bạn trở lại!",
+      "MORE_EFFECTIVELY": "Nâng cao hiệu suất với quy trình làm việc được tối ưu hóa.",
+      "SIGN_IN_TO_YOUR_ACCOUNT": "Đăng nhập vào tài khoản của bạn",
+      "USERNAME": "Tên người dùng",
+      "PASSWORD": "Mật khẩu",
+      "FORGOT_PASSWORD": "Quên mật khẩu?",
+      "SIGN_IN": "Đăng nhập",
+      "8_CHARACTERS": "+8 ký tự",
+      "USERNAME_PLACEHOLDER": "Nhập username hoặc email"
+    },
+    "USER": {
+      "TOTAL_ATTENDANCE": "Số lần chấm công",
+      "TOTAL_LATE": "Tổng số lần đi trễ",
+      "AVG_CHECK_IN": "Trung bình giờ vào",
+      "AVG_CHECK_OUT": "Trung bình giờ ra",
+      "THIS_MONTH": "Tháng này",
+      "THIS_YEAR": "Năm nay",
+      "MINUTES": "phút",
+      "THIS_WEEK": "Tuần này",
+      "ATTENDANCE_HISTORY": "Lịch sử chấm công",
+      "FILTER": "Bộ lọc",
+      "START_DATE": "Từ ngày",
+      "END_DATE": "Đến ngày",
+      "CHECK_IN_TIME": "Thời gian vào",
+      "CHECK_OUT_TIME": "Thời gian ra",
+      "OVERTIME": "Làm thêm giờ",
+      "WORKING_HOURS": "Số giờ làm việc",
+      "FILTER_V": "Lọc",
+      "TODAY_ATTENDANCE": "Chấm công hôm nay",
+      "DETAIL": "Chi tiết chấm công",
+      "LOGIN_COUNT": "Số lần đăng nhập",
+      "INVALID_ATTEMPTS": "Số lần không hợp lệ",
+      "CURRENT_STATUS": "Trạng thái hiện tại",
+      "EARLIER_THAN_YESTERDAY": "Sớm hơn",
+      "LATER_THAN_YESTERDAY": "Muộn hơn"
+    },
+    "REQUEST_PASSWORD": {
+      "FORGOT_PASSWORD": "Bạn quên mật khẩu?",
+      "DESC": "Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn một liên kết để đặt lại mật khẩu của bạn.",
+      "EMAIL_ADDRESS": "Địa chỉ Email",
+      "SEND_REQUEST": "Gửi yêu cầu",
+      "RETURN_LOGIN": "Quay lại đăng nhập",
+      "NOT_FOUND": "Không tìm thấy email",
+      "SEND_SUCCESS": "Gửi yêu cầu thành công",
+      "WAIT_BEFORE_RETRY": "Vui lòng chờ {{countdown}} giây trước khi thử lại!"
+    },
+    "VERIFY": {
+      "TITLE": "Vui lòng kiểm tra email!",
+      "DESC": "Chúng tôi đã gửi email mã xác nhận gồm 6 chữ số. Vui lòng nhập mã vào ô bên dưới để xác minh email của bạn.",
+      "DON'T_HAVE_A_CODE": "Chưa nhận được mã?",
+      "RESEND": "Gửi lại",
+      "VERIFY": "Xác minh"
+    },
+    "UPDATE_PASSWORD": {
+      "TITLE": "Yêu cầu đã được gửi thành công!",
+      "DESC": "Cập nhật mật khẩu của bạn để đảm bảo tài khoản của bạn được an toàn.",
+      "PASSWORD": "Mật khẩu mới",
+      "CONFIRM": "Xác nhận mật khẩu mới",
+      "UPDATE_PASSWORD": "Cập nhật mật khẩu",
+      "EQUAL": "Mật khẩu và xác nhận mật khẩu phải trùng khớp",
+      "UPDATE_SUCCESS": "Cập nhật mật khẩu thành công!"
+    },
+    "USER_SCHEDULAR": {
+      "TITLE": "Danh sách sự kiện",
+      "EVENT_DETAIL": "Chi tiết sự kiện",
+      "SEARCH_PLACEHOLDER": "Tìm kiếm theo tên sự kiện",
+      "FILTER_LABEL": "Loại sự kiện",
+      "FILTER_OPTIONS": {
+        "ALL": "Tất cả",
+        "HOLIDAY": "Ngày lễ",
+        "NON_HOLIDAY": "Khác"
+      }
+    },
+    "CHANGE_PASSWORD": {
+      "TITLE": "Thay đổi mật khẩu của bạn!",
+      "DESC": "Hãy tạo một mật khẩu mạnh để bảo vệ tài khoản của bạn tốt hơn.",
+      "CHANGE_PASSWORD": "Đổi mật khẩu",
+      "CURRENT_PASSWORD": "Mật khẩu hiện tại",
+      "LEAST_8_CHARACTERS": "Ít nhất 8 ký tự"
+    },
+    "EMPLOYEE-CONTRACT": {
+      "TOTAL_NEW_EMPLOYEE": "Tổng số nhân viên mới ",
+      "TOTAL_OLD_EMPLOYEE": "Tổng số nhân viên nghỉ việc",
+      "TOTAL_EMPLOYEE": "Tổng số nhân viên trong công ty",
+      "TOTAL_CONTRACT": "Tổng số hợp đồng mới",
+      "NEW_EMPLOYEE": "Nhân viên mới ",
+      "OLD_EMPLOYEE": "Nhân viên nghỉ việc",
+      "EMPLOYEE": "Nhân viên trong công ty",
+      "STAFF_STATISTICS": "Biểu đồ thống kê nhân viên",
+      "GENDER_STATISTICS": "Giới tính của nhân viên",
+      "GENDER_STATISTICS_MALE": "Nam",
+      "GENDER_STATISTICS_FEMALE": "Nữ",
+      "GENDER_STATISTICS_OTHER": "Khác"
+    },
+    "TIMEOFF_ERROR": {
+      "TOTAL_TIMEOOF": "Tổng số đơn nghỉ phép",
+      "TOTAL_ERROR": "Tổng số đơn báo lỗi",
+      "TOTAL_REQUEST": "Tổng số yêu cầu",
+      "TOTAL_TIMEOOF_APPROVED": "Tổng số đơn nghỉ phép đã duyệt",
+      "TOTAL_TIMEOOF_NOT_APPROVED": "Tổng số đơn nghỉ phép chưa duyệt",
+      "TOTAL_ERROR_APPROVED": "Tổng số đơn báo lỗi đã duyệt",
+      "TOTAL_ERROR_NOT_APPROVED": "Tổng số đơn báo lỗi chưa duyệt",
+      "REQUEST_STATISTICS_CHART": "Biểu đồ thống kê yêu cầu",
+      "ERROR_STATISTICS_CHART_HIGH": "Cao",
+      "ERROR_STATISTICS_CHART_SHORT": "Thấp",
+      "ERROR_STATISTICS_CHART": "Biểu đồ thống kê báo lỗi"
+    },
+    "LEARNING": {
+      "LONGEST_CHAIN": "Chuỗi học dài nhất",
+      "SHORTEST_CHAIN": "Chuỗi học ngắn nhất",
+      "EXERCISE": "Bài",
+      "THE_MOST_TOPIC": "Chủ đề phổ biến nhất",
+      "CHAIN": "Chuỗi",
+      "LEARNING_WORD": "Từ",
+      "LEARNING_TOPIC": "Chủ đề",
+      "LEARNING_TIME": "Thời gian học",
+      "LEARNING_LIST": "Danh sách học tập"
+    },
+
+    "TOPIC": {
+      "TITLE": "Danh sách chủ đề",
+      "SEARCH_BY": "Tìm kiếm theo ",
+      "TABLE": {
+        "name": "Tên chủ đề",
+        "note": "Ghi chú",
+        "numberOfCourses": "Số khoá học"
+      },
+      "FORM": {
+        "TITLE_CREATE": "Thêm chủ đề",
+        "TITLE_UPDATE": "Cập nhật chủ đề",
+        "ENTER_TOPIC_NAME": "Nhập tên chủ đề",
+        "ENTER_NOTES": "Nhập ghi chú"
+      },
+      "DELETE_OBJECT_NAME": "chủ đề này không"
+    },
+    
+    "COURSES": {
+      "TITLE": "Danh sách khóa học",
+      "SEARCH_BY": "Tìm kiếm theo ",
+      "TABLE": {
+        "title": "Tên khóa học",
+        "topic": "Chủ đề",
+        "level": "Độ khó",
+        "description": "Mô tả",
+        "image": "Hình ảnh"
+      },
+      "FORM": {
+        "TITLE_CREATE": "Thêm khóa học",
+        "TITLE_UPDATE": "Cập nhật khóa học",
+        "ENTER_COURSE_NAME": "Nhập tên khóa học",
+        "SELECT_TOPIC": "Chọn chủ đề",
+        "SELECT_LEVEL": "Chọn độ khó",
+        "ENTER_DESCRIPTION": "Nhập mô tả",
+        "ENTER_IMAGE": "Nhập hình ảnh"
+      },
+      "DELETE_OBJECT_NAME": "khóa học này không"
+    },
+
+    "VOCABULARY": {
+      "TITLE": "Danh sách từ vựng",
+      "SEARCH_BY": "Tìm kiếm theo ",
+      "TABLE": {
+        "eng": "Nghĩa tiếng Anh",
+        "vie": "Nghĩa tiếng Việt",
+        "transcription": "Phiên âm",
+        "type": "Loại từ",
+        "course": "Khóa học",
+        "example": "Ví dụ",
+        "image": "Hình ảnh"
+      },
+      "FORM": {
+        "TITLE_CREATE": "Thêm từ vựng",
+        "TITLE_UPDATE": "Cập nhật từ vựng",
+        "ENTER_ENG": "Nhập nghĩa tiếng Anh",
+        "ENTER_VIE": "Nhập nghĩa tiếng Việt",
+        "ENTER_TRANSCRIPTION": "Nhập phiên âm",
+        "SELECT_TYPE": "Chọn loại từ",
+        "SELECT_COURSE": "Chọn khóa học",
+        "ENTER_EXAMPLE": "Nhập ví dụ",
+        "ENTER_IMAGE": "Nhập hình ảnh"
+      },
+      "DELETE_OBJECT_NAME": "word"
+    }
+  }
+}
