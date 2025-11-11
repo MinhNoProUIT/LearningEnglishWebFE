@@ -9,6 +9,7 @@ import AvatarMenu from "./AvatarMenu";
 import { Box, Typography } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { usePathMaps } from "@/utils/usePathMaps";
+import { HEADER_H } from "@/constants/layout";
 export default function Header() {
   const pathname = usePathname();
   const { mapPathName, mapParentPathName } = usePathMaps();
@@ -22,23 +23,24 @@ export default function Header() {
       direction="row"
       sx={{
         display: "flex",
-        right: "24px",
-        left: "24px",
-        alignItems: "center",
-        height: "70px",
-        position: "absolute",
+        right: 0,
+        left: 0,
         top: 0,
+        alignItems: "center",
+        height: HEADER_H,
+        position: "fixed",
         padding: "0 24px",
         zIndex: 1000,
         backgroundColor: "var(--header-maim-color)", // Nền bán trong suốt
         backdropFilter: "blur(10px)", // Làm mờ phần nền phía sau header
+        WebkitBackdropFilter: "blur(10px)",
       }}
       spacing={2}
     >
       <Stack
         direction="row"
         sx={{
-          display: "flex",
+          px: 3,
           width: "100%",
           alignItems: "center",
           justifyContent: "space-between",

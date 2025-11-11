@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import ClientProvider from "@/components/ClientProvider";
 import { LanguageProvider } from "@/providers/LanguageProvider";
+import { Inter } from "next/font/google";
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -14,6 +15,12 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+const inter = Inter({
+  subsets: ["latin", "vietnamese"], // hỗ trợ cả tiếng Việt
+  variable: "--font-inter",
+  display: "swap",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <LanguageProvider>
           <ClientProvider>{children}</ClientProvider>

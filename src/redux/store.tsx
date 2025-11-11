@@ -1,12 +1,14 @@
-// store.ts
+// store.tsx
 import { configureStore } from "@reduxjs/toolkit";
 import { authSlice } from "./slices/authSlice";
 import { toastSlice } from "./slices/toastSlice";
 import { sidebarSlice } from "./slices/sidebarSlice";
 import { courseApi } from "@/services/CourseService";
+import uiReducer from "./slices/uiSlide";
 
 export const store = configureStore({
   reducer: {
+    ui: uiReducer,
     auth: authSlice.reducer,
     [toastSlice.name]: toastSlice.reducer,
     [sidebarSlice.name]: sidebarSlice.reducer,

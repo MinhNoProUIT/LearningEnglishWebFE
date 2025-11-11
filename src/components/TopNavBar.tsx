@@ -14,12 +14,15 @@ import {
   IconButton,
   Divider,
   alpha,
+  colors,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useSelector } from "react-redux";
 import { authSelector } from "@/redux/slices/authSlice";
 import { HoverDropdown } from "./HoverDropdown";
+import { HEADER_H, NAV_H } from "@/constants/layout";
+import useScrollDirection from "@/hooks/useScrollDirection";
 // ==== types ====
 type Child = { label: string; href: string; allow?: boolean };
 type Item = {
@@ -33,7 +36,14 @@ export default function TopNavBar() {
   const router = useRouter();
   const pathname = usePathname();
   const menuLeft = useSelector(authSelector);
-
+  const scrollUp = useScrollDirection(4);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const [measuredH, setMeasuredH] = React.useState(64);
+  React.useLayoutEffect(() => {
+    if (rootRef.current) {
+      setMeasuredH(rootRef.current.offsetHeight);
+    }
+  }, []);
   // ====== KHAI BÁO MENU (demo) ======
   const items: Item[] = [
     {
@@ -121,22 +131,35 @@ export default function TopNavBar() {
     height: 40,
     borderRadius: 1.5,
     fontWeight: 600,
+    fontSize: "16px",
     letterSpacing: 0.2,
-    textTransform: "none" as const,
-    color: "#fff",
-    fontFamily: "var(--font-geist-sans)",
+    textTransform: "uppercase" as const,
+    color: "#f5f5f5",
     bgcolor: active ? alpha("#000", 0.08) : "transparent",
     "&:hover": { bgcolor: alpha("#000", 0.12) },
   });
 
   return (
-    <Box sx={{ position: "sticky", top: 55, zIndex: 1200 }}>
+    <Box
+      ref={rootRef}
+      sx={{
+        position: "fixed",
+        top: HEADER_H,
+        left: 0,
+        right: 0,
+        zIndex: (t) => t.zIndex.appBar,
+        transform: scrollUp ? "translateY(0)" : `translateY(-${measuredH}px)`,
+        transition: "transform 260ms cubic-bezier(.2,.8,.2,1)",
+        willChange: "transform",
+        pointerEvents: scrollUp ? "auto" : "none",
+      }}
+    >
       <AppBar
         position="static"
         elevation={0}
         sx={{
           background:
-            "linear-gradient(90deg,#0044ff 0%, #0077ff 40%, #00c0a3 100%)",
+            "linear-gradient(90deg, #00ff88 0%, #00cc44 50%, #00b32d 100%)",
           color: "#fff",
           borderRadius: "0 0 12px 12px",
           boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
@@ -145,7 +168,8 @@ export default function TopNavBar() {
         <Container maxWidth="lg" disableGutters>
           <Toolbar
             sx={{
-              minHeight: 64,
+              minHeight: NAV_H,
+              height: 80,
               gap: 2,
               display: "flex",
               justifyContent: "space-between",
@@ -202,13 +226,11 @@ export default function TopNavBar() {
                     active={active}
                     onNavigate={(href) => go(href)}
                     buttonSx={btnSx}
-                    fontFamily="var(--font-geist-sans)"
                   />
                 );
               })}
             </Box>
 
-            {/* ACTIONS RIGHT */}
             <Box
               sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}
             >
@@ -238,7 +260,6 @@ export default function TopNavBar() {
                   color: "#0b2",
                   bgcolor: "#92f667",
                   borderRadius: 1.5,
-                  fontFamily: "var(--font-geist-sans)",
                   "&:hover": { bgcolor: "#7ee64f" },
                 }}
               >

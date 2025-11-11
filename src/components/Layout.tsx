@@ -7,33 +7,58 @@ import Header from "./Header";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { authSelector } from "@/redux/slices/authSlice";
-import TopNavBar from "@/components/TopNavBar"; // 👈 thêm
+import TopNavBar from "@/components/TopNavBar";
+import { uiSelector } from "@/redux/slices/uiSlide";
+
+const HIDE_CHROME_PREFIXES = [
+  "/login",
+  "/register",
+  "/auth",
+  "/exam",
+  "/game",
+  "/video",
+];
+
+const HIDE_TOPNAV_ONLY_PREFIXES = [
+  "/materials", // ví dụ: /materials/vocab, /materials/grammar
+  "/reader", // ví dụ trang đọc
+  // thêm route tùy nhu cầu...
+];
+
+const startsWithAny = (pathname: string, prefixes: string[]) =>
+  prefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+const shouldHideByPath = (pathname: string) =>
+  HIDE_CHROME_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const { t } = useTranslation("common");
   const menuLeft = useSelector(authSelector);
 
+  const { showHeader, showTopNav, isFullscreenStudy } = useSelector(uiSelector);
+
+  const hideBothByRoute = startsWithAny(pathname, HIDE_CHROME_PREFIXES);
+  const hideTopNavByRoute = startsWithAny(pathname, HIDE_TOPNAV_ONLY_PREFIXES);
+
+  const hideHeader = hideBothByRoute || isFullscreenStudy || !showHeader;
+  const hideTopNav =
+    hideBothByRoute || hideTopNavByRoute || isFullscreenStudy || !showTopNav;
+
   return (
-    // 👉 Dùng layout theo cột, KHÔNG còn Sidebar
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      {/* Header đang fixed ở top (55px) */}
-      <Header />
+      {!hideHeader && <Header />}
+      {!hideTopNav && <TopNavBar />}
 
-      {/* Thanh menu ngang nằm dưới Header, sticky ở vị trí top: 55 */}
-      <TopNavBar />
-
-      {/* Vùng nội dung scroll */}
       <Box
         component="main"
         sx={{
           flex: 1,
-          height: "100%",
-          overflowY: "auto",
+
           position: "relative",
           backgroundColor: "var(--background-after-color)",
-          // ❗ KHÔNG cần paddingTop: 55px nữa vì phần content nằm dưới TopNav (TopNav đã tính sticky 55)
-          // Nếu Header của bạn vẫn overlay nội dung, giữ lại paddingTop: '55px'
         }}
       >
         <Box
