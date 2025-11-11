@@ -11,7 +11,7 @@ export default function useScrollDirection(minDelta = 5) {
       const y = window.scrollY;
       const delta = y - lastY.current;
       if (Math.abs(delta) < minDelta) return;
-      setScrollUp(delta < 0); // lên = true, xuống = false
+      setScrollUp(delta < 0);
       lastY.current = y;
     };
     window.addEventListener("scroll", onScroll, { passive: true });

@@ -9,7 +9,7 @@ import { useSelector } from "react-redux";
 import { authSelector } from "@/redux/slices/authSlice";
 import TopNavBar from "@/components/TopNavBar";
 import { uiSelector } from "@/redux/slices/uiSlide";
-
+import { NAV_H, HEADER_H } from "@/constants/layout";
 const HIDE_CHROME_PREFIXES = [
   "/login",
   "/register",
@@ -46,7 +46,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const hideHeader = hideBothByRoute || isFullscreenStudy || !showHeader;
   const hideTopNav =
     hideBothByRoute || hideTopNavByRoute || isFullscreenStudy || !showTopNav;
-
+  const topPadding = (hideHeader ? 0 : HEADER_H) + (hideTopNav ? 0 : NAV_H);
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       {!hideHeader && <Header />}
@@ -56,7 +56,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         component="main"
         sx={{
           flex: 1,
-
+          pt: `${topPadding}px`,
           position: "relative",
           backgroundColor: "var(--background-after-color)",
         }}

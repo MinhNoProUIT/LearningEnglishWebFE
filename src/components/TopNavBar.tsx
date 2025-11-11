@@ -148,8 +148,8 @@ export default function TopNavBar() {
         left: 0,
         right: 0,
         zIndex: (t) => t.zIndex.appBar,
-        transform: scrollUp ? "translateY(0)" : `translateY(-${measuredH}px)`,
-        transition: "transform 260ms cubic-bezier(.2,.8,.2,1)",
+        transform: scrollUp ? "translateY(0)" : `translateY(-162%)`,
+        transition: "transform 2000ms cubic-bezier(.2,.8,.2,1)",
         willChange: "transform",
         pointerEvents: scrollUp ? "auto" : "none",
       }}

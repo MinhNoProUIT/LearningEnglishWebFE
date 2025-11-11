@@ -21,7 +21,6 @@ export default function ProtectedLayout({
 }) {
   const [loading, setLoading] = useState(true);
 
-  // Mô phỏng loading trong 500ms rồi render giao diện
   useEffect(() => {
     const timeout = setTimeout(() => {
       setLoading(false);
