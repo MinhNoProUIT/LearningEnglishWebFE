@@ -57,11 +57,8 @@ export default function TopNavBar() {
     { label: "Lịch khai giảng", href: "/schedule", allow: true },
     {
       label: "Khóa học",
+      href: "/courses",
       allow: true,
-      children: [
-        { label: "TOEIC 450+", href: "/courses/toeic-450", allow: true },
-        { label: "TOEIC 650+", href: "/courses/toeic-650", allow: true },
-      ],
     },
     {
       label: "Tài liệu TOEIC",
@@ -136,7 +133,11 @@ export default function TopNavBar() {
     textTransform: "uppercase" as const,
     color: "#f5f5f5",
     bgcolor: active ? alpha("#000", 0.08) : "transparent",
-    "&:hover": { bgcolor: alpha("#000", 0.12) },
+    "&:hover": {
+      bgcolor: alpha("#000", 0.0),
+      color: "#FFF9C4",
+      fontSize: "17px",
+    },
   });
 
   return (
