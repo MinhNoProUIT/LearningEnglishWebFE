@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import Image from "next/image";
 
 const theme = createTheme({
   palette: {
@@ -90,6 +91,7 @@ const LoginPage: React.FC = () => {
             overflow: "hidden",
             position: "relative",
             zIndex: 1,
+            backgroundColor: "white",
           }}
         >
           {/* Left side - Illustration */}
@@ -106,41 +108,20 @@ const LoginPage: React.FC = () => {
           >
             {/* Logo */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 50,
-                  height: 50,
-                  background: "#2d5f4f",
+              <Image
+                src="/images/english-logo.jpg"
+                alt="Logo"
+                width={80}
+                height={80}
+                style={{
                   borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  fontSize: 20,
+                  objectFit: "cover",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
                 }}
-              >
-                UK
-              </Box>
-              <Box>
-                <Typography
-                  sx={{
-                    fontSize: 13,
-                    color: "#2d5f4f",
-                    fontWeight: 600,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  UNIVERSITAS
-                  <br />
-                  KRISTEN
-                  <br />
-                  MARANATHA
-                </Typography>
-              </Box>
+              />
             </Box>
 
-            {/* Illustration area */}
+            {/* Illustration Area as big image */}
             <Box
               sx={{
                 flex: 1,
@@ -150,21 +131,19 @@ const LoginPage: React.FC = () => {
                 my: 4,
               }}
             >
-              <Box
-                sx={{
-                  width: "100%",
-                  height: 300,
-                  background: "rgba(45, 95, 79, 0.1)",
+              <Image
+                src="/images/english-background.jpg"
+                alt="Illustration"
+                width={500}
+                height={350}
+                style={{
                   borderRadius: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  objectFit: "cover",
+                  width: "100%",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+                  height: "100%",
                 }}
-              >
-                <Typography sx={{ color: "#2d5f4f", opacity: 0.5 }}>
-                  🌲 Illustration Area
-                </Typography>
-              </Box>
+              />
             </Box>
           </Box>
 
@@ -326,7 +305,7 @@ const LoginPage: React.FC = () => {
                 >
                   Don't have an account?{" "}
                   <Link
-                    href="#"
+                    href="/authentication/register"
                     sx={{
                       color: "#5fa89a",
                       textDecoration: "none",
@@ -339,22 +318,6 @@ const LoginPage: React.FC = () => {
                     Register Now
                   </Link>
                 </Typography>
-              </Box>
-
-              <Box sx={{ textAlign: "center", mt: 4 }}>
-                <Link
-                  href="#"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: 12,
-                    textDecoration: "none",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  }}
-                >
-                  Terms and Services
-                </Link>
               </Box>
 
               <Box sx={{ textAlign: "center", mt: 4 }}>
