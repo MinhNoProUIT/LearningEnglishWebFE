@@ -165,7 +165,7 @@ const mockLesson: Lesson = {
 - On Mondays, at weekends
 - In the morning/afternoon/evening
   `,
-  videoUrl: "https://example.com/video",
+  videoUrl: "https://www.youtube.com/watch?v=TZkwfPco9-8",
   exercises: [
     {
       id: "q1",
@@ -200,427 +200,54 @@ const mockLesson: Lesson = {
   ],
 };
 
-// Styles
-const styles = {
-  container: {
-    minHeight: "100vh",
-    background:
-      "linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%)",
-    padding: "32px 16px",
-  },
-  pageWrapper: {
-    maxWidth: "1400px",
-    margin: "0 auto",
-  },
-  header: {
-    textAlign: "center" as const,
-    marginBottom: "48px",
-  },
-  iconWrapper: {
-    width: "80px",
-    height: "80px",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    borderRadius: "50%",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "16px",
-    boxShadow: "0 8px 24px rgba(67, 160, 71, 0.3)",
-  },
-  title: {
-    fontSize: "48px",
-    fontWeight: 700,
-    background: "linear-gradient(135deg, #2e7d32 0%, #43a047 100%)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    marginBottom: "12px",
-  },
-  subtitle: {
-    fontSize: "18px",
-    color: "#666",
-    fontWeight: 400,
-  },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "24px",
-    marginBottom: "48px",
-  },
-  statCard: {
-    background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)",
-    borderRadius: "24px",
-    padding: "32px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-    border: "2px solid rgba(67, 160, 71, 0.1)",
-    transition: "all 0.3s ease",
-    cursor: "pointer",
-  },
-  statCardHover: {
-    transform: "translateY(-4px)",
-    boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-  },
-  statContent: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-  },
-  statIconBox: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  statLabel: {
-    fontSize: "14px",
-    color: "#999",
-    marginBottom: "4px",
-  },
-  statValue: {
-    fontSize: "32px",
-    fontWeight: 700,
-    color: "#333",
-  },
-  sectionTitle: {
-    fontSize: "32px",
-    fontWeight: 700,
-    color: "#333",
-    marginBottom: "24px",
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    flexWrap: "wrap" as const,
-  },
-  levelBadge: {
-    padding: "8px 24px",
-    borderRadius: "24px",
-    fontSize: "14px",
-    fontWeight: 600,
-  },
-  topicsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-    gap: "24px",
-    marginBottom: "48px",
-  },
-  topicCard: {
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "32px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-    border: "3px solid transparent",
-    transition: "all 0.3s ease",
-    cursor: "pointer",
-    position: "relative" as const,
-  },
-  topicCardHover: {
-    borderColor: "#66bb6a",
-    boxShadow: "0 16px 48px rgba(67, 160, 71, 0.2)",
-    transform: "translateY(-8px)",
-  },
-  topicHeader: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: "20px",
-  },
-  topicIconBox: {
-    width: "56px",
-    height: "56px",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "transform 0.3s ease",
-  },
-  completeBadge: {
-    background: "#e8f5e9",
-    borderRadius: "50%",
-    padding: "4px",
-  },
-  topicTitle: {
-    fontSize: "22px",
-    fontWeight: 700,
-    color: "#333",
-    marginBottom: "12px",
-    transition: "color 0.3s ease",
-  },
-  topicDescription: {
-    fontSize: "15px",
-    color: "#666",
-    lineHeight: 1.6,
-    marginBottom: "20px",
-  },
-  topicMeta: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-    fontSize: "14px",
-    color: "#999",
-    marginBottom: "24px",
-  },
-  metaItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  },
-  startButton: {
-    width: "100%",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    color: "#ffffff",
-    padding: "16px",
-    borderRadius: "16px",
-    border: "none",
-    fontSize: "16px",
-    fontWeight: 600,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: "0 4px 16px rgba(67, 160, 71, 0.3)",
-  },
-  lessonContainer: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%)",
-  },
-  lessonNav: {
-    background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)",
-    padding: "20px 32px",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-    borderBottom: "3px solid #66bb6a",
-  },
-  navContent: {
-    maxWidth: "1400px",
-    margin: "0 auto",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "12px 24px",
-    background: "transparent",
-    border: "2px solid #66bb6a",
-    borderRadius: "12px",
-    color: "#43a047",
-    fontSize: "15px",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-  },
-  navTitle: {
-    fontSize: "20px",
-    fontWeight: 700,
-    color: "#333",
-  },
-  lessonContent: {
-    maxWidth: "1400px",
-    margin: "0 auto",
-    padding: "40px 32px",
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "32px",
-  },
-  tabsContainer: {
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "12px",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-    display: "flex",
-    gap: "12px",
-    marginBottom: "32px",
-  },
-  tab: {
-    flex: 1,
-    padding: "16px 24px",
-    background: "transparent",
-    border: "none",
-    borderRadius: "16px",
-    fontSize: "16px",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    color: "#666",
-  },
-  activeTab: {
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    color: "#ffffff",
-    boxShadow: "0 4px 16px rgba(67, 160, 71, 0.3)",
-  },
-  contentCard: {
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "40px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-    border: "2px solid rgba(67, 160, 71, 0.1)",
-  },
-  textContent: {
-    fontSize: "16px",
-    lineHeight: 1.8,
-    color: "#333",
-  },
-  videoContainer: {
-    width: "100%",
-    aspectRatio: "16 / 9",
-    background: "linear-gradient(135deg, #333 0%, #555 100%)",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "24px",
-    position: "relative" as const,
-    overflow: "hidden",
-  },
-  playButton: {
-    width: "80px",
-    height: "80px",
-    background: "rgba(255,255,255,0.95)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-  },
-  exerciseCard: {
-    background: "#ffffff",
-    borderRadius: "20px",
-    padding: "32px",
-    marginBottom: "24px",
-    border: "2px solid #f0f0f0",
-    transition: "all 0.3s ease",
-  },
-  questionNumber: {
-    display: "inline-block",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    color: "#ffffff",
-    padding: "8px 16px",
-    borderRadius: "12px",
-    fontSize: "14px",
-    fontWeight: 700,
-    marginBottom: "16px",
-  },
-  question: {
-    fontSize: "20px",
-    fontWeight: 600,
-    color: "#333",
-    marginBottom: "24px",
-    lineHeight: 1.6,
-  },
-  optionsGrid: {
-    display: "grid",
-    gap: "12px",
-  },
-  option: {
-    padding: "20px 24px",
-    background: "#f8f9fa",
-    border: "3px solid transparent",
-    borderRadius: "16px",
-    fontSize: "16px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    fontWeight: 500,
-    color: "#333",
-  },
-  optionSelected: {
-    background: "#e8f5e9",
-    borderColor: "#66bb6a",
-  },
-  optionCorrect: {
-    background: "#e8f5e9",
-    borderColor: "#43a047",
-    color: "#2e7d32",
-  },
-  optionWrong: {
-    background: "#ffebee",
-    borderColor: "#ef5350",
-    color: "#c62828",
-  },
-  submitButton: {
-    width: "100%",
-    padding: "20px",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "16px",
-    fontSize: "18px",
-    fontWeight: 700,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: "0 4px 16px rgba(67, 160, 71, 0.3)",
-    marginTop: "32px",
-  },
-  resultCard: {
-    background: "linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)",
-    borderRadius: "24px",
-    padding: "40px",
-    textAlign: "center" as const,
-    marginTop: "32px",
-    border: "3px solid #66bb6a",
-  },
-  resultIcon: {
-    width: "80px",
-    height: "80px",
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    borderRadius: "50%",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "24px",
-    boxShadow: "0 8px 24px rgba(67, 160, 71, 0.3)",
-  },
-  resultScore: {
-    fontSize: "48px",
-    fontWeight: 700,
-    background: "linear-gradient(135deg, #2e7d32 0%, #43a047 100%)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    marginBottom: "12px",
-  },
-  resultText: {
-    fontSize: "20px",
-    color: "#666",
-    marginBottom: "32px",
-  },
-  resultButtons: {
-    display: "flex",
-    gap: "16px",
-    justifyContent: "center",
-  },
-  resultButton: {
-    padding: "16px 32px",
-    borderRadius: "12px",
-    fontSize: "16px",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    border: "none",
-  },
-  retryButton: {
-    background: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
-    color: "#ffffff",
-    boxShadow: "0 4px 16px rgba(67, 160, 71, 0.3)",
-  },
-  nextButton: {
-    background: "#ffffff",
-    color: "#43a047",
-    border: "2px solid #66bb6a",
-  },
+// Utility function to extract video ID and detect platform
+const getVideoEmbedUrl = (
+  url: string
+): { embedUrl: string; platform: string } | null => {
+  // YouTube
+  const youtubeRegex =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const youtubeMatch = url.match(youtubeRegex);
+  if (youtubeMatch) {
+    return {
+      embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}`,
+      platform: "youtube",
+    };
+  }
+
+  // TikTok
+  const tiktokRegex =
+    /tiktok\.com\/@[\w.-]+\/video\/(\d+)|tiktok\.com\/v\/(\d+)|vm\.tiktok\.com\/([\w]+)/;
+  const tiktokMatch = url.match(tiktokRegex);
+  if (tiktokMatch) {
+    const videoId = tiktokMatch[1] || tiktokMatch[2] || tiktokMatch[3];
+    return {
+      embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
+      platform: "tiktok",
+    };
+  }
+
+  // Vimeo
+  const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+  const vimeoMatch = url.match(vimeoRegex);
+  if (vimeoMatch) {
+    return {
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      platform: "vimeo",
+    };
+  }
+
+  // Dailymotion
+  const dailymotionRegex = /dailymotion\.com\/video\/([^_]+)/;
+  const dailymotionMatch = url.match(dailymotionRegex);
+  if (dailymotionMatch) {
+    return {
+      embedUrl: `https://www.dailymotion.com/embed/video/${dailymotionMatch[1]}`,
+      platform: "dailymotion",
+    };
+  }
+
+  return null;
 };
 
 // Components
@@ -640,13 +267,13 @@ const GrammarListPage = ({
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Beginner":
-        return { bg: "#e8f5e9", color: "#2e7d32" };
+        return "bg-green-50 text-green-700";
       case "Intermediate":
-        return { bg: "#e3f2fd", color: "#1565c0" };
+        return "bg-blue-50 text-blue-700";
       case "Advanced":
-        return { bg: "#f3e5f5", color: "#6a1b9a" };
+        return "bg-purple-50 text-purple-700";
       default:
-        return { bg: "#f5f5f5", color: "#666" };
+        return "bg-gray-50 text-gray-700";
     }
   };
 
@@ -661,59 +288,66 @@ const GrammarListPage = ({
       icon: Trophy,
       label: "Hoàn thành",
       value: "0/8",
-      gradient: "linear-gradient(135deg, #43a047 0%, #66bb6a 100%)",
+      gradient: "from-green-600 to-green-400",
     },
     {
       icon: Clock,
       label: "Thời gian học",
       value: "0 giờ",
-      gradient: "linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%)",
+      gradient: "from-blue-600 to-blue-400",
     },
     {
       icon: Star,
       label: "Điểm trung bình",
       value: "0%",
-      gradient: "linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%)",
+      gradient: "from-purple-600 to-purple-400",
     },
   ];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.pageWrapper}>
-        <div style={styles.header}>
-          <div style={styles.iconWrapper}>
-            <BookOpen size={40} color="#ffffff" />
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-400 rounded-3xl inline-flex items-center justify-center mb-4 shadow-sm">
+            <BookOpen size={40} className="text-white" />
           </div>
-          <h1 style={styles.title}>Ngữ Pháp Tiếng Anh</h1>
-          <p style={styles.subtitle}>Học ngữ pháp từ cơ bản đến nâng cao</p>
+          <h1 className="text-5xl font-bold text-gray-900 mb-3">
+            Ngữ Pháp Tiếng Anh
+          </h1>
+          <p className="text-lg text-gray-600">
+            Học ngữ pháp từ cơ bản đến nâng cao
+          </p>
         </div>
 
-        <div style={styles.statsGrid}>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
-            const isHovered = hoveredStat === index;
             return (
               <div
                 key={index}
-                style={{
-                  ...styles.statCard,
-                  ...(isHovered ? styles.statCardHover : {}),
-                }}
+                className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-200 transition-all duration-300 cursor-pointer ${
+                  hoveredStat === index
+                    ? "transform -translate-y-1 shadow-md border-green-300"
+                    : ""
+                }`}
                 onMouseEnter={() => setHoveredStat(index)}
                 onMouseLeave={() => setHoveredStat(null)}
               >
-                <div style={styles.statContent}>
+                <div className="flex items-center gap-5">
                   <div
-                    style={{
-                      ...styles.statIconBox,
-                      background: stat.gradient,
-                    }}
+                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center flex-shrink-0`}
                   >
-                    <Icon size={28} color="#ffffff" />
+                    <Icon size={28} className="text-white" />
                   </div>
                   <div>
-                    <div style={styles.statLabel}>{stat.label}</div>
-                    <div style={styles.statValue}>{stat.value}</div>
+                    <div className="text-sm text-gray-500 mb-1">
+                      {stat.label}
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -721,96 +355,82 @@ const GrammarListPage = ({
           })}
         </div>
 
-        {Object.entries(groupedTopics).map(([level, topics]) => {
-          const levelColors = getLevelColor(level);
-          return (
-            <div key={level}>
-              <div style={styles.sectionTitle}>
-                <span
-                  style={{
-                    ...styles.levelBadge,
-                    background: levelColors.bg,
-                    color: levelColors.color,
-                  }}
-                >
-                  {level}
-                </span>
-                <span style={{ color: "#ccc" }}>•</span>
-                <span style={{ fontSize: "24px", color: "#666" }}>
-                  {topics.length} chủ đề
-                </span>
-              </div>
-              <div style={styles.topicsGrid}>
-                {topics.map((topic) => {
-                  const isHovered = hoveredCard === topic.id;
-                  return (
-                    <div
-                      key={topic.id}
-                      style={{
-                        ...styles.topicCard,
-                        ...(isHovered ? styles.topicCardHover : {}),
-                      }}
-                      onClick={() => onSelectTopic(topic)}
-                      onMouseEnter={() => setHoveredCard(topic.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      <div style={styles.topicHeader}>
-                        <div
-                          style={{
-                            ...styles.topicIconBox,
-                            transform: isHovered ? "scale(1.1)" : "scale(1)",
-                          }}
-                        >
-                          <BookOpen size={28} color="#ffffff" />
-                        </div>
-                        {topic.completed && (
-                          <div style={styles.completeBadge}>
-                            <CheckCircle2 size={24} color="#43a047" />
-                          </div>
-                        )}
-                      </div>
-                      <h3
-                        style={{
-                          ...styles.topicTitle,
-                          color: isHovered ? "#43a047" : "#333",
-                        }}
-                      >
-                        {topic.title}
-                      </h3>
-                      <p style={styles.topicDescription}>{topic.description}</p>
-                      <div style={styles.topicMeta}>
-                        <div style={styles.metaItem}>
-                          <Clock size={16} />
-                          <span>{topic.duration}</span>
-                        </div>
-                        <div style={styles.metaItem}>
-                          <FileText size={16} />
-                          <span>{topic.lessons} bài học</span>
-                        </div>
-                      </div>
-                      <button
-                        style={styles.startButton}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.boxShadow =
-                            "0 8px 24px rgba(67, 160, 71, 0.4)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow =
-                            "0 4px 16px rgba(67, 160, 71, 0.3)";
-                        }}
-                      >
-                        Bắt đầu học
-                        <ChevronRight size={20} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Topics by Level */}
+        {Object.entries(groupedTopics).map(([level, topics]) => (
+          <div key={level} className="mb-12">
+            <div className="flex items-center gap-4 flex-wrap mb-6">
+              <span
+                className={`px-6 py-2 rounded-full text-sm font-semibold ${getLevelColor(
+                  level
+                )}`}
+              >
+                {level}
+              </span>
+              <span className="text-gray-300">•</span>
+              <span className="text-2xl text-gray-600">
+                {topics.length} chủ đề
+              </span>
             </div>
-          );
-        })}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {topics.map((topic) => (
+                <div
+                  key={topic.id}
+                  className={`bg-white rounded-2xl p-8 shadow-sm border transition-all duration-300 cursor-pointer relative ${
+                    hoveredCard === topic.id
+                      ? "border-green-400 shadow-md transform -translate-y-1"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => onSelectTopic(topic)}
+                  onMouseEnter={() => setHoveredCard(topic.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div
+                      className={`w-14 h-14 bg-gradient-to-br from-green-500 to-green-400 rounded-2xl flex items-center justify-center transition-transform duration-300 ${
+                        hoveredCard === topic.id ? "scale-110" : ""
+                      }`}
+                    >
+                      <BookOpen size={28} className="text-white" />
+                    </div>
+                    {topic.completed && (
+                      <div className="bg-green-50 rounded-full p-1">
+                        <CheckCircle2 size={24} className="text-green-500" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-xl font-bold mb-3 text-gray-900 min-h-[56px] flex items-start">
+                    {topic.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed mb-5 min-h-[48px]">
+                    {topic.description}
+                  </p>
+
+                  {/* Meta */}
+                  <div className="flex items-center gap-5 text-sm text-gray-500 mb-6">
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={16} />
+                      <span>{topic.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <FileText size={16} />
+                      <span>{topic.lessons} bài học</span>
+                    </div>
+                  </div>
+
+                  {/* Button */}
+                  <button className="w-full bg-gradient-to-r from-green-500 to-green-400 text-white px-4 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                    Bắt đầu học
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -864,13 +484,7 @@ const LessonPage = ({
         return (
           <h1
             key={index}
-            style={{
-              fontSize: "36px",
-              fontWeight: 700,
-              color: "#2e7d32",
-              marginBottom: "24px",
-              marginTop: "32px",
-            }}
+            className="text-4xl font-bold text-green-700 mb-6 mt-8"
           >
             {line.replace("# ", "")}
           </h1>
@@ -879,13 +493,7 @@ const LessonPage = ({
         return (
           <h2
             key={index}
-            style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              color: "#43a047",
-              marginBottom: "16px",
-              marginTop: "24px",
-            }}
+            className="text-3xl font-bold text-green-600 mb-4 mt-6"
           >
             {line.replace("## ", "")}
           </h2>
@@ -894,23 +502,14 @@ const LessonPage = ({
         return (
           <h3
             key={index}
-            style={{
-              fontSize: "22px",
-              fontWeight: 600,
-              color: "#66bb6a",
-              marginBottom: "12px",
-              marginTop: "16px",
-            }}
+            className="text-2xl font-semibold text-green-500 mb-3 mt-4"
           >
             {line.replace("### ", "")}
           </h3>
         );
       } else if (line.startsWith("- ")) {
         return (
-          <li
-            key={index}
-            style={{ marginLeft: "24px", marginBottom: "8px", color: "#333" }}
-          >
+          <li key={index} className="ml-6 mb-2 text-gray-700">
             {line.replace("- ", "")}
           </li>
         );
@@ -918,82 +517,99 @@ const LessonPage = ({
         return <br key={index} />;
       } else {
         return (
-          <p
-            key={index}
-            style={{ marginBottom: "12px", color: "#444", lineHeight: 1.7 }}
-          >
+          <p key={index} className="mb-3 text-gray-700 leading-relaxed">
             {line}
           </p>
         );
       }
     });
 
-    return <div style={styles.textContent}>{content}</div>;
+    return <div className="text-base leading-relaxed">{content}</div>;
   };
 
   const score = calculateScore();
+  const videoEmbed = mockLesson.videoUrl
+    ? getVideoEmbedUrl(mockLesson.videoUrl)
+    : null;
 
   return (
-    <div style={styles.lessonContainer}>
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
-      <div style={styles.lessonNav}>
-        <div style={styles.navContent}>
-          <button style={styles.backButton} onClick={onBack}>
+      <div className="bg-white px-8 py-5 shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <button
+            className="flex items-center gap-2 px-6 py-3 bg-transparent border border-gray-300 rounded-xl text-gray-700 font-semibold transition-all duration-300 hover:bg-gray-50 hover:border-green-400"
+            onClick={onBack}
+          >
             <ArrowLeft size={18} /> Quay lại
           </button>
-          <h2 style={styles.navTitle}>{topic.title}</h2>
-          <div style={{ width: "120px" }}></div>
+          <h2 className="text-xl font-bold text-gray-900">{topic.title}</h2>
+          <div className="w-32"></div>
         </div>
       </div>
 
       {/* Lesson Content */}
-      <div style={styles.lessonContent}>
+      <div className="max-w-7xl mx-auto p-10">
         {/* Tabs */}
-        <div style={styles.tabsContainer}>
+        <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200 flex gap-3 mb-8 overflow-x-auto">
           <button
-            style={{
-              ...styles.tab,
-              ...(activeTab === "theory" ? styles.activeTab : {}),
-            }}
+            className={`flex-1 min-w-[100px] px-4 sm:px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === "theory"
+                ? "bg-gradient-to-r from-green-500 to-green-400 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("theory")}
           >
             <BookOpen size={20} /> Lý thuyết
           </button>
           <button
-            style={{
-              ...styles.tab,
-              ...(activeTab === "video" ? styles.activeTab : {}),
-            }}
+            className={`flex-1 min-w-[100px] px-4 sm:px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === "video"
+                ? "bg-gradient-to-r from-green-500 to-green-400 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("video")}
           >
             <Video size={20} /> Video
           </button>
           <button
-            style={{
-              ...styles.tab,
-              ...(activeTab === "exercise" ? styles.activeTab : {}),
-            }}
+            className={`flex-1 min-w-[100px] px-4 sm:px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === "exercise"
+                ? "bg-gradient-to-r from-green-500 to-green-400 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
             onClick={() => setActiveTab("exercise")}
           >
             <FileText size={20} /> Bài tập
           </button>
         </div>
 
-        {/* Main Tab Content */}
-        <div style={styles.contentCard}>
+        {/* Main Content Card */}
+        <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-200">
           {activeTab === "theory" && renderContent()}
 
           {activeTab === "video" && (
             <div>
-              <div style={styles.videoContainer}>
-                <iframe
-                  src={mockLesson.videoUrl}
-                  style={{ width: "100%", height: "100%", border: "none" }}
-                  title="Grammar Video"
-                  allowFullScreen
-                />
+              <div
+                className="w-full rounded-2xl overflow-hidden mb-6 bg-gray-900"
+                style={{ aspectRatio: "16 / 9" }}
+              >
+                {videoEmbed ? (
+                  <iframe
+                    src={videoEmbed.embedUrl}
+                    className="w-full h-full"
+                    title="Grammar Video"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-white">
+                    <Play size={60} className="mb-4 opacity-70" />
+                    <p>Video không khả dụng</p>
+                  </div>
+                )}
               </div>
-              <p style={{ textAlign: "center", color: "#666" }}>
+              <p className="text-center text-gray-600">
                 Xem video bài học để hiểu rõ hơn về ngữ pháp này.
               </p>
             </div>
@@ -1007,20 +623,23 @@ const LessonPage = ({
                 return (
                   <div
                     key={exercise.id}
-                    style={{
-                      ...styles.exerciseCard,
-                      ...(submitted
+                    className={`bg-white rounded-2xl p-8 mb-6 border-2 transition-all duration-300 ${
+                      submitted
                         ? isCorrect
-                          ? styles.optionCorrect
+                          ? "bg-green-50 border-green-500"
                           : selected !== undefined
-                          ? styles.optionWrong
-                          : {}
-                        : {}),
-                    }}
+                          ? "bg-red-50 border-red-400"
+                          : "border-gray-200"
+                        : "border-gray-200"
+                    }`}
                   >
-                    <div style={styles.questionNumber}>Câu {index + 1}</div>
-                    <div style={styles.question}>{exercise.question}</div>
-                    <div style={styles.optionsGrid}>
+                    <div className="inline-block bg-gradient-to-r from-green-500 to-green-400 text-white px-4 py-2 rounded-xl text-sm font-bold mb-4">
+                      Câu {index + 1}
+                    </div>
+                    <div className="text-xl font-semibold text-gray-900 mb-6 leading-relaxed">
+                      {exercise.question}
+                    </div>
+                    <div className="grid gap-3">
                       {exercise.options.map((option, i) => {
                         const isSelected = selected === i;
                         const isAnswerCorrect =
@@ -1031,14 +650,15 @@ const LessonPage = ({
                         return (
                           <div
                             key={i}
-                            style={{
-                              ...styles.option,
-                              ...(isSelected && !submitted
-                                ? styles.optionSelected
-                                : {}),
-                              ...(isAnswerCorrect ? styles.optionCorrect : {}),
-                              ...(isAnswerWrong ? styles.optionWrong : {}),
-                            }}
+                            className={`px-6 py-5 rounded-xl border-2 cursor-pointer transition-all duration-300 flex items-center gap-3 font-medium ${
+                              isSelected && !submitted
+                                ? "bg-green-50 border-green-400"
+                                : isAnswerCorrect
+                                ? "bg-green-50 border-green-500 text-green-800"
+                                : isAnswerWrong
+                                ? "bg-red-50 border-red-400 text-red-800"
+                                : "bg-gray-50 border-gray-200 hover:border-green-300 text-gray-700"
+                            }`}
                             onClick={() => handleAnswerSelect(exercise.id, i)}
                           >
                             <Check size={18} />
@@ -1052,33 +672,38 @@ const LessonPage = ({
               })}
 
               {!submitted && (
-                <button style={styles.submitButton} onClick={handleSubmit}>
+                <button
+                  className="w-full bg-gradient-to-r from-green-500 to-green-400 text-white py-5 rounded-xl text-lg font-bold transition-all duration-300 shadow-sm hover:shadow-md mt-8"
+                  onClick={handleSubmit}
+                >
                   Nộp bài
                 </button>
               )}
 
               {showResults && (
-                <div style={styles.resultCard}>
-                  <div style={styles.resultIcon}>
-                    <Trophy size={40} color="#fff" />
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-10 text-center mt-8 border-2 border-green-300">
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-400 rounded-full inline-flex items-center justify-center mb-6 shadow-sm">
+                    <Trophy size={40} className="text-white" />
                   </div>
-                  <div style={styles.resultScore}>{score}%</div>
-                  <div style={styles.resultText}>
+                  <div className="text-5xl font-bold text-gray-900 mb-3">
+                    {score}%
+                  </div>
+                  <div className="text-xl text-gray-600 mb-8">
                     {score >= 80
                       ? "Xuất sắc! Bạn đã nắm vững ngữ pháp này 🎉"
                       : score >= 50
                       ? "Tốt! Hãy xem lại lý thuyết để đạt điểm cao hơn 💪"
                       : "Hãy ôn lại lý thuyết và thử lại nhé 🔄"}
                   </div>
-                  <div style={styles.resultButtons}>
+                  <div className="flex gap-4 justify-center">
                     <button
-                      style={{ ...styles.resultButton, ...styles.retryButton }}
+                      className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-sm hover:shadow-md"
                       onClick={handleRetry}
                     >
                       Làm lại
                     </button>
                     <button
-                      style={{ ...styles.resultButton, ...styles.nextButton }}
+                      className="px-8 py-4 bg-white text-gray-700 rounded-xl font-semibold border border-gray-300 transition-all duration-300 hover:bg-gray-50 hover:border-green-400"
                       onClick={onBack}
                     >
                       Quay lại danh sách
@@ -1094,9 +719,7 @@ const LessonPage = ({
   );
 };
 
-// ============================
-// App Component (Main Entry)
-// ============================
+// Main App Component
 const GrammarApp = () => {
   const [selectedTopic, setSelectedTopic] = useState<GrammarTopic | null>(null);
 

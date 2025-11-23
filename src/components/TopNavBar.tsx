@@ -68,7 +68,7 @@ export default function TopNavBar() {
       allow: true,
       children: [
         { label: "Từ vựng", href: "/materials/vocab", allow: true },
-        { label: "Ngữ pháp", href: "/materials/grammar", allow: true },
+        { label: "Ngữ pháp", href: "/user/grammar", allow: true },
       ],
     },
     {

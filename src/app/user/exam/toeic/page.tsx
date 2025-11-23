@@ -90,6 +90,7 @@ const TestCard = ({
         sx={{
           position: "absolute",
           right: 16,
+          top: 16,
           zIndex: 10,
           fontWeight: 700,
           fontSize: "0.7rem",

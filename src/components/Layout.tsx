@@ -10,6 +10,7 @@ import { authSelector } from "@/redux/slices/authSlice";
 import TopNavBar from "@/components/TopNavBar";
 import { uiSelector } from "@/redux/slices/uiSlide";
 import { NAV_H, HEADER_H } from "@/constants/layout";
+import Chat from "./chatbot";
 const HIDE_CHROME_PREFIXES = [
   "/login",
   "/register",
@@ -69,6 +70,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         >
           {children}
         </Box>
+        <Chat />
       </Box>
     </div>
   );
