@@ -17,12 +17,16 @@ const HIDE_CHROME_PREFIXES = [
   "/exam",
   "/game",
   "/video",
+  "/learn",
+  "/vocabulary",
 ];
 
 const HIDE_TOPNAV_ONLY_PREFIXES = [
   "/materials", // ví dụ: /materials/vocab, /materials/grammar
   "/reader", // ví dụ trang đọc
   // thêm route tùy nhu cầu...
+  "/learn",
+  "/vocabulary",
 ];
 
 const startsWithAny = (pathname: string, prefixes: string[]) =>

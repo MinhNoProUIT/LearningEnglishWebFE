@@ -1,7 +1,6 @@
 "use client";
 
 import { Box } from "@mui/material";
-import DisplayInfo from "../dashboard/DisplayInfo";
 import ReactECharts from "echarts-for-react";
 
 const Test = () => {
@@ -74,7 +73,6 @@ const Test = () => {
         gap: "24px",
       }}
     >
-      <DisplayInfo />
       <ReactECharts
         option={option}
         style={{ height: "800px", width: "100%" }}
