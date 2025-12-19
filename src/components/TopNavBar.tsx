@@ -251,7 +251,7 @@ export default function TopNavBar() {
               </IconButton>
 
               <Button
-                onClick={() => router.push("/user/exam/toeic")}
+                onClick={() => router.push("/user/exam")}
                 sx={{
                   height: 40,
                   px: 2.5,

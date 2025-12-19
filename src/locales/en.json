@@ -852,8 +852,7 @@
           },
           "DELETE_OBJECT_NAME": "word"
         }
-      }
-    },
+      },
     "BUTTON": {
       "REFRESH": "Refresh",
       "SAVE": "Save",
@@ -1693,4 +1692,3 @@
       "LEARNING_LIST": "Learning List"
     }
   }
-}
