@@ -7,37 +7,85 @@
     /* Light mode - Green theme */
     --background: 0 0% 100%;
     --foreground: 150 10% 10%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 150 10% 10%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 150 10% 10%;
-    
+
     /* Primary - Xanh lá đậm */
     --primary: 150 70% 35%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Secondary - Xanh lá nhạt */
     --secondary: 145 45% 95%;
     --secondary-foreground: 150 70% 25%;
-    
+
     /* Muted - Xám xanh nhẹ */
     --muted: 150 20% 96%;
     --muted-foreground: 150 10% 45%;
-    
+
     /* Accent - Xanh lá sáng */
     --accent: 145 50% 92%;
     --accent-foreground: 150 70% 30%;
-    
+
     /* Destructive - Đỏ */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --border: 150 20% 88%;
     --input: 150 20% 92%;
     --ring: 150 70% 40%;
     --radius: 0.75rem;
+
+    /* ================== EXAM THEME - Soft Green ================== */
+    /* Gradients */
+    --exam-gradient-primary: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    --exam-gradient-primary-light: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%);
+    --exam-gradient-primary-dark: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --exam-gradient-secondary: linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%);
+    --exam-gradient-accent: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
+    --exam-gradient-accent-light: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+    --exam-gradient-hero: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+    --exam-gradient-hero-light: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+    --exam-gradient-card: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+
+    /* Solid Colors */
+    --exam-primary: #10b981;
+    --exam-primary-dark: #059669;
+    --exam-primary-light: #34d399;
+    --exam-primary-lighter: #6ee7b7;
+    --exam-text: #047857;
+    --exam-text-light: #059669;
+    --exam-bg: #f0fdf4;
+    --exam-bg-light: #f8fdfb;
+    --exam-bg-dark: #ecfdf5;
+    --exam-border: #d1fae5;
+    --exam-border-light: #e5e7eb;
+
+    /* Status Colors */
+    --exam-status-completed: #059669;
+    --exam-status-completed-bg: #d1fae5;
+    --exam-status-progress: #d97706;
+    --exam-status-progress-bg: #fef3c7;
+    --exam-status-pending: #6b7280;
+    --exam-status-pending-bg: #f3f4f6;
+    --exam-status-locked: #9ca3af;
+    --exam-status-locked-bg: #f3f4f6;
+
+    /* Difficulty Colors */
+    --exam-difficulty-easy: #059669;
+    --exam-difficulty-easy-bg: #d1fae5;
+    --exam-difficulty-medium: #d97706;
+    --exam-difficulty-medium-bg: #fef3c7;
+    --exam-difficulty-hard: #dc2626;
+    --exam-difficulty-hard-bg: #fee2e2;
+
+    /* Shadows */
+    --exam-shadow-card: 0 10px 40px rgba(0,0,0,0.08);
+    --exam-shadow-card-hover: 0 8px 30px rgba(16, 185, 129, 0.12);
+    --exam-shadow-button: 0 8px 20px rgba(0,0,0,0.2);
   }
 
   .dark {

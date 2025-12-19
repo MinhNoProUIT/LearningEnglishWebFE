@@ -14,6 +14,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const theme = createTheme({
   palette: {
@@ -36,6 +37,7 @@ const theme = createTheme({
 });
 
 const LoginPage: React.FC = () => {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +45,8 @@ const LoginPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Login:", { username, password });
-    // Xử lý đăng nhập
+    // Xử lý đăng nhập - sau khi login thành công, chuyển về trang home
+    router.push("/home");
   };
 
   return (

@@ -1,0 +1,1530 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useParams } from "next/navigation";
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  Stack,
+  Grid,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  LinearProgress,
+  Tooltip,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+} from "@mui/material";
+import {
+  ArrowLeft,
+  Clock,
+  Flag,
+  Send,
+  ChevronLeft,
+  ChevronRight,
+  Headphones,
+  Play,
+  Volume2,
+  AlertTriangle,
+  Image as ImageIcon,
+  MessageSquare,
+  Users,
+  PenTool,
+  FileText,
+  BookMarked,
+} from "lucide-react";
+import { examTheme } from "@/components/exam";
+
+const theme = examTheme;
+
+// ================== TYPES ==================
+type Question = {
+  id: number;
+  partId: number;
+  type: string;
+  imageUrl?: string;
+  audioUrl?: string;
+  conversationText?: string;
+  talkText?: string;
+  passage?: string;
+  questionText?: string;
+  options?: { label: string; text: string }[];
+  subQuestions?: {
+    id: number;
+    questionText: string;
+    options: { label: string; text: string }[];
+  }[];
+};
+
+type Part = {
+  id: number;
+  name: string;
+  category: "Listening" | "Reading";
+  questionCount: number;
+  startQuestion: number;
+  endQuestion: number;
+  icon: string;
+  instructions: string;
+};
+
+// ================== MOCK DATA ==================
+const parts: Part[] = [
+  {
+    id: 1,
+    name: "Part 1 - Photographs",
+    category: "Listening",
+    questionCount: 6,
+    startQuestion: 1,
+    endQuestion: 6,
+    icon: "Image",
+    instructions: "Nhìn vào hình ảnh và chọn mô tả phù hợp nhất với những gì bạn thấy trong hình.",
+  },
+  {
+    id: 2,
+    name: "Part 2 - Question & Response",
+    category: "Listening",
+    questionCount: 25,
+    startQuestion: 7,
+    endQuestion: 31,
+    icon: "MessageSquare",
+    instructions: "Nghe câu hỏi và chọn câu trả lời phù hợp nhất.",
+  },
+  {
+    id: 3,
+    name: "Part 3 - Conversations",
+    category: "Listening",
+    questionCount: 39,
+    startQuestion: 32,
+    endQuestion: 70,
+    icon: "Users",
+    instructions: "Nghe đoạn hội thoại và trả lời các câu hỏi liên quan.",
+  },
+  {
+    id: 4,
+    name: "Part 4 - Talks",
+    category: "Listening",
+    questionCount: 30,
+    startQuestion: 71,
+    endQuestion: 100,
+    icon: "Volume2",
+    instructions: "Nghe bài nói và trả lời các câu hỏi liên quan.",
+  },
+  {
+    id: 5,
+    name: "Part 5 - Incomplete Sentences",
+    category: "Reading",
+    questionCount: 30,
+    startQuestion: 101,
+    endQuestion: 130,
+    icon: "PenTool",
+    instructions: "Chọn từ hoặc cụm từ phù hợp nhất để hoàn thành câu.",
+  },
+  {
+    id: 6,
+    name: "Part 6 - Text Completion",
+    category: "Reading",
+    questionCount: 16,
+    startQuestion: 131,
+    endQuestion: 146,
+    icon: "FileText",
+    instructions: "Đọc đoạn văn và chọn từ hoặc câu phù hợp để điền vào chỗ trống.",
+  },
+  {
+    id: 7,
+    name: "Part 7 - Reading Comprehension",
+    category: "Reading",
+    questionCount: 54,
+    startQuestion: 147,
+    endQuestion: 200,
+    icon: "BookMarked",
+    instructions: "Đọc các đoạn văn bản và trả lời các câu hỏi liên quan.",
+  },
+];
+
+// Generate mock questions
+const generateMockQuestions = (): Question[] => {
+  const questions: Question[] = [];
+
+  // Part 1 - Photographs (1-6)
+  for (let i = 1; i <= 6; i++) {
+    questions.push({
+      id: i,
+      partId: 1,
+      type: "photograph",
+      imageUrl: `/images/toeic/part1/q${i}.jpg`,
+      audioUrl: `/audio/toeic/part1/q${i}.mp3`,
+      options: [
+        { label: "A", text: "Option A description" },
+        { label: "B", text: "Option B description" },
+        { label: "C", text: "Option C description" },
+        { label: "D", text: "Option D description" },
+      ],
+    });
+  }
+
+  // Part 2 - Question & Response (7-31)
+  for (let i = 7; i <= 31; i++) {
+    questions.push({
+      id: i,
+      partId: 2,
+      type: "question-response",
+      audioUrl: `/audio/toeic/part2/q${i}.mp3`,
+      questionText: `Question ${i}: [Audio question will play]`,
+      options: [
+        { label: "A", text: "Response option A" },
+        { label: "B", text: "Response option B" },
+        { label: "C", text: "Response option C" },
+      ],
+    });
+  }
+
+  // Part 3 - Conversations (32-70) - grouped by 3
+  for (let i = 32; i <= 70; i += 3) {
+    const conversationNum = Math.floor((i - 32) / 3) + 1;
+    questions.push({
+      id: i,
+      partId: 3,
+      type: "conversation",
+      audioUrl: `/audio/toeic/part3/conv${conversationNum}.mp3`,
+      conversationText: `[Conversation ${conversationNum}]\nMan: This is a sample conversation.\nWoman: Yes, this is for testing purposes.\nMan: We will add real content later.`,
+      subQuestions: [
+        {
+          id: i,
+          questionText: `What is the conversation mainly about?`,
+          options: [
+            { label: "A", text: "A meeting schedule" },
+            { label: "B", text: "A project deadline" },
+            { label: "C", text: "A job interview" },
+            { label: "D", text: "A business trip" },
+          ],
+        },
+        {
+          id: i + 1,
+          questionText: `What does the man suggest?`,
+          options: [
+            { label: "A", text: "Postponing the meeting" },
+            { label: "B", text: "Hiring more staff" },
+            { label: "C", text: "Changing the venue" },
+            { label: "D", text: "Extending the deadline" },
+          ],
+        },
+        {
+          id: i + 2,
+          questionText: `What will the woman probably do next?`,
+          options: [
+            { label: "A", text: "Make a phone call" },
+            { label: "B", text: "Send an email" },
+            { label: "C", text: "Attend a meeting" },
+            { label: "D", text: "Review a document" },
+          ],
+        },
+      ],
+    });
+  }
+
+  // Part 4 - Talks (71-100) - grouped by 3
+  for (let i = 71; i <= 100; i += 3) {
+    const talkNum = Math.floor((i - 71) / 3) + 1;
+    questions.push({
+      id: i,
+      partId: 4,
+      type: "talk",
+      audioUrl: `/audio/toeic/part4/talk${talkNum}.mp3`,
+      talkText: `[Talk ${talkNum}]\nGood morning everyone. This is a sample announcement for testing purposes. We will add real content later.`,
+      subQuestions: [
+        {
+          id: i,
+          questionText: `What is the purpose of this announcement?`,
+          options: [
+            { label: "A", text: "To advertise a product" },
+            { label: "B", text: "To announce a schedule change" },
+            { label: "C", text: "To welcome new employees" },
+            { label: "D", text: "To provide safety instructions" },
+          ],
+        },
+        {
+          id: i + 1,
+          questionText: `What are listeners asked to do?`,
+          options: [
+            { label: "A", text: "Fill out a form" },
+            { label: "B", text: "Contact the office" },
+            { label: "C", text: "Attend a meeting" },
+            { label: "D", text: "Visit a website" },
+          ],
+        },
+        {
+          id: i + 2,
+          questionText: `When will the event take place?`,
+          options: [
+            { label: "A", text: "This morning" },
+            { label: "B", text: "This afternoon" },
+            { label: "C", text: "Tomorrow" },
+            { label: "D", text: "Next week" },
+          ],
+        },
+      ],
+    });
+  }
+
+  // Part 5 - Incomplete Sentences (101-130)
+  for (let i = 101; i <= 130; i++) {
+    questions.push({
+      id: i,
+      partId: 5,
+      type: "incomplete-sentence",
+      questionText: `The company's new policy requires all employees to submit their reports _______ the end of each month.`,
+      options: [
+        { label: "A", text: "by" },
+        { label: "B", text: "until" },
+        { label: "C", text: "within" },
+        { label: "D", text: "during" },
+      ],
+    });
+  }
+
+  // Part 6 - Text Completion (131-146) - grouped by 4
+  for (let i = 131; i <= 146; i += 4) {
+    questions.push({
+      id: i,
+      partId: 6,
+      type: "text-completion",
+      passage: `Dear Mr. Johnson,
+
+Thank you for your interest in our company. We are pleased to inform you that your application has been _______ (${i}).
+
+We would like to invite you for an interview on March 15th at 10:00 AM. Please _______ (${i + 1}) this email to confirm your attendance.
+
+If you have any questions, please do not _______ (${i + 2}) to contact us.
+
+We look forward to _______ (${i + 3}) you soon.
+
+Best regards,
+HR Department`,
+      subQuestions: [
+        {
+          id: i,
+          questionText: `_______ (${i})`,
+          options: [
+            { label: "A", text: "accepted" },
+            { label: "B", text: "accepting" },
+            { label: "C", text: "acceptance" },
+            { label: "D", text: "acceptable" },
+          ],
+        },
+        {
+          id: i + 1,
+          questionText: `_______ (${i + 1})`,
+          options: [
+            { label: "A", text: "respond" },
+            { label: "B", text: "reply to" },
+            { label: "C", text: "answer" },
+            { label: "D", text: "react" },
+          ],
+        },
+        {
+          id: i + 2,
+          questionText: `_______ (${i + 2})`,
+          options: [
+            { label: "A", text: "hesitate" },
+            { label: "B", text: "hesitating" },
+            { label: "C", text: "hesitation" },
+            { label: "D", text: "hesitant" },
+          ],
+        },
+        {
+          id: i + 3,
+          questionText: `_______ (${i + 3})`,
+          options: [
+            { label: "A", text: "meet" },
+            { label: "B", text: "meeting" },
+            { label: "C", text: "met" },
+            { label: "D", text: "meets" },
+          ],
+        },
+      ],
+    });
+  }
+
+  // Part 7 - Reading Comprehension (147-200)
+  // Single passages (147-175)
+  for (let i = 147; i <= 175; i += 3) {
+    questions.push({
+      id: i,
+      partId: 7,
+      type: "single-passage",
+      passage: `NOTICE TO ALL EMPLOYEES
+
+Effective immediately, the company will implement new parking regulations. All employees must register their vehicles with the security office by the end of this week.
+
+Parking spaces will be assigned on a first-come, first-served basis. Priority will be given to employees who carpool.
+
+For more information, please contact the facilities department.`,
+      subQuestions: [
+        {
+          id: i,
+          questionText: `What is the purpose of this notice?`,
+          options: [
+            { label: "A", text: "To announce new parking rules" },
+            { label: "B", text: "To advertise carpool services" },
+            { label: "C", text: "To introduce new employees" },
+            { label: "D", text: "To schedule vehicle maintenance" },
+          ],
+        },
+        {
+          id: i + 1,
+          questionText: `What must employees do?`,
+          options: [
+            { label: "A", text: "Buy a parking permit" },
+            { label: "B", text: "Register their vehicles" },
+            { label: "C", text: "Join a carpool group" },
+            { label: "D", text: "Park in designated areas" },
+          ],
+        },
+        {
+          id: i + 2,
+          questionText: `Who will receive priority for parking spaces?`,
+          options: [
+            { label: "A", text: "Senior employees" },
+            { label: "B", text: "Department managers" },
+            { label: "C", text: "Employees who carpool" },
+            { label: "D", text: "Early arrivals" },
+          ],
+        },
+      ],
+    });
+  }
+
+  // Double passages (176-200)
+  for (let i = 176; i <= 200; i += 5) {
+    questions.push({
+      id: i,
+      partId: 7,
+      type: "double-passage",
+      passage: `[Email 1]
+From: HR Department
+To: All Staff
+Subject: Annual Company Picnic
+
+Dear colleagues,
+
+We are pleased to announce our annual company picnic will be held on Saturday, June 15th at Riverside Park. The event will start at 10:00 AM.
+
+Please RSVP by June 10th.
+
+---
+
+[Email 2]
+From: John Smith
+To: HR Department
+Subject: RE: Annual Company Picnic
+
+Thank you for the invitation. I would like to confirm my attendance along with my family (3 people total).
+
+Is there anything I should bring?`,
+      subQuestions: [
+        {
+          id: i,
+          questionText: `What is being announced in the first email?`,
+          options: [
+            { label: "A", text: "A company merger" },
+            { label: "B", text: "A company picnic" },
+            { label: "C", text: "A staff meeting" },
+            { label: "D", text: "A holiday schedule" },
+          ],
+        },
+        {
+          id: i + 1,
+          questionText: `When will the event take place?`,
+          options: [
+            { label: "A", text: "June 10th" },
+            { label: "B", text: "June 15th" },
+            { label: "C", text: "Saturday morning" },
+            { label: "D", text: "10:00 AM" },
+          ],
+        },
+        {
+          id: i + 2,
+          questionText: `How many people will John Smith bring?`,
+          options: [
+            { label: "A", text: "1" },
+            { label: "B", text: "2" },
+            { label: "C", text: "3" },
+            { label: "D", text: "4" },
+          ],
+        },
+        {
+          id: i + 3,
+          questionText: `What does John Smith want to know?`,
+          options: [
+            { label: "A", text: "The location of the event" },
+            { label: "B", text: "If he should bring something" },
+            { label: "C", text: "The cost of attending" },
+            { label: "D", text: "Who else is attending" },
+          ],
+        },
+        {
+          id: i + 4,
+          questionText: `By when should employees RSVP?`,
+          options: [
+            { label: "A", text: "June 10th" },
+            { label: "B", text: "June 15th" },
+            { label: "C", text: "One week before" },
+            { label: "D", text: "Immediately" },
+          ],
+        },
+      ],
+    });
+  }
+
+  return questions;
+};
+
+const mockQuestions = generateMockQuestions();
+
+// Part Icon mapping
+const partIcons: Record<string, React.ReactNode> = {
+  Image: <ImageIcon size={18} />,
+  MessageSquare: <MessageSquare size={18} />,
+  Users: <Users size={18} />,
+  Volume2: <Volume2 size={18} />,
+  PenTool: <PenTool size={18} />,
+  FileText: <FileText size={18} />,
+  BookMarked: <BookMarked size={18} />,
+};
+
+// ================== COMPONENTS ==================
+
+// Timer Component
+const Timer = ({ initialTime, onTimeUp }: { initialTime: number; onTimeUp: () => void }) => {
+  const [timeLeft, setTimeLeft] = useState(initialTime);
+  const [isWarning, setIsWarning] = useState(false);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      onTimeUp();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, onTimeUp]);
+
+  useEffect(() => {
+    if (timeLeft <= 300) { // 5 minutes warning
+      setIsWarning(true);
+    }
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: 2,
+        py: 1,
+        borderRadius: 2,
+        bgcolor: isWarning ? "#fef2f2" : "#f0fdf4",
+        border: `1px solid ${isWarning ? "#fee2e2" : "#d1fae5"}`,
+      }}
+    >
+      <Clock size={18} color={isWarning ? "#dc2626" : theme.colors.primary} />
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        color={isWarning ? "#dc2626" : theme.colors.primaryDark}
+      >
+        {formatTime(timeLeft)}
+      </Typography>
+    </Box>
+  );
+};
+
+// Question Navigator Component
+const QuestionNavigator = ({
+  parts,
+  answers,
+  flaggedQuestions,
+  currentQuestion,
+  onQuestionClick,
+  isListeningSection,
+  listeningProgress,
+}: {
+  parts: Part[];
+  answers: Record<number, string>;
+  flaggedQuestions: Set<number>;
+  currentQuestion: number;
+  onQuestionClick: (questionId: number) => void;
+  isListeningSection: boolean;
+  listeningProgress: number; // Câu listening cao nhất đã đến (không thể quay lại)
+}) => {
+  return (
+    <Paper sx={{ p: 2, borderRadius: 2, maxHeight: "calc(100vh - 200px)", overflow: "auto" }}>
+      <Typography variant="subtitle2" fontWeight={700} mb={2}>
+        Danh sách câu hỏi
+      </Typography>
+
+      {/* Listening Section Notice */}
+      {isListeningSection && (
+        <Paper sx={{ p: 1.5, mb: 2, bgcolor: "#fef3c7", borderRadius: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Headphones size={16} color="#d97706" />
+            <Typography variant="caption" color="#92400e" fontWeight={600}>
+              Phần Listening: Không thể quay lại câu trước
+            </Typography>
+          </Stack>
+        </Paper>
+      )}
+
+      {parts.map((part) => {
+        const isListeningPart = part.category === "Listening";
+
+        return (
+          <Box key={part.id} mb={2}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <Chip
+                label={part.category}
+                size="small"
+                sx={{
+                  fontSize: "0.65rem",
+                  height: 20,
+                  bgcolor: isListeningPart ? "#dbeafe" : "#fef3c7",
+                  color: isListeningPart ? "#1d4ed8" : "#92400e",
+                }}
+              />
+              <Typography variant="caption" fontWeight={600} color="text.secondary">
+                {part.name.split(" - ")[0]}
+              </Typography>
+            </Stack>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {Array.from(
+                { length: part.endQuestion - part.startQuestion + 1 },
+                (_, i) => part.startQuestion + i
+              ).map((qNum) => {
+                const isAnswered = answers[qNum] !== undefined;
+                const isFlagged = flaggedQuestions.has(qNum);
+                const isCurrent = currentQuestion === qNum;
+                const isReadingPart = part.category === "Reading";
+
+                // Listening: chỉ cho click vào câu hiện tại
+                // Reading: tự do click, NHƯNG không cho click khi đang trong phần Listening
+                const isListeningLocked = isListeningPart && qNum > listeningProgress;
+                const isListeningPassed = isListeningPart && qNum < listeningProgress;
+                const isReadingLockedDuringListening = isReadingPart && isListeningSection;
+                const canClick = isListeningPart
+                  ? qNum === currentQuestion
+                  : !isReadingLockedDuringListening;
+
+                return (
+                  <Tooltip
+                    key={qNum}
+                    title={
+                      isReadingLockedDuringListening
+                        ? "Hoàn thành phần Listening trước khi làm phần Reading"
+                        : isListeningLocked
+                        ? "Phần Listening: Chưa đến câu này"
+                        : isListeningPassed
+                        ? "Phần Listening: Không thể quay lại"
+                        : `Câu ${qNum}${isAnswered ? " - Đã trả lời" : ""}${isFlagged ? " - Đã đánh dấu" : ""}`
+                    }
+                  >
+                    <Box
+                      onClick={() => canClick ? onQuestionClick(qNum) : null}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        cursor: canClick ? "pointer" : "not-allowed",
+                        border: isCurrent ? `2px solid ${theme.colors.primary}` : "1px solid #e5e7eb",
+                        bgcolor: isReadingLockedDuringListening
+                          ? "#f3f4f6"
+                          : isListeningLocked
+                          ? "#f3f4f6"
+                          : isListeningPassed
+                          ? (isAnswered ? "#d1fae5" : "#fee2e2")
+                          : isAnswered
+                          ? "#d1fae5"
+                          : isFlagged
+                          ? "#fef3c7"
+                          : "white",
+                        color: isReadingLockedDuringListening
+                          ? "#9ca3af"
+                          : isListeningLocked
+                          ? "#9ca3af"
+                          : isListeningPassed
+                          ? (isAnswered ? theme.colors.primaryDark : "#dc2626")
+                          : isAnswered
+                          ? theme.colors.primaryDark
+                          : isFlagged
+                          ? "#92400e"
+                          : "grey.600",
+                        opacity: (isListeningLocked || isReadingLockedDuringListening) ? 0.5 : 1,
+                        position: "relative",
+                        "&:hover": canClick ? {
+                          borderColor: theme.colors.primary,
+                        } : {},
+                      }}
+                    >
+                      {qNum}
+                      {isFlagged && !isListeningPart && (
+                        <Flag
+                          size={8}
+                          color="#d97706"
+                          fill="#d97706"
+                          style={{ position: "absolute", top: 1, right: 1 }}
+                        />
+                      )}
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+            </Box>
+          </Box>
+        );
+      })}
+
+      {/* Legend */}
+      <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e5e7eb" }}>
+        <Typography variant="caption" color="text.secondary" mb={1} display="block">
+          Chú thích:
+        </Typography>
+        <Stack spacing={0.5}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#d1fae5" }} />
+            <Typography variant="caption">Đã trả lời</Typography>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#fef3c7" }} />
+            <Typography variant="caption">Đã đánh dấu (Reading)</Typography>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#fee2e2" }} />
+            <Typography variant="caption">Bỏ qua (Listening)</Typography>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "white", border: "1px solid #e5e7eb" }} />
+            <Typography variant="caption">Chưa trả lời</Typography>
+          </Stack>
+        </Stack>
+      </Box>
+    </Paper>
+  );
+};
+
+// ================== MAIN PAGE ==================
+export default function ToeicTestPage() {
+  const router = useRouter();
+  const params = useParams();
+  const testId = params.id;
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [listeningProgress, setListeningProgress] = useState(1); // Câu Listening cao nhất đã đến
+
+  // Audio states for Listening section
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration] = useState(10); // Mock: 10 seconds for demo (real: 30-90s)
+  const [audioEnded, setAudioEnded] = useState(false);
+  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
+  const countdownStartedRef = useRef(false); // Track if countdown already started
+
+  // Refs to avoid stale closures in useEffect
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  const listeningProgressRef = useRef(listeningProgress);
+
+  // Listening section: câu 1-100, Reading section: câu 101-200
+  const LISTENING_END = 100;
+  const AUTO_ADVANCE_DELAY = 5; // seconds
+
+  // Get all question IDs in order - useMemo to keep stable reference
+  const allQuestionIds = React.useMemo(() => mockQuestions.flatMap((q) => {
+    if (q.subQuestions) {
+      return q.subQuestions.map((sq) => sq.id);
+    }
+    return [q.id];
+  }), []);
+
+  const currentQuestionId = allQuestionIds[currentQuestionIndex];
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex;
+  }, [currentQuestionIndex]);
+
+  useEffect(() => {
+    listeningProgressRef.current = listeningProgress;
+  }, [listeningProgress]);
+
+  // Check if currently in Listening section
+  const isListeningSection = currentQuestionId <= LISTENING_END;
+  const isReadingSection = currentQuestionId > LISTENING_END;
+
+  // Find the question or subquestion
+  const findQuestionData = (questionId: number) => {
+    for (const q of mockQuestions) {
+      if (q.id === questionId && !q.subQuestions) {
+        return { question: q, subQuestion: null, parentQuestion: null };
+      }
+      if (q.subQuestions) {
+        const subQ = q.subQuestions.find((sq) => sq.id === questionId);
+        if (subQ) {
+          return { question: null, subQuestion: subQ, parentQuestion: q };
+        }
+      }
+    }
+    return { question: null, subQuestion: null, parentQuestion: null };
+  };
+
+  const { question: currentQuestion, subQuestion, parentQuestion } = findQuestionData(currentQuestionId);
+
+  const currentPart = parts.find(
+    (p) => currentQuestionId >= p.startQuestion && currentQuestionId <= p.endQuestion
+  );
+
+  const handleAnswer = (questionId: number, answer: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  };
+
+  const handleFlag = (questionId: number) => {
+    // Chỉ cho phép đánh dấu trong phần Reading
+    if (questionId <= LISTENING_END) return;
+
+    setFlaggedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleNavigate = (direction: "prev" | "next") => {
+    if (direction === "next" && currentQuestionIndex < allQuestionIds.length - 1) {
+      // Nếu đang trong Listening và audio chưa kết thúc, không cho chuyển
+      if (isListeningSection && isAudioPlaying) return;
+
+      const nextIndex = currentQuestionIndex + 1;
+      const nextQuestionId = allQuestionIds[nextIndex];
+
+      // Update listening progress khi đi tiếp
+      if (nextQuestionId <= LISTENING_END && nextQuestionId > listeningProgress) {
+        setListeningProgress(nextQuestionId);
+      }
+
+      // Cancel auto-advance countdown nếu người dùng tự chuyển
+      setAutoAdvanceCountdown(null);
+
+      setCurrentQuestionIndex(nextIndex);
+    } else if (direction === "prev") {
+      // Listening: không cho quay lại
+      if (isListeningSection) return;
+
+      // Reading: cho phép quay lại (nhưng không vào phần Listening)
+      if (currentQuestionIndex > 0) {
+        const prevIndex = currentQuestionIndex - 1;
+        const prevQuestionId = allQuestionIds[prevIndex];
+
+        // Không cho quay lại phần Listening từ Reading
+        if (prevQuestionId <= LISTENING_END) return;
+
+        setCurrentQuestionIndex(prevIndex);
+      }
+    }
+  };
+
+  const handleQuestionClick = (questionId: number) => {
+    // Listening: không cho click nhảy câu
+    if (questionId <= LISTENING_END) return;
+
+    // Reading: cho phép click nhảy câu tự do
+    const index = allQuestionIds.indexOf(questionId);
+    if (index !== -1) {
+      setCurrentQuestionIndex(index);
+    }
+  };
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    // Simulate submission
+    setTimeout(() => {
+      router.push(`/user/exam/toeic/fulltest/${testId}/result`);
+    }, 1500);
+  };
+
+  const handleTimeUp = useCallback(() => {
+    setShowSubmitDialog(true);
+  }, []);
+
+  // Auto-play audio when entering a new Listening question
+  useEffect(() => {
+    if (isListeningSection) {
+      // Reset audio states for new question
+      setAudioProgress(0);
+      setAudioEnded(false);
+      setAutoAdvanceCountdown(null);
+      countdownStartedRef.current = false; // Reset countdown flag
+
+      // Auto-start audio after a short delay
+      const startTimer = setTimeout(() => {
+        setIsAudioPlaying(true);
+      }, 500);
+
+      return () => clearTimeout(startTimer);
+    }
+  }, [currentQuestionId, isListeningSection]);
+
+  // Simulate audio playing progress
+  useEffect(() => {
+    if (!isAudioPlaying || !isListeningSection) return;
+
+    const progressInterval = setInterval(() => {
+      setAudioProgress((prev) => {
+        if (prev >= audioDuration) {
+          clearInterval(progressInterval);
+          setIsAudioPlaying(false);
+          setAudioEnded(true);
+          return audioDuration;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(progressInterval);
+  }, [isAudioPlaying, isListeningSection, audioDuration]);
+
+  // Auto-advance countdown after audio ends
+  useEffect(() => {
+    if (!audioEnded || !isListeningSection) return;
+
+    // Prevent starting countdown multiple times
+    if (countdownStartedRef.current) return;
+    countdownStartedRef.current = true;
+
+    // Start countdown
+    let countdown = AUTO_ADVANCE_DELAY;
+    setAutoAdvanceCountdown(countdown);
+
+    const countdownInterval = setInterval(() => {
+      countdown -= 1;
+      if (countdown <= 0) {
+        clearInterval(countdownInterval);
+        setAutoAdvanceCountdown(null);
+        // Auto-advance to next question - use refs to get latest values
+        const currentIdx = currentQuestionIndexRef.current;
+        if (currentIdx < allQuestionIds.length - 1) {
+          const nextIndex = currentIdx + 1;
+          const nextQuestionId = allQuestionIds[nextIndex];
+          if (nextQuestionId <= LISTENING_END && nextQuestionId > listeningProgressRef.current) {
+            setListeningProgress(nextQuestionId);
+          }
+          setCurrentQuestionIndex(nextIndex);
+        }
+      } else {
+        setAutoAdvanceCountdown(countdown);
+      }
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [audioEnded, isListeningSection, allQuestionIds]);
+
+  const answeredCount = Object.keys(answers).length;
+  const totalQuestions = 200;
+  const progress = (answeredCount / totalQuestions) * 100;
+
+  return (
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
+      {/* Header */}
+      <Box
+        sx={{
+          bgcolor: "white",
+          borderBottom: "1px solid #e5e7eb",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 4 }, py: 1.5 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={2} alignItems="center">
+              <IconButton onClick={() => setShowExitDialog(true)} size="small">
+                <ArrowLeft size={20} />
+              </IconButton>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  TOEIC Test {testId}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {currentPart?.name}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Timer initialTime={120 * 60} onTimeUp={handleTimeUp} />
+
+              <Box sx={{ display: { xs: "none", md: "block" } }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="body2" color="text.secondary">
+                    Đã trả lời:
+                  </Typography>
+                  <Chip
+                    label={`${answeredCount}/${totalQuestions}`}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: answeredCount === totalQuestions ? "#d1fae5" : "#f3f4f6",
+                      color: answeredCount === totalQuestions ? theme.colors.primaryDark : "grey.700",
+                    }}
+                  />
+                </Stack>
+              </Box>
+
+              <Button
+                variant="contained"
+                startIcon={<Send size={18} />}
+                onClick={() => setShowSubmitDialog(true)}
+                sx={{
+                  background: theme.gradients.primary,
+                  fontWeight: 700,
+                  "&:hover": { background: theme.gradients.primaryDark },
+                }}
+              >
+                Nộp bài
+              </Button>
+            </Stack>
+          </Stack>
+
+          {/* Progress bar */}
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              mt: 1.5,
+              height: 4,
+              borderRadius: 2,
+              bgcolor: "#e5e7eb",
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 2,
+                background: theme.gradients.primary,
+              },
+            }}
+          />
+        </Box>
+      </Box>
+
+      {/* Main Content */}
+      <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 4 }, py: 3 }}>
+        <Grid container spacing={3}>
+          {/* Question Area */}
+          <Grid size={{ xs: 12, md: 9 }}>
+            <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+              {/* Part Header */}
+              <Box
+                sx={{
+                  p: 2,
+                  background: currentPart?.category === "Listening" ? "#dbeafe" : "#fef3c7",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      bgcolor: currentPart?.category === "Listening" ? "#1d4ed8" : "#d97706",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                    }}
+                  >
+                    {currentPart && partIcons[currentPart.icon]}
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      {currentPart?.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {currentPart?.instructions}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/* Question Content */}
+              <Box sx={{ p: 3 }}>
+                {/* Question Number & Flag */}
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: theme.gradients.primary,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Typography variant="subtitle1" fontWeight={700} color="white">
+                        {currentQuestionId}
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      Câu {currentQuestionId}
+                    </Typography>
+                  </Stack>
+
+                  {/* Chỉ hiện nút flag cho Reading */}
+                  {isReadingSection && (
+                    <Tooltip title={flaggedQuestions.has(currentQuestionId) ? "Bỏ đánh dấu" : "Đánh dấu để xem lại"}>
+                      <IconButton
+                        onClick={() => handleFlag(currentQuestionId)}
+                        sx={{
+                          color: flaggedQuestions.has(currentQuestionId) ? "#d97706" : "grey.400",
+                        }}
+                      >
+                        <Flag
+                          size={20}
+                          fill={flaggedQuestions.has(currentQuestionId) ? "#d97706" : "transparent"}
+                        />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Stack>
+
+                {/* Listening Section Notice */}
+                {isListeningSection && (
+                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#fef3c7", borderRadius: 2 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Headphones size={20} color="#d97706" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight={600} color="#92400e">
+                          Phần Listening
+                        </Typography>
+                        <Typography variant="caption" color="#92400e">
+                          Audio sẽ tự động phát và chuyển câu sau {AUTO_ADVANCE_DELAY} giây. Bạn không thể quay lại câu trước.
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                )}
+
+                {/* Image for Part 1 */}
+                {(currentQuestion?.imageUrl || parentQuestion?.imageUrl) && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 300,
+                      bgcolor: "#f3f4f6",
+                      borderRadius: 2,
+                      mb: 3,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Stack spacing={1} alignItems="center">
+                      <ImageIcon size={48} color="#9ca3af" />
+                      <Typography variant="body2" color="text.secondary">
+                        [Hình ảnh câu hỏi]
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Audio Player for Listening */}
+                {(currentQuestion?.audioUrl || parentQuestion?.audioUrl) && (
+                  <Paper
+                    sx={{
+                      p: 2,
+                      mb: 3,
+                      borderRadius: 2,
+                      bgcolor: audioEnded ? "#fef3c7" : "#f0f9ff",
+                      border: `1px solid ${audioEnded ? "#fde68a" : "#bae6fd"}`,
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: isAudioPlaying ? "#0ea5e9" : audioEnded ? "#d97706" : "#94a3b8",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            animation: isAudioPlaying ? "pulse 1.5s infinite" : "none",
+                            "@keyframes pulse": {
+                              "0%": { boxShadow: "0 0 0 0 rgba(14, 165, 233, 0.4)" },
+                              "70%": { boxShadow: "0 0 0 10px rgba(14, 165, 233, 0)" },
+                              "100%": { boxShadow: "0 0 0 0 rgba(14, 165, 233, 0)" },
+                            },
+                          }}
+                        >
+                          {isAudioPlaying ? <Volume2 size={20} /> : <Play size={20} />}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={(audioProgress / audioDuration) * 100}
+                            sx={{
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: audioEnded ? "#fde68a" : "#e0f2fe",
+                              "& .MuiLinearProgress-bar": {
+                                bgcolor: audioEnded ? "#d97706" : "#0ea5e9",
+                                // Tắt transition khi reset về 0 để không bị animation tụt ngược
+                                transition: audioProgress === 0 ? "none" : "transform 0.5s linear",
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>
+                          {Math.floor(audioProgress / 60)}:{(audioProgress % 60).toString().padStart(2, "0")} / {Math.floor(audioDuration / 60)}:{(audioDuration % 60).toString().padStart(2, "0")}
+                        </Typography>
+                      </Stack>
+
+                      {/* Audio Status */}
+                      {isAudioPlaying && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Headphones size={16} color="#0ea5e9" />
+                          <Typography variant="caption" color="#0284c7" fontWeight={600}>
+                            Đang phát audio... Hãy lắng nghe cẩn thận
+                          </Typography>
+                        </Stack>
+                      )}
+
+                      {/* Auto-advance countdown */}
+                      {audioEnded && autoAdvanceCountdown !== null && (
+                        <Paper
+                          sx={{
+                            p: 1.5,
+                            bgcolor: "#fffbeb",
+                            borderRadius: 2,
+                            border: "1px solid #fef3c7",
+                          }}
+                        >
+                          <Stack spacing={0.5} alignItems="center">
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Clock size={18} color="#d97706" />
+                              <Typography variant="body2" fontWeight={700} color="#92400e">
+                                Tự động chuyển câu sau {autoAdvanceCountdown} giây
+                              </Typography>
+                              <Box
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  bgcolor: "#d97706",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Typography variant="body2" fontWeight={700} color="white">
+                                  {autoAdvanceCountdown}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                            <Typography variant="caption" color="#92400e">
+                              Hoặc nhấn &quot;Câu tiếp theo&quot; để chuyển ngay
+                            </Typography>
+                          </Stack>
+                        </Paper>
+                      )}
+
+                      {audioEnded && autoAdvanceCountdown === null && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Volume2 size={16} color="#d97706" />
+                          <Typography variant="caption" color="#92400e" fontWeight={600}>
+                            Audio đã kết thúc
+                          </Typography>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Paper>
+                )}
+
+                {/* Conversation/Talk Text */}
+                {(parentQuestion?.conversationText || parentQuestion?.talkText) && (
+                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
+                      {parentQuestion.conversationText || parentQuestion.talkText}
+                    </Typography>
+                  </Paper>
+                )}
+
+                {/* Passage for Part 6, 7 */}
+                {(currentQuestion?.passage || parentQuestion?.passage) && (
+                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2, maxHeight: 300, overflow: "auto" }}>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
+                      {currentQuestion?.passage || parentQuestion?.passage}
+                    </Typography>
+                  </Paper>
+                )}
+
+                {/* Question Text */}
+                {(currentQuestion?.questionText || subQuestion?.questionText) && (
+                  <Typography variant="body1" fontWeight={600} mb={3}>
+                    {currentQuestion?.questionText || subQuestion?.questionText}
+                  </Typography>
+                )}
+
+                {/* Options */}
+                <RadioGroup
+                  value={answers[currentQuestionId] || ""}
+                  onChange={(e) => handleAnswer(currentQuestionId, e.target.value)}
+                >
+                  <Stack spacing={1.5}>
+                    {(currentQuestion?.options || subQuestion?.options)?.map((option) => (
+                      <Paper
+                        key={option.label}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: "2px solid",
+                          borderColor: answers[currentQuestionId] === option.label ? theme.colors.primary : "#e5e7eb",
+                          bgcolor: answers[currentQuestionId] === option.label ? "#f0fdf4" : "white",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            borderColor: theme.colors.primaryLight,
+                          },
+                        }}
+                        onClick={() => handleAnswer(currentQuestionId, option.label)}
+                      >
+                        <FormControlLabel
+                          value={option.label}
+                          control={
+                            <Radio
+                              sx={{
+                                color: "#d1d5db",
+                                "&.Mui-checked": { color: theme.colors.primary },
+                              }}
+                            />
+                          }
+                          label={
+                            <Stack direction="row" spacing={2} alignItems="center">
+                              <Box
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  bgcolor: answers[currentQuestionId] === option.label ? theme.colors.primary : "#e5e7eb",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={700}
+                                  color={answers[currentQuestionId] === option.label ? "white" : "grey.600"}
+                                >
+                                  {option.label}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2">{option.text}</Typography>
+                            </Stack>
+                          }
+                          sx={{ m: 0, width: "100%" }}
+                        />
+                      </Paper>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+
+                {/* Navigation Buttons */}
+                <Stack direction="row" justifyContent="space-between" mt={4}>
+                  {isListeningSection ? (
+                    // Listening: chỉ có nút Next
+                    <Box sx={{ flex: 1 }} />
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      startIcon={<ChevronLeft size={18} />}
+                      disabled={currentQuestionId === 101} // Câu đầu của Reading
+                      onClick={() => handleNavigate("prev")}
+                      sx={{
+                        borderColor: "#e5e7eb",
+                        color: "grey.700",
+                        "&:hover": { borderColor: theme.colors.primary, color: theme.colors.primary },
+                      }}
+                    >
+                      Câu trước
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="contained"
+                    endIcon={<ChevronRight size={18} />}
+                    disabled={
+                      currentQuestionIndex === allQuestionIds.length - 1 ||
+                      (isListeningSection && isAudioPlaying)
+                    }
+                    onClick={() => handleNavigate("next")}
+                    sx={{
+                      background: theme.gradients.primary,
+                      "&:hover": { background: theme.gradients.primaryDark },
+                    }}
+                  >
+                    {isListeningSection && autoAdvanceCountdown !== null
+                      ? `Câu tiếp theo (${autoAdvanceCountdown}s)`
+                      : "Câu tiếp theo"}
+                  </Button>
+                </Stack>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Question Navigator Sidebar */}
+          <Grid size={{ xs: 12, md: 3 }} sx={{ display: { xs: "none", md: "block" } }}>
+            <Box sx={{ position: "sticky", top: 120 }}>
+              <QuestionNavigator
+                parts={parts}
+                answers={answers}
+                flaggedQuestions={flaggedQuestions}
+                currentQuestion={currentQuestionId}
+                onQuestionClick={handleQuestionClick}
+                isListeningSection={isListeningSection}
+                listeningProgress={listeningProgress}
+              />
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Submit Dialog */}
+      <Dialog open={showSubmitDialog} onClose={() => setShowSubmitDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận nộp bài</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Paper sx={{ p: 2, bgcolor: "#f8fafc", borderRadius: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2">Số câu đã trả lời:</Typography>
+                <Typography variant="subtitle1" fontWeight={700} color={theme.colors.primary}>
+                  {answeredCount}/{totalQuestions}
+                </Typography>
+              </Stack>
+            </Paper>
+
+            {answeredCount < totalQuestions && (
+              <Paper sx={{ p: 2, bgcolor: "#fef3c7", borderRadius: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <AlertTriangle size={20} color="#d97706" />
+                  <Box>
+                    <Typography variant="body2" fontWeight={600} color="#92400e">
+                      Cảnh báo
+                    </Typography>
+                    <Typography variant="caption" color="#92400e">
+                      Bạn còn {totalQuestions - answeredCount} câu chưa trả lời. Các câu chưa trả lời sẽ được tính là sai.
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            )}
+
+            <Typography variant="body2" color="text.secondary">
+              Sau khi nộp bài, bạn không thể thay đổi câu trả lời. Bạn có chắc chắn muốn nộp bài?
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setShowSubmitDialog(false)} sx={{ color: "grey.600" }}>
+            Quay lại làm bài
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            sx={{
+              background: theme.gradients.primary,
+              "&:hover": { background: theme.gradients.primaryDark },
+            }}
+          >
+            {isSubmitting ? "Đang nộp bài..." : "Xác nhận nộp bài"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Exit Dialog */}
+      <Dialog open={showExitDialog} onClose={() => setShowExitDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Thoát bài thi?</DialogTitle>
+        <DialogContent>
+          <Paper sx={{ p: 2, bgcolor: "#fef2f2", borderRadius: 2, mb: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="flex-start">
+              <AlertTriangle size={20} color="#dc2626" />
+              <Box>
+                <Typography variant="body2" fontWeight={600} color="#dc2626">
+                  Cảnh báo
+                </Typography>
+                <Typography variant="caption" color="#991b1b">
+                  Nếu thoát, tiến trình làm bài của bạn sẽ bị mất và bài thi sẽ không được chấm điểm.
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
+          <Typography variant="body2" color="text.secondary">
+            Bạn có chắc chắn muốn thoát bài thi?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setShowExitDialog(false)} sx={{ color: "grey.600" }}>
+            Tiếp tục làm bài
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => router.push(`/user/exam/toeic/fulltest/${testId}`)}
+          >
+            Thoát bài thi
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
