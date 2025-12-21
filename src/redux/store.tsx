@@ -5,6 +5,7 @@ import { toastSlice } from "./slices/toastSlice";
 import { sidebarSlice } from "./slices/sidebarSlice";
 import { courseApi } from "@/services/CourseService";
 import uiReducer from "./slices/uiSlide";
+import { grammarTopicApi } from "@/services/GrammarService";
 
 export const store = configureStore({
   reducer: {
@@ -13,9 +14,13 @@ export const store = configureStore({
     [toastSlice.name]: toastSlice.reducer,
     [sidebarSlice.name]: sidebarSlice.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
+    [grammarTopicApi.reducerPath]: grammarTopicApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(courseApi.middleware), // ✅ THÊM middleware
+    getDefaultMiddleware().concat(
+      courseApi.middleware,
+      grammarTopicApi.middleware
+    ), // ✅ THÊM middleware
 });
 
 export type RootState = ReturnType<typeof store.getState>;
