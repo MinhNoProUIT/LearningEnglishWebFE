@@ -32,12 +32,12 @@ export const quizAttemptApi = createApi({
     // GET /History - Lịch sử làm bài của user (có phân trang)
     getQuizHistory: builder.query<
       { data: IQuizHistoryItem[]; total: number; page: number; limit: number },
-      { page?: number; limit?: number } | void
+      { page?: number; limit?: number }
     >({
-      query: (params) => {
+      query: (params = {}) => {
         const queryParams = new URLSearchParams();
-        if (params?.page) queryParams.append("page", params.page.toString());
-        if (params?.limit) queryParams.append("limit", params.limit.toString());
+        if (params.page !== undefined) queryParams.append("page", params.page.toString());
+        if (params.limit !== undefined) queryParams.append("limit", params.limit.toString());
         const queryString = queryParams.toString();
         return queryString ? `History?${queryString}` : "History";
       },

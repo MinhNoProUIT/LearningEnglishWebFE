@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Send, Mic, Volume2, Sparkles, Star, Lightbulb, X, Plus, Trash2, MessageSquare } from "lucide-react";
 import {
   useCreateSessionMutation,
@@ -38,8 +38,8 @@ const ChatbotUI = () => {
   const [deleteSession] = useDeleteSessionMutation();
   const [clearMessages] = useClearMessagesMutation();
 
-  const sessions = sessionsData?.data || [];
-  const messages = historyData?.data?.messages || [];
+  const sessions = useMemo(() => sessionsData?.data || [], [sessionsData?.data]);
+  const messages = useMemo(() => historyData?.data?.messages || [], [historyData?.data?.messages]);
 
   // Sync messages from API to local state
   useEffect(() => {

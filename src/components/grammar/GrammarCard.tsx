@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BookOpen, Clock, ChevronRight, CheckCircle2 } from "lucide-react";
+import { BookOpen, Clock, ChevronRight } from "lucide-react";
 import { IGrammarTopicGetAll } from "@/models/Grammar";
 
 interface GrammarCardProps {
