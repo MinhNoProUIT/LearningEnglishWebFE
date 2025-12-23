@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import Header from "./Header";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
-import { authSelector } from "@/redux/slices/authSlice";
+import { selectAuth } from "@/redux/slices/authSlice";
 import TopNavBar from "@/components/TopNavBar";
 import { uiSelector } from "@/redux/slices/uiSlide";
 import { NAV_H, HEADER_H } from "@/constants/layout";
@@ -44,7 +44,7 @@ const shouldHideByPath = (pathname: string) =>
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const { t } = useTranslation("common");
-  const menuLeft = useSelector(authSelector);
+  const auth = useSelector(selectAuth);
 
   const { showHeader, showTopNav, isFullscreenStudy } = useSelector(uiSelector);
 

@@ -19,7 +19,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useSelector } from "react-redux";
-import { authSelector } from "@/redux/slices/authSlice";
+import { selectAuth } from "@/redux/slices/authSlice";
 import { HoverDropdown } from "./HoverDropdown";
 import { HEADER_H, NAV_H } from "@/constants/layout";
 import useScrollDirection from "@/hooks/useScrollDirection";
@@ -35,7 +35,7 @@ type Item = {
 export default function TopNavBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const menuLeft = useSelector(authSelector);
+  const auth = useSelector(selectAuth);
   const scrollUp = useScrollDirection(4);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [measuredH, setMeasuredH] = React.useState(64);

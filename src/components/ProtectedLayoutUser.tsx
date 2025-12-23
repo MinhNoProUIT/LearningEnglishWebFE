@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useDispatch } from 'react-redux'
-import { authSlice } from '@/redux/slices/authSlice'
+import { useSelector } from 'react-redux'
+import { selectIsAuthenticated, selectIsLoading } from '@/redux/slices/authSlice'
 import { useEffect, useState } from 'react'
 import MainLoader from '@/components/MainLoader'
 import { Box, keyframes } from '@mui/material'
@@ -16,59 +16,28 @@ const slide = keyframes`
   }
 `
 
-const getUserData = async router => {
-    const token = sessionStorage.getItem('auth_token')
+export default function ProtectedLayoutUser({ children }: { children: React.ReactNode }) {
+    const router = useRouter()
+    const isAuthenticated = useSelector(selectIsAuthenticated)
+    const isLoading = useSelector(selectIsLoading)
 
-    if (!token) {
-        router.push('/login')
-        return null
-    }
-
-    try {
-        const userResponse = await fetch('https://localhost:44381/api/Auth/Me', {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-
-        if (!userResponse.ok || userResponse.status !== 200) {
-            router.push('/login')
-            return null
-        }
-
-        const userData = await userResponse.json()
-
-        if (userData.Data) {
-            return userData.Data.MenuLeft
-        } else {
-            console.error('No data available or request failed')
-            return null
-        }
-    } catch {
-        router.push('/403')
-        return null
-    }
-}
-
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-    const router = useRouter() // Dùng để chuyển hướng
-    const dispatch = useDispatch()
-
-    const [isChecking, setIsChecking] = useState(true) // Trạng thái kiểm tra quyền
+    const [showContent, setShowContent] = useState(false)
 
     useEffect(() => {
-        const fetchMenuLeft = async () => {
-            const data = await getUserData(router)
-            if (data) {
-                dispatch(authSlice.actions.updateAuth(data))
-                setIsChecking(false)
+        // Đợi cho đến khi auth state được hydrate
+        if (!isLoading) {
+            if (!isAuthenticated) {
+                // Chưa đăng nhập -> redirect về login
+                router.push('/authentication/login')
+            } else {
+                // Đã đăng nhập -> hiển thị nội dung
+                setShowContent(true)
             }
         }
-        fetchMenuLeft()
-    }, [dispatch, router])
+    }, [isAuthenticated, isLoading, router])
 
-    if (isChecking) {
+    // Đang kiểm tra auth state
+    if (isLoading || !showContent) {
         return <MainLoader />
     }
 

@@ -1,4 +1,6 @@
-// store.tsx
+// src/redux/store.tsx
+// ==================== REDUX STORE CONFIGURATION ====================
+
 import { configureStore } from "@reduxjs/toolkit";
 import { authSlice } from "./slices/authSlice";
 import { toastSlice } from "./slices/toastSlice";
@@ -10,11 +12,14 @@ import { grammarRuleApi } from "@/services/GrammarRuleService";
 import { grammarExampleApi } from "@/services/GrammarExampleService";
 import { grammarQuizApi } from "@/services/GrammarQuizService";
 import { grammarVideoApi } from "@/services/GrammarVideoService";
+import { chatApi } from "@/services/ChatService";
+import { authApi } from "@/services/AuthService";
+import { quizAttemptApi } from "@/services/QuizAttemptService";
 
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
-    auth: authSlice.reducer,
+    [authSlice.name]: authSlice.reducer,
     [toastSlice.name]: toastSlice.reducer,
     [sidebarSlice.name]: sidebarSlice.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
@@ -23,6 +28,9 @@ export const store = configureStore({
     [grammarExampleApi.reducerPath]: grammarExampleApi.reducer,
     [grammarQuizApi.reducerPath]: grammarQuizApi.reducer,
     [grammarVideoApi.reducerPath]: grammarVideoApi.reducer,
+    [chatApi.reducerPath]: chatApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,
+    [quizAttemptApi.reducerPath]: quizAttemptApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -31,7 +39,10 @@ export const store = configureStore({
       grammarRuleApi.middleware,
       grammarExampleApi.middleware,
       grammarQuizApi.middleware,
-      grammarVideoApi.middleware
+      grammarVideoApi.middleware,
+      chatApi.middleware,
+      authApi.middleware,
+      quizAttemptApi.middleware
     ),
 });
 

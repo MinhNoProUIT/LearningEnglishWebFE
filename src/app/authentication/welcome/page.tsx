@@ -667,7 +667,7 @@ export default function EvolingoWelcome() {
             Tham gia cùng hàng nghìn học viên đã chinh phục tiếng Anh thành công
           </p>
           <button
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => (window.location.href = "/authentication/login")}
             className="px-12 py-6 bg-white text-green-600 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-white/30 transition-all duration-300 hover:scale-105 hover:-translate-y-1"
           >
             Bắt đầu học ngay - Miễn phí
