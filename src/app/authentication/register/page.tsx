@@ -1,117 +1,99 @@
 "use client";
-import React, { useState } from "react";
-import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+// src/app/authentication/register/page.tsx
+// ==================== REGISTER PAGE ====================
+
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// Auth imports
+import { useRegisterMutation } from "@/services/AuthService";
+import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
+
+// ==================== COMPONENT ====================
 const RegisterPage = () => {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-  });
+
+  // State
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  // RTK Query mutation
+  const [registerUser, { isLoading }] = useRegisterMutation();
 
-    // Validate full name
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required";
-    }
+  // React Hook Form với Zod validation
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-    // Validate email
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
+  // Watch password để hiển thị requirements
+  const password = watch("password");
 
-    // Validate username
-    if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
-    }
-
-    // Validate password
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    } else if (!/[A-Z]/.test(formData.password)) {
-      newErrors.password =
-        "Password must contain at least one uppercase letter";
-    } else if (!/[0-9]/.test(formData.password)) {
-      newErrors.password = "Password must contain at least one number";
-    }
-
-    // Validate confirm password
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    // Validate terms
-    if (!agreedToTerms) {
-      newErrors.terms = "You must agree to the Terms and Conditions";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Password requirements check
+  const passwordRequirements = {
+    minLength: password?.length >= 8,
+    uppercase: /[A-Z]/.test(password || ""),
+    lowercase: /[a-z]/.test(password || ""),
+    number: /[0-9]/.test(password || ""),
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Clear API error after 5 seconds
+  useEffect(() => {
+    if (apiError) {
+      const timer = setTimeout(() => setApiError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [apiError]);
 
-    if (!validateForm()) {
+  // ==================== HANDLE SUBMIT ====================
+  const onSubmit = async (data: RegisterFormData) => {
+    // Validate terms checkbox
+    if (!agreedToTerms) {
+      setTermsError("You must agree to the Terms and Conditions");
       return;
     }
 
-    setIsLoading(true);
+    setApiError(null);
+    setTermsError(null);
 
     try {
-      // Replace with your API endpoint
-      // const response = await fetch('/api/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
+      await registerUser(data).unwrap();
 
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        // Store email for verification page
-        sessionStorage.setItem("verifyEmail", formData.email);
-        // Redirect to verify page
-        router.push(
-          `/authentication/verify-email?email=${encodeURIComponent(
-            formData.email
-          )}`
-        );
-      }, 1500);
-    } catch (error) {
-      setIsLoading(false);
-      setErrors({ general: "Registration failed. Please try again." });
+      // Lưu email để hiển thị ở trang verify
+      sessionStorage.setItem("verifyEmail", data.email);
+
+      // Redirect to verify email page
+      router.push(
+        `/authentication/verify?email=${encodeURIComponent(data.email)}`
+      );
+    } catch (error: unknown) {
+      // Xử lý error từ API
+      const err = error as { data?: { error?: string; message?: string } };
+      const errorMessage =
+        err.data?.error ||
+        err.data?.message ||
+        "Registration failed. Please try again.";
+      setApiError(errorMessage);
     }
   };
 
-  const handleChange =
-    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData({ ...formData, [field]: e.target.value });
-      // Clear error when user starts typing
-      if (errors[field]) {
-        setErrors({ ...errors, [field]: "" });
-      }
-    };
-
+  // ==================== RENDER ====================
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 relative overflow-hidden py-8 px-4">
       {/* Background decorative circles */}
@@ -187,53 +169,15 @@ const RegisterPage = () => {
             Fill in your details to get started
           </p>
 
-          {/* General error */}
-          {errors.general && (
+          {/* API Error */}
+          {apiError && (
             <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 border border-red-300 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-red-600 text-sm">{errors.general}</span>
+              <span className="text-red-600 text-sm">{apiError}</span>
             </div>
           )}
 
-          <div>
-            {/* Full Name */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter your full name"
-              value={formData.fullName}
-              onChange={handleChange("fullName")}
-              disabled={isLoading}
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                errors.fullName ? "border-red-300 bg-red-50" : "border-gray-200"
-              } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
-            />
-            {errors.fullName && (
-              <p className="text-red-500 text-xs mb-4">{errors.fullName}</p>
-            )}
-            {!errors.fullName && <div className="mb-4"></div>}
-
-            {/* Email */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="your.email@maranatha.edu"
-              value={formData.email}
-              onChange={handleChange("email")}
-              disabled={isLoading}
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                errors.email ? "border-red-300 bg-red-50" : "border-gray-200"
-              } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mb-4">{errors.email}</p>
-            )}
-            {!errors.email && <div className="mb-4"></div>}
-
+          <form onSubmit={handleSubmit(onSubmit)}>
             {/* Username */}
             <label className="block text-gray-700 text-sm font-medium mb-2">
               Username
@@ -241,17 +185,34 @@ const RegisterPage = () => {
             <input
               type="text"
               placeholder="Choose a username"
-              value={formData.username}
-              onChange={handleChange("username")}
+              {...register("username")}
               disabled={isLoading}
               className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
                 errors.username ? "border-red-300 bg-red-50" : "border-gray-200"
               } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
             />
             {errors.username && (
-              <p className="text-red-500 text-xs mb-4">{errors.username}</p>
+              <p className="text-red-500 text-xs mb-4">{errors.username.message}</p>
             )}
             {!errors.username && <div className="mb-4"></div>}
+
+            {/* Email */}
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="your.email@example.com"
+              {...register("email")}
+              disabled={isLoading}
+              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
+                errors.email ? "border-red-300 bg-red-50" : "border-gray-200"
+              } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mb-4">{errors.email.message}</p>
+            )}
+            {!errors.email && <div className="mb-4"></div>}
 
             {/* Password */}
             <label className="block text-gray-700 text-sm font-medium mb-2">
@@ -261,13 +222,10 @@ const RegisterPage = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a strong password"
-                value={formData.password}
-                onChange={handleChange("password")}
+                {...register("password")}
                 disabled={isLoading}
                 className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                  errors.password
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200"
+                  errors.password ? "border-red-300 bg-red-50" : "border-gray-200"
                 } focus:border-green-500 focus:bg-white focus:outline-none pr-12 transition-all`}
               />
               <button
@@ -279,9 +237,58 @@ const RegisterPage = () => {
               </button>
             </div>
             {errors.password && (
-              <p className="text-red-500 text-xs mb-4">{errors.password}</p>
+              <p className="text-red-500 text-xs mb-2">{errors.password.message}</p>
             )}
-            {!errors.password && <div className="mb-4"></div>}
+
+            {/* Password Requirements */}
+            {password && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 mb-2">Password must have:</p>
+                <div className="grid grid-cols-2 gap-1">
+                  <div
+                    className={`text-xs flex items-center gap-1 ${
+                      passwordRequirements.minLength
+                        ? "text-green-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    <CheckCircle size={12} />
+                    <span>8+ characters</span>
+                  </div>
+                  <div
+                    className={`text-xs flex items-center gap-1 ${
+                      passwordRequirements.uppercase
+                        ? "text-green-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    <CheckCircle size={12} />
+                    <span>Uppercase letter</span>
+                  </div>
+                  <div
+                    className={`text-xs flex items-center gap-1 ${
+                      passwordRequirements.lowercase
+                        ? "text-green-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    <CheckCircle size={12} />
+                    <span>Lowercase letter</span>
+                  </div>
+                  <div
+                    className={`text-xs flex items-center gap-1 ${
+                      passwordRequirements.number
+                        ? "text-green-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    <CheckCircle size={12} />
+                    <span>Number</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!password && !errors.password && <div className="mb-4"></div>}
 
             {/* Confirm Password */}
             <label className="block text-gray-700 text-sm font-medium mb-2">
@@ -291,8 +298,7 @@ const RegisterPage = () => {
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Re-enter your password"
-                value={formData.confirmPassword}
-                onChange={handleChange("confirmPassword")}
+                {...register("confirmPassword")}
                 disabled={isLoading}
                 className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
                   errors.confirmPassword
@@ -310,7 +316,7 @@ const RegisterPage = () => {
             </div>
             {errors.confirmPassword && (
               <p className="text-red-500 text-xs mb-4">
-                {errors.confirmPassword}
+                {errors.confirmPassword.message}
               </p>
             )}
             {!errors.confirmPassword && <div className="mb-4"></div>}
@@ -322,9 +328,7 @@ const RegisterPage = () => {
                 checked={agreedToTerms}
                 onChange={(e) => {
                   setAgreedToTerms(e.target.checked);
-                  if (errors.terms) {
-                    setErrors({ ...errors, terms: "" });
-                  }
+                  if (termsError) setTermsError(null);
                 }}
                 disabled={isLoading}
                 className="mt-1 w-4 h-4 accent-green-500"
@@ -339,45 +343,39 @@ const RegisterPage = () => {
                 </a>
               </span>
             </label>
-            {errors.terms && (
-              <p className="text-red-500 text-xs mb-4">{errors.terms}</p>
+            {termsError && (
+              <p className="text-red-500 text-xs mb-4">{termsError}</p>
             )}
-            {!errors.terms && <div className="mb-2"></div>}
+            {!termsError && <div className="mb-2"></div>}
 
             {/* Submit button */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-base hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg mb-6 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02]"
+              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-base hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg mb-6 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] flex items-center justify-center"
             >
               {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                <>
+                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
                   Creating Account...
-                </span>
+                </>
               ) : (
                 "Create Account"
               )}
             </button>
+
+            {/* Mobile: Sign In Link */}
+            <div className="md:hidden text-center mb-6">
+              <p className="text-gray-600 text-sm">
+                Already have an account?{" "}
+                <a
+                  href="/authentication/login"
+                  className="text-green-600 font-medium hover:underline"
+                >
+                  Sign In
+                </a>
+              </p>
+            </div>
 
             {/* Support */}
             <div className="text-center">
@@ -389,7 +387,7 @@ const RegisterPage = () => {
                 Contact us at tsc@maranatha.edu
               </a>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

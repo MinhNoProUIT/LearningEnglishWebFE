@@ -1,21 +1,35 @@
 "use client";
-import React, { useState } from "react";
+// src/app/authentication/login/page.tsx
+// ==================== LOGIN PAGE ====================
+
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Box,
   TextField,
   Button,
   Typography,
   Link,
-  Container,
   Paper,
   InputAdornment,
   IconButton,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDispatch } from "react-redux";
 
+// Auth imports
+import { useLoginMutation } from "@/services/AuthService";
+import { setCredentials } from "@/redux/slices/authSlice";
+import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
+import type { AppDispatch } from "@/redux/store";
+
+// ==================== THEME ====================
 const theme = createTheme({
   palette: {
     primary: {
@@ -36,19 +50,77 @@ const theme = createTheme({
   },
 });
 
+// ==================== COMPONENT ====================
 const LoginPage: React.FC = () => {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Login:", { username, password });
-    // Xử lý đăng nhập - sau khi login thành công, chuyển về trang home
-    router.push("/home");
+  // State
+  const [showPassword, setShowPassword] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // RTK Query mutation
+  const [login, { isLoading }] = useLoginMutation();
+
+  // React Hook Form với Zod validation
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  // Clear API error khi user bắt đầu nhập
+  useEffect(() => {
+    if (apiError) {
+      const timer = setTimeout(() => setApiError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [apiError]);
+
+  // ==================== HANDLE SUBMIT ====================
+  const onSubmit = async (data: LoginFormData) => {
+    setApiError(null);
+
+    try {
+      const result = await login(data).unwrap();
+
+      // Lưu credentials vào Redux (sẽ tự động sync với localStorage và Cookie)
+      dispatch(
+        setCredentials({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          userId: result.userId,
+          role: result.role,
+        })
+      );
+
+      // ==================== REDIRECT BACK LOGIC ====================
+      // Nếu user bị redirect từ protected route, quay lại route đó
+      // Ví dụ: User ở /checkout -> bị đá về /login?redirect=/checkout
+      // Sau login thành công -> quay lại /checkout
+      const redirectUrl = searchParams.get("redirect");
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push("/home");
+      }
+    } catch (error: unknown) {
+      // Xử lý error từ API
+      const err = error as { data?: { error?: string; message?: string } };
+      const errorMessage =
+        err.data?.error || err.data?.message || "Login failed. Please try again.";
+      setApiError(errorMessage);
+    }
   };
 
+  // ==================== RENDER ====================
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -124,7 +196,7 @@ const LoginPage: React.FC = () => {
               />
             </Box>
 
-            {/* Illustration Area as big image */}
+            {/* Illustration Area */}
             <Box
               sx={{
                 flex: 1,
@@ -172,7 +244,15 @@ const LoginPage: React.FC = () => {
               Login
             </Typography>
 
-            <Box component="form" onSubmit={handleSubmit}>
+            {/* API Error Alert */}
+            {apiError && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {apiError}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+              {/* Email Field */}
               <Typography
                 sx={{
                   color: "rgba(255, 255, 255, 0.9)",
@@ -180,13 +260,15 @@ const LoginPage: React.FC = () => {
                   fontSize: 14,
                 }}
               >
-                Username
+                Email
               </Typography>
               <TextField
                 fullWidth
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your email"
+                {...register("email")}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                disabled={isLoading}
                 sx={{
                   mb: 3,
                   "& .MuiOutlinedInput-root": {
@@ -194,22 +276,28 @@ const LoginPage: React.FC = () => {
                     borderRadius: 2,
                     color: "white",
                     "& fieldset": {
-                      borderColor: "transparent",
+                      borderColor: errors.email ? "#f44336" : "transparent",
                     },
                     "&:hover fieldset": {
-                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      borderColor: errors.email
+                        ? "#f44336"
+                        : "rgba(255, 255, 255, 0.3)",
                     },
                     "&.Mui-focused fieldset": {
-                      borderColor: "#5fa89a",
+                      borderColor: errors.email ? "#f44336" : "#5fa89a",
                     },
                   },
                   "& .MuiInputBase-input::placeholder": {
                     color: "rgba(255, 255, 255, 0.5)",
                     opacity: 1,
                   },
+                  "& .MuiFormHelperText-root": {
+                    color: "#ff8a80",
+                  },
                 }}
               />
 
+              {/* Password Field */}
               <Typography
                 sx={{
                   color: "rgba(255, 255, 255, 0.9)",
@@ -223,20 +311,24 @@ const LoginPage: React.FC = () => {
                 fullWidth
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
+                {...register("password")}
+                error={!!errors.password}
+                helperText={errors.password?.message}
+                disabled={isLoading}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
                 }}
                 sx={{
                   mb: 1,
@@ -245,25 +337,31 @@ const LoginPage: React.FC = () => {
                     borderRadius: 2,
                     color: "white",
                     "& fieldset": {
-                      borderColor: "transparent",
+                      borderColor: errors.password ? "#f44336" : "transparent",
                     },
                     "&:hover fieldset": {
-                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      borderColor: errors.password
+                        ? "#f44336"
+                        : "rgba(255, 255, 255, 0.3)",
                     },
                     "&.Mui-focused fieldset": {
-                      borderColor: "#5fa89a",
+                      borderColor: errors.password ? "#f44336" : "#5fa89a",
                     },
                   },
                   "& .MuiInputBase-input::placeholder": {
                     color: "rgba(255, 255, 255, 0.5)",
                     opacity: 1,
                   },
+                  "& .MuiFormHelperText-root": {
+                    color: "#ff8a80",
+                  },
                 }}
               />
 
+              {/* Forgot Password Link */}
               <Box sx={{ textAlign: "right", mb: 3 }}>
                 <Link
-                  href="#"
+                  href="/authentication/forgot-password"
                   sx={{
                     color: "rgba(255, 255, 255, 0.6)",
                     fontSize: 13,
@@ -277,10 +375,12 @@ const LoginPage: React.FC = () => {
                 </Link>
               </Box>
 
+              {/* Submit Button */}
               <Button
                 fullWidth
                 type="submit"
                 variant="contained"
+                disabled={isLoading}
                 sx={{
                   background: "#5fa89a",
                   color: "white",
@@ -293,11 +393,20 @@ const LoginPage: React.FC = () => {
                   "&:hover": {
                     background: "#4d8d80",
                   },
+                  "&:disabled": {
+                    background: "rgba(95, 168, 154, 0.5)",
+                    color: "rgba(255, 255, 255, 0.7)",
+                  },
                 }}
               >
-                Login to Evolingo
+                {isLoading ? (
+                  <CircularProgress size={24} sx={{ color: "white" }} />
+                ) : (
+                  "Login to Evolingo"
+                )}
               </Button>
 
+              {/* Register Link */}
               <Box sx={{ textAlign: "center" }}>
                 <Typography
                   sx={{
@@ -306,7 +415,7 @@ const LoginPage: React.FC = () => {
                     mb: 0.5,
                   }}
                 >
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Link
                     href="/authentication/register"
                     sx={{
@@ -323,6 +432,7 @@ const LoginPage: React.FC = () => {
                 </Typography>
               </Box>
 
+              {/* Contact Support */}
               <Box sx={{ textAlign: "center", mt: 4 }}>
                 <Typography
                   sx={{
