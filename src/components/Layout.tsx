@@ -30,6 +30,7 @@ const HIDE_TOPNAV_ONLY_PREFIXES = [
   // thêm route tùy nhu cầu...
   "/learn",
   "/vocabulary",
+  "/post"
 ];
 
 const startsWithAny = (pathname: string, prefixes: string[]) =>
