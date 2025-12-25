@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Clock,
@@ -13,8 +13,13 @@ import {
   TrendingUp,
   Pencil,
   Eye,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { DifficultyBadge, type Difficulty } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import { useGetInProgressAttemptQuery } from "@/services/ExamAttemptService";
 
 // ================== TYPES ==================
 type TestStructure = {
@@ -39,82 +44,55 @@ type TestInfo = {
   avgBandScore?: number;
 };
 
-// ================== MOCK DATA ==================
-const ieltsTestsInfo: Record<number, TestInfo> = {
-  1: {
-    id: 1,
-    title: "IELTS Academic Test 1",
-    subtitle: "Cambridge IELTS 18",
-    duration: "2 giờ 45 phút",
-    sections: 3,
-    category: "IELTS Academic",
-    difficulty: "Trung bình",
-    description:
-      "Đề thi IELTS Academic theo format Cambridge IELTS 18. Bao gồm 3 phần: Listening, Reading và Writing. Phù hợp cho người chuẩn bị thi IELTS Academic.",
-    structure: [
-      {
-        section: "Listening",
-        name: "Listening Test",
-        duration: "30 phút + 10 phút chép đáp án",
-        tasks: 40,
-        brief: "4 phần nghe với độ khó tăng dần. Nghe hội thoại, độc thoại về các chủ đề học thuật và đời sống.",
-      },
-      {
-        section: "Reading",
-        name: "Academic Reading",
-        duration: "60 phút",
-        tasks: 40,
-        brief: "3 bài đọc học thuật với các dạng câu hỏi đa dạng: True/False/Not Given, Matching, Multiple Choice, etc.",
-      },
-      {
-        section: "Writing",
-        name: "Academic Writing",
-        duration: "60 phút",
-        tasks: 2,
-        brief: "Task 1: Mô tả biểu đồ/bảng/quy trình (150 từ). Task 2: Viết essay về chủ đề học thuật (250 từ).",
-      },
-    ],
-    totalAttempts: 8765,
-    avgBandScore: 6.5,
-  },
-  2: {
-    id: 2,
-    title: "IELTS Academic Test 2",
-    subtitle: "Cambridge IELTS 18",
-    duration: "2 giờ 45 phút",
-    sections: 3,
-    category: "IELTS Academic",
-    difficulty: "Trung bình",
-    description:
-      "Đề thi IELTS Academic theo format Cambridge IELTS 18. Đề thi chất lượng cao với độ khó chuẩn.",
-    structure: [
-      { section: "Listening", name: "Listening Test", duration: "30 phút + 10 phút chép đáp án", tasks: 40, brief: "4 phần nghe với độ khó tăng dần." },
-      { section: "Reading", name: "Academic Reading", duration: "60 phút", tasks: 40, brief: "3 bài đọc học thuật với các dạng câu hỏi đa dạng." },
-      { section: "Writing", name: "Academic Writing", duration: "60 phút", tasks: 2, brief: "Task 1: Mô tả biểu đồ. Task 2: Viết essay." },
-    ],
-    totalAttempts: 7654,
-    avgBandScore: 6.3,
-  },
+// ================== HELPER FUNCTIONS ==================
+const mapLevelToDifficulty = (level: string): Difficulty => {
+  switch (level?.toLowerCase()) {
+    case "easy":
+      return "Dễ";
+    case "medium":
+      return "Trung bình";
+    case "hard":
+      return "Khó";
+    default:
+      return "Trung bình";
+  }
 };
 
-// Default test info
-const getDefaultTestInfo = (id: number): TestInfo => ({
-  id,
-  title: `IELTS Academic Test ${id}`,
-  subtitle: "Cambridge IELTS Series",
-  duration: "2 giờ 45 phút",
-  sections: 3,
-  category: "IELTS Academic",
-  difficulty: "Trung bình",
-  description: "Đề thi IELTS Academic bao gồm 3 phần: Listening, Reading và Writing. Phù hợp cho người chuẩn bị thi IELTS.",
-  structure: [
-    { section: "Listening", name: "Listening Test", duration: "30 phút + 10 phút chép đáp án", tasks: 40, brief: "4 phần nghe với độ khó tăng dần." },
-    { section: "Reading", name: "Academic Reading", duration: "60 phút", tasks: 40, brief: "3 bài đọc học thuật với các dạng câu hỏi đa dạng." },
-    { section: "Writing", name: "Academic Writing", duration: "60 phút", tasks: 2, brief: "Task 1: Mô tả biểu đồ. Task 2: Viết essay." },
-  ],
-  totalAttempts: Math.floor(Math.random() * 8000) + 1000,
-  avgBandScore: Math.round((Math.random() * 2 + 5.5) * 10) / 10,
-});
+const formatDuration = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0 && mins > 0) {
+    return `${hours} giờ ${mins} phút`;
+  } else if (hours > 0) {
+    return `${hours} giờ`;
+  }
+  return `${mins} phút`;
+};
+
+// Default structure for IELTS test
+const getDefaultStructure = (): TestStructure[] => [
+  {
+    section: "Listening",
+    name: "Listening Test",
+    duration: "30 phút + 10 phút chép đáp án",
+    tasks: 40,
+    brief: "4 phần nghe với độ khó tăng dần. Nghe hội thoại, độc thoại về các chủ đề học thuật và đời sống.",
+  },
+  {
+    section: "Reading",
+    name: "Academic Reading",
+    duration: "60 phút",
+    tasks: 40,
+    brief: "3 bài đọc học thuật với các dạng câu hỏi đa dạng: True/False/Not Given, Matching, Multiple Choice, etc.",
+  },
+  {
+    section: "Writing",
+    name: "Academic Writing",
+    duration: "60 phút",
+    tasks: 2,
+    brief: "Task 1: Mô tả biểu đồ/bảng/quy trình (150 từ). Task 2: Viết essay về chủ đề học thuật (250 từ).",
+  },
+];
 
 // Section icons
 const sectionIcons: Record<string, React.ReactNode> = {
@@ -133,12 +111,119 @@ const sectionColors: Record<string, { bg: string; text: string }> = {
 export default function IeltsTestInfoPage() {
   const params = useParams();
   const router = useRouter();
-  const testId = Number(params.id);
+  const testId = params.id as string;
 
-  const test = ieltsTestsInfo[testId] || getDefaultTestInfo(testId);
+  // Fetch exam details from API
+  const {
+    data: examData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetExamByIdQuery(testId);
+
+  // Check for in-progress attempt
+  const { data: inProgressAttempt } = useGetInProgressAttemptQuery(testId);
+
+  // Transform API data to TestInfo format
+  const test = useMemo((): TestInfo | null => {
+    if (!examData) return null;
+
+    // Build structure from exam sections or use default
+    const structure: TestStructure[] = examData.sections?.length
+      ? examData.sections.map((section) => {
+          const totalQuestions = section.question_groups?.reduce(
+            (sum, qg) => sum + (qg.questions?.length || 0),
+            0
+          ) || 0;
+
+          // Map section type to IELTS section names
+          let sectionName = section.section_type || "Section";
+          let displayName = section.title || section.section_type || "Section";
+
+          if (section.section_type?.toLowerCase().includes("listen")) {
+            sectionName = "Listening";
+            displayName = "Listening Test";
+          } else if (section.section_type?.toLowerCase().includes("read")) {
+            sectionName = "Reading";
+            displayName = "Academic Reading";
+          } else if (section.section_type?.toLowerCase().includes("writ")) {
+            sectionName = "Writing";
+            displayName = "Academic Writing";
+          }
+
+          return {
+            section: sectionName,
+            name: displayName,
+            duration: section.duration ? `${section.duration} phút` : "N/A",
+            tasks: totalQuestions,
+            brief: section.instructions || "",
+          };
+        })
+      : getDefaultStructure();
+
+    return {
+      id: examData.id,
+      title: examData.title,
+      subtitle: examData.description || "IELTS Academic Test",
+      duration: formatDuration(examData.duration),
+      sections: structure.length,
+      category: "IELTS Academic",
+      difficulty: mapLevelToDifficulty(examData.level),
+      description:
+        examData.description ||
+        "Đề thi IELTS Academic bao gồm các phần: Listening, Reading và Writing. Phù hợp cho người chuẩn bị thi IELTS.",
+      structure,
+      totalAttempts: 5000, // Could be fetched from API if available
+      avgBandScore: 6.5, // Could be fetched from API if available
+    };
+  }, [examData]);
 
   const handleStartTest = () => {
     router.push(`/user/exam/ielts/fulltest/${testId}/test`);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mx-auto" />
+          <p className="mt-4 text-gray-600">Đang tải thông tin bài test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !test) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto" />
+          <h2 className="mt-4 text-xl font-bold text-gray-800">
+            Không thể tải thông tin bài test
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.
+          </p>
+          <div className="mt-6 flex gap-3 justify-center">
+            <button
+              onClick={() => router.push("/user/exam/ielts/fulltest")}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Quay lại
+            </button>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Thử lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -205,7 +290,7 @@ export default function IeltsTestInfoPage() {
                     onClick={handleStartTest}
                     className="inline-flex items-center gap-3 px-4 py-2 bg-white text-emerald-700 rounded-lg font-semibold shadow-sm hover:scale-[1.02] transition"
                   >
-                    Bắt đầu làm bài
+                    {inProgressAttempt ? "Tiếp tục làm bài" : "Bắt đầu làm bài"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -315,7 +400,7 @@ export default function IeltsTestInfoPage() {
                     onClick={handleStartTest}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-semibold hover:scale-[1.02] transition shadow-lg"
                   >
-                    Bắt đầu làm bài
+                    {inProgressAttempt ? "Tiếp tục làm bài" : "Bắt đầu làm bài"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -369,7 +454,7 @@ export default function IeltsTestInfoPage() {
             onClick={handleStartTest}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold"
           >
-            Bắt đầu làm bài
+            {inProgressAttempt ? "Tiếp tục làm bài" : "Bắt đầu làm bài"}
           </button>
         </div>
       </div>

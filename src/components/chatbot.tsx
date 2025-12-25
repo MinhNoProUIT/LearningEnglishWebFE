@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Mic, Volume2, Sparkles, Star, Lightbulb, X, Plus, Trash2, MessageSquare } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Send, Mic, Sparkles, Star, Lightbulb, X, Plus, Trash2, MessageSquare } from "lucide-react";
 import {
   useCreateSessionMutation,
   useGetSessionsQuery,
@@ -341,16 +343,65 @@ const ChatbotUI = () => {
                         </span>
                       </div>
                     )}
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                    {message.sender === "AI" && (
-                      <button className="mt-2 flex items-center gap-1 text-emerald-600 hover:text-emerald-700 transition-colors text-xs font-medium">
-                        <Volume2 className="w-3 h-3" />
-                        Nghe phát âm
-                      </button>
-                    )}
-                    <span
+                    <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
+                      message.sender === "USER" ? "prose-invert" : "prose-gray"
+                    }`}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-1">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-base font-bold mt-2 mb-1">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-bold mt-1 mb-1">{children}</h3>,
+                          h4: ({ children }) => <h4 className="text-sm font-semibold mt-1 mb-1">{children}</h4>,
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          code: ({ children }) => (
+                            <code className={`px-1 py-0.5 rounded text-xs ${
+                              message.sender === "USER" ? "bg-white/20" : "bg-gray-100 text-emerald-600"
+                            }`}>
+                              {children}
+                            </code>
+                          ),
+                          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          blockquote: ({ children }) => (
+                            <blockquote className={`border-l-2 pl-2 my-2 italic ${
+                              message.sender === "USER" ? "border-white/50" : "border-emerald-300 text-gray-600"
+                            }`}>
+                              {children}
+                            </blockquote>
+                          ),
+                          // Table support
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto my-2">
+                              <table className="min-w-full border-collapse border border-gray-300 text-xs">
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          thead: ({ children }) => (
+                            <thead className="bg-emerald-50">{children}</thead>
+                          ),
+                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                          tr: ({ children }) => (
+                            <tr className="border-b border-gray-200">{children}</tr>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border border-gray-300 px-2 py-1 font-semibold text-left bg-emerald-100">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border border-gray-300 px-2 py-1">{children}</td>
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                                        <span
                       className={`text-xs mt-1 block ${
                         message.sender === "USER"
                           ? "text-emerald-100"

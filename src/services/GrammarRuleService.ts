@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { IGrammarRule, IGrammarRuleCreate, IGrammarRuleUpdate } from "../models/GrammarRule";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/grammar-rule";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-rule";
 
 export const grammarRuleApi = createApi({
   reducerPath: "grammarRuleApi",

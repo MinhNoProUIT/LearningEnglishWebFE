@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -12,6 +12,8 @@ import {
   TextField,
   InputAdornment,
   Tooltip,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Clock,
@@ -29,6 +31,7 @@ import {
   Headphones,
   Eye,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -39,6 +42,75 @@ import {
   type TestStatus,
   type Difficulty,
 } from "@/components/exam";
+import { useGetAllExamsQuery } from "@/services/ExamService";
+import { useGetExamHistoryQuery } from "@/services/ExamAttemptService";
+import { IExam, IExamAttemptHistory } from "@/models/Exam";
+
+// ================== HELPER FUNCTIONS ==================
+const mapLevelToDifficulty = (level: string): Difficulty => {
+  switch (level?.toLowerCase()) {
+    case "easy":
+      return "Dễ";
+    case "medium":
+      return "Trung bình";
+    case "hard":
+      return "Khó";
+    default:
+      return "Trung bình";
+  }
+};
+
+const transformExamToTestItem = (
+  exam: IExam,
+  attemptHistory: IExamAttemptHistory[]
+): TestItem => {
+  const examAttempts = attemptHistory.filter((a) => a.exam_id === exam.id);
+  const completedAttempts = examAttempts.filter((a) => a.status === "completed");
+  const inProgressAttempt = examAttempts.find((a) => a.status === "in_progress");
+
+  let status: TestStatus = "not_started";
+  let score: number | undefined;
+  let completedDate: string | undefined;
+  let bestScore: number | undefined;
+
+  if (completedAttempts.length > 0) {
+    status = "completed";
+    const latestCompleted = completedAttempts.sort(
+      (a, b) =>
+        new Date(b.completed_at || 0).getTime() -
+        new Date(a.completed_at || 0).getTime()
+    )[0];
+    // Convert percentage score to Band score (0-9)
+    const percentScore = latestCompleted.score || 0;
+    score = Math.round((percentScore / 100) * 9 * 2) / 2; // Round to 0.5
+    completedDate = latestCompleted.completed_at
+      ? new Date(latestCompleted.completed_at).toLocaleDateString("vi-VN")
+      : undefined;
+    bestScore = Math.max(
+      ...completedAttempts.map((a) => Math.round(((a.score || 0) / 100) * 9 * 2) / 2)
+    );
+  } else if (inProgressAttempt) {
+    status = "in_progress";
+  }
+
+  // Parse sections from exam description or use default
+  const sections = ["Listening", "Reading", "Writing"];
+
+  return {
+    id: exam.id,
+    title: exam.title,
+    subtitle: exam.description || "",
+    status,
+    score,
+    maxScore: 9,
+    completedDate,
+    duration: `${exam.duration} phút`,
+    sections,
+    difficulty: mapLevelToDifficulty(exam.level),
+    attempts: examAttempts.length,
+    bestScore,
+  };
+};
 
 // Theme shorthand for easier usage
 const theme = {
@@ -66,148 +138,6 @@ interface TestItem {
   attempts: number;
   bestScore?: number;
 }
-
-// ================== MOCK DATA ==================
-const ieltsTests: TestItem[] = [
-  {
-    id: 1,
-    title: "IELTS Test 1",
-    subtitle: "Cambridge 18 - Test 1",
-    status: "completed",
-    score: 7.5,
-    maxScore: 9,
-    completedDate: "18/12/2024",
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 2,
-    bestScore: 7.5,
-  },
-  {
-    id: 2,
-    title: "IELTS Test 2",
-    subtitle: "Cambridge 18 - Test 2",
-    status: "completed",
-    score: 7.0,
-    maxScore: 9,
-    completedDate: "12/12/2024",
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 1,
-    bestScore: 7.0,
-  },
-  {
-    id: 3,
-    title: "IELTS Test 3",
-    subtitle: "Cambridge 18 - Test 3",
-    status: "in_progress",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 1,
-  },
-  {
-    id: 4,
-    title: "IELTS Test 4",
-    subtitle: "Cambridge 18 - Test 4",
-    status: "not_started",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 5,
-    title: "IELTS Test 5",
-    subtitle: "Cambridge 17 - Test 1",
-    status: "not_started",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 6,
-    title: "IELTS Test 6",
-    subtitle: "Cambridge 17 - Test 2",
-    status: "not_started",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 7,
-    title: "IELTS Test 7",
-    subtitle: "Cambridge 17 - Test 3",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 8,
-    title: "IELTS Test 8",
-    subtitle: "Cambridge 17 - Test 4",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 9,
-    title: "IELTS Test 9",
-    subtitle: "Cambridge 16 - Test 1",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 10,
-    title: "IELTS Test 10",
-    subtitle: "Cambridge 16 - Test 2",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 11,
-    title: "IELTS Test 11",
-    subtitle: "Cambridge 16 - Test 3",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 12,
-    title: "IELTS Test 12",
-    subtitle: "Cambridge 16 - Test 4",
-    status: "locked",
-    maxScore: 9,
-    duration: "120 phút",
-    sections: ["Listening", "Reading", "Writing"],
-    difficulty: "Khó",
-    attempts: 0,
-  },
-];
 
 // ================== COMPONENTS ==================
 
@@ -415,11 +345,43 @@ export default function IeltsFullTestPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
+  // Fetch IELTS exams (exam_type_id = 2 for IELTS)
+  const {
+    data: examsData,
+    isLoading: isLoadingExams,
+    error: examsError,
+    refetch: refetchExams,
+  } = useGetAllExamsQuery({ exam_type_id: 2, limit: 100 });
+
+  // Fetch exam history
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    refetch: refetchHistory,
+  } = useGetExamHistoryQuery();
+
+  const isLoading = isLoadingExams || isLoadingHistory;
+
+  // Transform API data to TestItem format
+  const ieltsTests = useMemo(() => {
+    if (!examsData?.data) return [];
+    const attemptHistory = historyData?.data || [];
+    return examsData.data.map((exam) =>
+      transformExamToTestItem(exam, attemptHistory)
+    );
+  }, [examsData, historyData]);
+
+  const handleRefresh = () => {
+    refetchExams();
+    refetchHistory();
+  };
+
   const completedTests = ieltsTests.filter((t) => t.status === "completed");
   const avgScore = completedTests.length > 0
     ? (completedTests.reduce((acc, t) => acc + (t.score || 0), 0) / completedTests.length).toFixed(1)
     : "0";
   const bestScore = Math.max(...completedTests.map((t) => t.score || 0), 0);
+  const totalTests = ieltsTests.length;
 
   const filteredTests = ieltsTests.filter((test) => {
     const matchSearch =
@@ -428,6 +390,53 @@ export default function IeltsFullTestPage() {
     const matchStatus = filterStatus === "all" || test.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          bgcolor: theme.colors.bgLight,
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress sx={{ color: theme.colors.primary }} />
+          <Typography color="text.secondary">Đang tải danh sách bài test...</Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (examsError) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          bgcolor: theme.colors.bgLight,
+          p: 4,
+        }}
+      >
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={handleRefresh}>
+              Thử lại
+            </Button>
+          }
+        >
+          Có lỗi xảy ra khi tải danh sách bài test. Vui lòng thử lại.
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: theme.colors.bgLight, minHeight: "100vh" }}>
@@ -506,17 +515,35 @@ export default function IeltsFullTestPage() {
               </Stack>
             </Box>
 
-            <Chip
-              label="12 bài test"
-              sx={{
-                bgcolor: "rgba(255,255,255,0.2)",
-                color: "white",
-                fontWeight: 700,
-                fontSize: "1rem",
-                py: 2.5,
-                px: 1,
-              }}
-            />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip title="Làm mới">
+                <Button
+                  onClick={handleRefresh}
+                  sx={{
+                    minWidth: 40,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: "rgba(255,255,255,0.15)",
+                    color: "white",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
+                  }}
+                >
+                  <RefreshCw size={18} />
+                </Button>
+              </Tooltip>
+              <Chip
+                label={`${totalTests} bài test`}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  py: 2.5,
+                  px: 1,
+                }}
+              />
+            </Stack>
           </Stack>
         </Box>
       </Box>
@@ -529,7 +556,7 @@ export default function IeltsFullTestPage() {
             <StatsCard
               icon={<CheckCircle size={24} color="white" />}
               label="Đã hoàn thành"
-              value={`${completedTests.length}/12`}
+              value={`${completedTests.length}/${totalTests}`}
               color={theme.primary}
             />
           </Grid>
@@ -553,7 +580,7 @@ export default function IeltsFullTestPage() {
             <StatsCard
               icon={<BarChart2 size={24} color="white" />}
               label="Tiến độ"
-              value={`${Math.round((completedTests.length / 12) * 100)}%`}
+              value={`${totalTests > 0 ? Math.round((completedTests.length / totalTests) * 100) : 0}%`}
               color={theme.accent}
             />
           </Grid>

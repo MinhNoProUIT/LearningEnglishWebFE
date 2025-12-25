@@ -7,7 +7,7 @@ import {
 } from "../models/QuizAttempt";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/quiz-attempt";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/quiz-attempt";
 
 export const quizAttemptApi = createApi({
   reducerPath: "quizAttemptApi",

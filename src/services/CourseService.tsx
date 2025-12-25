@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { createBaseQuery } from "./api";
 import { IGetAllCourses, ICreateCourse, IUpdateCourse } from "@/models/Course";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/courses";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/courses";
 
 export const courseApi = createApi({
   reducerPath: "courseApi",

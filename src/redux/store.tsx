@@ -16,6 +16,20 @@ import { chatApi } from "@/services/ChatService";
 import { authApi } from "@/services/AuthService";
 import { quizAttemptApi } from "@/services/QuizAttemptService";
 
+// Exam System APIs
+import { examTypeApi } from "@/services/ExamTypeService";
+import { levelApi } from "@/services/LevelService";
+import { examCategoryApi } from "@/services/ExamCategoryService";
+import { examApi } from "@/services/ExamService";
+import { examSectionApi } from "@/services/ExamSectionService";
+import { questionGroupApi } from "@/services/QuestionGroupService";
+import { questionApi } from "@/services/QuestionService";
+import { examAttemptApi } from "@/services/ExamAttemptService";
+import { practiceApi } from "@/services/PracticeService";
+
+// Game System APIs
+import { treasureHuntApi } from "@/services/TreasureHuntService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -31,6 +45,18 @@ export const store = configureStore({
     [chatApi.reducerPath]: chatApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [quizAttemptApi.reducerPath]: quizAttemptApi.reducer,
+    // Exam System
+    [examTypeApi.reducerPath]: examTypeApi.reducer,
+    [levelApi.reducerPath]: levelApi.reducer,
+    [examCategoryApi.reducerPath]: examCategoryApi.reducer,
+    [examApi.reducerPath]: examApi.reducer,
+    [examSectionApi.reducerPath]: examSectionApi.reducer,
+    [questionGroupApi.reducerPath]: questionGroupApi.reducer,
+    [questionApi.reducerPath]: questionApi.reducer,
+    [examAttemptApi.reducerPath]: examAttemptApi.reducer,
+    [practiceApi.reducerPath]: practiceApi.reducer,
+    // Game System
+    [treasureHuntApi.reducerPath]: treasureHuntApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -42,7 +68,19 @@ export const store = configureStore({
       grammarVideoApi.middleware,
       chatApi.middleware,
       authApi.middleware,
-      quizAttemptApi.middleware
+      quizAttemptApi.middleware,
+      // Exam System
+      examTypeApi.middleware,
+      levelApi.middleware,
+      examCategoryApi.middleware,
+      examApi.middleware,
+      examSectionApi.middleware,
+      questionGroupApi.middleware,
+      questionApi.middleware,
+      examAttemptApi.middleware,
+      practiceApi.middleware,
+      // Game System
+      treasureHuntApi.middleware
     ),
 });
 

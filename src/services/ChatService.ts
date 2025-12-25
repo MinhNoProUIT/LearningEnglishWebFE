@@ -13,7 +13,7 @@ import {
 } from "../models/Chat";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/chat";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/chat";
 
 export const chatApi = createApi({
   reducerPath: "chatApi",

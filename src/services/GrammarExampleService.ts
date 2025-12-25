@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { IGrammarExample, IGrammarExampleCreate, IGrammarExampleUpdate } from "../models/GrammarExample";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/grammar-example";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-example";
 
 export const grammarExampleApi = createApi({
   reducerPath: "grammarExampleApi",

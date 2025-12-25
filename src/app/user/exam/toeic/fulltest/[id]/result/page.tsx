@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, useMemo } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   LinearProgress,
   Tabs,
   Tab,
+  CircularProgress,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -29,8 +30,15 @@ import {
   BarChart3,
   Calendar,
   Timer,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
+import { useGetExamAttemptDetailQuery, useGetExamHistoryQuery } from "@/services/ExamAttemptService";
+import {
+  IExamAttemptDetailResponse,
+  IExamAttemptHistory,
+} from "@/models/Exam";
 
 const theme = examTheme;
 
@@ -240,8 +248,132 @@ const ScoreCircle = ({
   );
 };
 
+// ==================== HELPER TYPES ====================
+interface PartResult {
+  part: number;
+  name: string;
+  correct: number;
+  total: number;
+  category: "Listening" | "Reading";
+}
+
+interface WrongAnswer {
+  id: number;
+  part: number;
+  partName: string;
+  question: string;
+  yourAnswer: string;
+  correctAnswer: string;
+  explanation: string;
+}
+
+interface ResultData {
+  id: number;
+  testTitle: string;
+  completedAt: string;
+  duration: string;
+  totalScore: number;
+  maxScore: number;
+  listeningScore: number;
+  readingScore: number;
+  listeningMax: number;
+  readingMax: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  attempts: number;
+  bestScore: number;
+  parts: PartResult[];
+  history: IExamAttemptHistory[];
+  wrongAnswers: WrongAnswer[];
+}
+
+// ==================== DATA TRANSFORMERS ====================
+const transformApiToResult = (
+  attemptDetail: IExamAttemptDetailResponse,
+  historyData: IExamAttemptHistory[]
+): ResultData => {
+  // Calculate listening and reading scores from sections
+  const listeningSections = attemptDetail.sections.filter(s => s.skill_type === "LISTENING");
+  const readingSections = attemptDetail.sections.filter(s => s.skill_type === "READING");
+
+  const listeningScore = listeningSections.reduce((sum, s) => sum + s.score, 0);
+  const listeningMax = listeningSections.reduce((sum, s) => sum + s.max_score, 0);
+  const readingScore = readingSections.reduce((sum, s) => sum + s.score, 0);
+  const readingMax = readingSections.reduce((sum, s) => sum + s.max_score, 0);
+
+  // Transform sections to parts
+  const parts: PartResult[] = attemptDetail.sections.map((section, idx) => {
+    const totalQuestions = section.question_groups.reduce(
+      (sum, g) => sum + g.questions.length,
+      0
+    );
+    const correctQuestions = section.question_groups.reduce(
+      (sum, g) => sum + g.questions.filter(q => q.is_correct).length,
+      0
+    );
+
+    return {
+      part: idx + 1,
+      name: section.title || `Part ${idx + 1}`,
+      correct: correctQuestions,
+      total: totalQuestions,
+      category: section.skill_type === "LISTENING" ? "Listening" : "Reading",
+    };
+  });
+
+  // Calculate total questions and correct answers
+  const totalQuestions = parts.reduce((sum, p) => sum + p.total, 0);
+  const correctAnswers = parts.reduce((sum, p) => sum + p.correct, 0);
+
+  // Extract wrong answers
+  const wrongAnswers: WrongAnswer[] = [];
+  attemptDetail.sections.forEach((section, sectionIdx) => {
+    section.question_groups.forEach((group) => {
+      group.questions.forEach((question) => {
+        if (!question.is_correct) {
+          wrongAnswers.push({
+            id: question.id,
+            part: sectionIdx + 1,
+            partName: section.title || `Part ${sectionIdx + 1}`,
+            question: question.question_text || `Câu ${question.id}`,
+            yourAnswer: question.user_answer?.selected_option_text || question.user_answer?.text_answer || "-",
+            correctAnswer: question.correct_answer?.correct_option_text || "-",
+            explanation: question.explanation || "",
+          });
+        }
+      });
+    });
+  });
+
+  // Find best score and attempt count from history
+  const examHistory = historyData.filter(h => h.exam_id === attemptDetail.exam_id);
+  const bestScore = examHistory.length > 0
+    ? Math.max(...examHistory.map(h => h.total_score))
+    : attemptDetail.total_score;
+
+  return {
+    id: attemptDetail.id,
+    testTitle: attemptDetail.exam_title,
+    completedAt: new Date().toLocaleDateString("vi-VN"),
+    duration: "Không xác định",
+    totalScore: attemptDetail.total_score,
+    maxScore: attemptDetail.max_score,
+    listeningScore,
+    readingScore,
+    listeningMax: listeningMax || 495, // Default TOEIC max
+    readingMax: readingMax || 495,
+    correctAnswers,
+    totalQuestions,
+    attempts: examHistory.length,
+    bestScore,
+    parts,
+    history: examHistory,
+    wrongAnswers,
+  };
+};
+
 // Part Result Card
-const PartResultCard = ({ part }: { part: typeof mockResult.parts[0] }) => {
+const PartResultCard = ({ part }: { part: PartResult }) => {
   const percentage = (part.correct / part.total) * 100;
 
   return (
@@ -323,10 +455,58 @@ const PartResultCard = ({ part }: { part: typeof mockResult.parts[0] }) => {
 export default function TestResultPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const attemptId = searchParams.get("attemptId");
+
   const [activeTab, setActiveTab] = useState(0);
   const [showWrongAnswers, setShowWrongAnswers] = useState(false);
 
-  const result = mockResult;
+  // ==================== API HOOKS ====================
+  const {
+    data: attemptDetail,
+    isLoading: isLoadingDetail,
+    error: detailError,
+    refetch: refetchDetail,
+  } = useGetExamAttemptDetailQuery(attemptId || "", {
+    skip: !attemptId,
+  });
+
+  const {
+    data: historyData,
+  } = useGetExamHistoryQuery({
+    examId: attemptDetail?.exam_id,
+    limit: 100,
+  }, {
+    skip: !attemptDetail?.exam_id,
+  });
+
+  // ==================== DERIVED DATA ====================
+  const result = useMemo(() => {
+    if (attemptDetail && historyData?.data) {
+      return transformApiToResult(attemptDetail, historyData.data);
+    }
+    // Fallback to mock data if no API data
+    return {
+      ...mockResult,
+      history: mockResult.history.map((h, idx) => ({
+        id: idx + 1,
+        exam_id: 1,
+        exam_title: mockResult.testTitle,
+        exam_type: "TOEIC",
+        level: "Intermediate",
+        total_score: h.score,
+        max_score: 990,
+        percentage: (h.score / 990) * 100,
+        correct_answers: Math.round((h.score / 990) * 200),
+        total_questions: 200,
+        start_time: h.date,
+        submit_time: h.date,
+        time_taken_minutes: 120,
+        status: "COMPLETED" as const,
+      })),
+    };
+  }, [attemptDetail, historyData]);
+
   const scorePercentage = (result.totalScore / result.maxScore) * 100;
 
   const listeningParts = result.parts.filter(p => p.category === "Listening");
@@ -336,6 +516,76 @@ export default function TestResultPage() {
   const listeningTotal = listeningParts.reduce((sum, p) => sum + p.total, 0);
   const readingCorrect = readingParts.reduce((sum, p) => sum + p.correct, 0);
   const readingTotal = readingParts.reduce((sum, p) => sum + p.total, 0);
+
+  // ==================== LOADING STATE ====================
+  if (isLoadingDetail) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            Đang tải kết quả...
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Vui lòng đợi trong giây lát
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // ==================== ERROR STATE ====================
+  if (detailError) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}>
+          <AlertTriangle size={48} color="#dc2626" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            Không thể tải kết quả
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Đã có lỗi xảy ra khi tải kết quả bài thi. Vui lòng thử lại.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowLeft size={18} />}
+              onClick={() => router.push("/user/exam/toeic/fulltest")}
+            >
+              Quay lại danh sách
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshCw size={18} />}
+              onClick={() => refetchDetail()}
+              sx={{
+                background: theme.gradients.primary,
+                "&:hover": { background: theme.gradients.primaryDark },
+              }}
+            >
+              Thử lại
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
@@ -622,88 +872,114 @@ export default function TestResultPage() {
         {activeTab === 1 && (
           <Paper sx={{ p: 3, borderRadius: 3, boxShadow: theme.shadows.card }}>
             <Typography variant="h6" fontWeight={700} mb={3}>
-              Lịch sử làm bài ({result.attempts} lần)
+              Lịch sử làm bài ({result.history.length} lần)
             </Typography>
 
-            <Stack spacing={2}>
-              {result.history.map((h, index) => (
-                <Paper
-                  key={h.attempt}
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 2,
-                    border: index === result.history.length - 1 ? `2px solid ${theme.colors.primary}` : "1px solid #e5e7eb",
-                    bgcolor: index === result.history.length - 1 ? "#f0fdf4" : "white",
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          background: index === result.history.length - 1 ? theme.gradients.primary : "#e5e7eb",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight={700} color={index === result.history.length - 1 ? "white" : "grey.600"}>
-                          #{h.attempt}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="subtitle1" fontWeight={700}>
-                            Lần {h.attempt}
-                          </Typography>
-                          {index === result.history.length - 1 && (
-                            <Chip label="Mới nhất" size="small" sx={{ height: 20, fontSize: "0.65rem", bgcolor: theme.colors.primary, color: "white" }} />
-                          )}
-                          {h.score === result.bestScore && (
-                            <Chip icon={<Trophy size={12} />} label="Điểm cao nhất" size="small" sx={{ height: 20, fontSize: "0.65rem", bgcolor: "#fef3c7", color: "#92400e" }} />
-                          )}
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Calendar size={12} color="#6b7280" />
-                          <Typography variant="caption" color="text.secondary">
-                            {h.date}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    </Stack>
+            {result.history.length === 0 ? (
+              <Box sx={{ textAlign: "center", py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Chưa có lịch sử làm bài
+                </Typography>
+              </Box>
+            ) : (
+              <Stack spacing={2}>
+                {result.history.map((h, index) => {
+                  const attemptNumber = result.history.length - index;
+                  const formattedDate = h.submit_time
+                    ? new Date(h.submit_time).toLocaleDateString("vi-VN")
+                    : h.start_time
+                    ? new Date(h.start_time).toLocaleDateString("vi-VN")
+                    : "Không xác định";
 
-                    <Stack direction="row" spacing={3} alignItems="center">
-                      <Box textAlign="center">
-                        <Typography variant="body2" color="text.secondary">Listening</Typography>
-                        <Typography variant="subtitle2" fontWeight={700} color="#1d4ed8">{h.listening}</Typography>
-                      </Box>
-                      <Box textAlign="center">
-                        <Typography variant="body2" color="text.secondary">Reading</Typography>
-                        <Typography variant="subtitle2" fontWeight={700} color="#92400e">{h.reading}</Typography>
-                      </Box>
-                      <Box textAlign="center">
-                        <Typography variant="body2" color="text.secondary">Tổng</Typography>
-                        <Typography variant="h6" fontWeight={800} color={theme.colors.primary}>{h.score}</Typography>
-                      </Box>
-                    </Stack>
-                  </Stack>
-                </Paper>
-              ))}
-            </Stack>
+                  return (
+                    <Paper
+                      key={h.id}
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        border: index === 0 ? `2px solid ${theme.colors.primary}` : "1px solid #e5e7eb",
+                        bgcolor: index === 0 ? "#f0fdf4" : "white",
+                      }}
+                    >
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: "50%",
+                              background: index === 0 ? theme.gradients.primary : "#e5e7eb",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Typography variant="body2" fontWeight={700} color={index === 0 ? "white" : "grey.600"}>
+                              #{attemptNumber}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="subtitle1" fontWeight={700}>
+                                Lần {attemptNumber}
+                              </Typography>
+                              {index === 0 && (
+                                <Chip label="Mới nhất" size="small" sx={{ height: 20, fontSize: "0.65rem", bgcolor: theme.colors.primary, color: "white" }} />
+                              )}
+                              {h.total_score === result.bestScore && (
+                                <Chip icon={<Trophy size={12} />} label="Điểm cao nhất" size="small" sx={{ height: 20, fontSize: "0.65rem", bgcolor: "#fef3c7", color: "#92400e" }} />
+                              )}
+                            </Stack>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Calendar size={12} color="#6b7280" />
+                              <Typography variant="caption" color="text.secondary">
+                                {formattedDate}
+                              </Typography>
+                            </Stack>
+                          </Box>
+                        </Stack>
+
+                        <Stack direction="row" spacing={3} alignItems="center">
+                          <Box textAlign="center">
+                            <Typography variant="body2" color="text.secondary">Đúng</Typography>
+                            <Typography variant="subtitle2" fontWeight={700} color="#1d4ed8">
+                              {h.correct_answers}/{h.total_questions}
+                            </Typography>
+                          </Box>
+                          <Box textAlign="center">
+                            <Typography variant="body2" color="text.secondary">Phần trăm</Typography>
+                            <Typography variant="subtitle2" fontWeight={700} color="#92400e">
+                              {h.percentage?.toFixed(0) || Math.round((h.total_score / h.max_score) * 100)}%
+                            </Typography>
+                          </Box>
+                          <Box textAlign="center">
+                            <Typography variant="body2" color="text.secondary">Điểm</Typography>
+                            <Typography variant="h6" fontWeight={800} color={theme.colors.primary}>
+                              {h.total_score}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            )}
 
             {/* Progress Chart Placeholder */}
-            <Box sx={{ mt: 4, p: 3, bgcolor: "#f8fafc", borderRadius: 2, textAlign: "center" }}>
-              <TrendingUp size={48} color={theme.colors.primary} />
-              <Typography variant="subtitle1" fontWeight={600} mt={2}>
-                Tiến bộ: +{result.history[result.history.length - 1].score - result.history[0].score} điểm
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Từ {result.history[0].score} lên {result.history[result.history.length - 1].score} điểm sau {result.attempts} lần làm
-              </Typography>
-            </Box>
+            {result.history.length > 1 && (
+              <Box sx={{ mt: 4, p: 3, bgcolor: "#f8fafc", borderRadius: 2, textAlign: "center" }}>
+                <TrendingUp size={48} color={theme.colors.primary} />
+                <Typography variant="subtitle1" fontWeight={600} mt={2}>
+                  Tiến bộ: {result.history[0].total_score >= result.history[result.history.length - 1].total_score ? "+" : ""}
+                  {result.history[0].total_score - result.history[result.history.length - 1].total_score} điểm
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Từ {result.history[result.history.length - 1].total_score} lên {result.history[0].total_score} điểm sau {result.history.length} lần làm
+                </Typography>
+              </Box>
+            )}
           </Paper>
         )}
 
