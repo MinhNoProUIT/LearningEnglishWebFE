@@ -17,13 +17,38 @@ import { GrammarCard } from "@/components/grammar";
 
 type LevelFilter = "all" | "LOW" | "MEDIUM" | "HIGH";
 
+// Map CEFR levels (A1, A2, B1, B2, C1, C2) to filter categories (LOW, MEDIUM, HIGH)
+const mapLevelToCategory = (level: string): "LOW" | "MEDIUM" | "HIGH" => {
+  const upperLevel = level.toUpperCase();
+  // A1, A2 hoặc LOW -> LOW (Cơ bản)
+  if (upperLevel === "A1" || upperLevel === "A2" || upperLevel === "LOW") {
+    return "LOW";
+  }
+  // B1, B2 hoặc MEDIUM -> MEDIUM (Trung bình)
+  if (upperLevel === "B1" || upperLevel === "B2" || upperLevel === "MEDIUM") {
+    return "MEDIUM";
+  }
+  // C1, C2 hoặc HIGH -> HIGH (Nâng cao)
+  if (upperLevel === "C1" || upperLevel === "C2" || upperLevel === "HIGH") {
+    return "HIGH";
+  }
+  // Default fallback
+  return "LOW";
+};
+
 const getLevelLabel = (level: string) => {
-  switch (level) {
+  switch (level.toUpperCase()) {
     case "LOW":
+    case "A1":
+    case "A2":
       return "Cơ bản";
     case "MEDIUM":
+    case "B1":
+    case "B2":
       return "Trung bình";
     case "HIGH":
+    case "C1":
+    case "C2":
       return "Nâng cao";
     default:
       return level;
@@ -31,7 +56,8 @@ const getLevelLabel = (level: string) => {
 };
 
 const getLevelColor = (level: string) => {
-  switch (level) {
+  const category = mapLevelToCategory(level);
+  switch (category) {
     case "LOW":
       return "from-green-500 to-emerald-400";
     case "MEDIUM":
@@ -82,10 +108,10 @@ export default function GrammarPage() {
       );
     }
 
-    // Filter by level
+    // Filter by level - map CEFR levels to categories
     if (levelFilter !== "all") {
       topics = topics.filter(
-        (t) => t.level.toUpperCase() === levelFilter
+        (t) => mapLevelToCategory(t.level) === levelFilter
       );
     }
 

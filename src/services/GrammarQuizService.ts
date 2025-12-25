@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { IGrammarQuiz, IGrammarQuizForUser, IGrammarQuizCreate, IGrammarQuizUpdate } from "../models/GrammarQuiz";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/grammar-quiz";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-quiz";
 
 export const grammarQuizApi = createApi({
   reducerPath: "grammarQuizApi",

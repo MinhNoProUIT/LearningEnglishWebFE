@@ -158,3 +158,181 @@
     text-wrap: balance;
   }
 }
+
+/* ================== TREASURE HUNT GAME ANIMATIONS ================== */
+@keyframes th-shine {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes th-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes th-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes th-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes th-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+  }
+}
+
+@keyframes th-sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+@keyframes th-confetti-fall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes th-banana-throw {
+  0% {
+    transform: translateX(-50px) translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(100px) translateY(-80px) rotate(360deg);
+  }
+  100% {
+    transform: translateX(200px) translateY(50px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes th-screen-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes th-star-pop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes th-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Utility classes for game animations */
+.th-animate-shine {
+  animation: th-shine 3s ease-in-out infinite;
+}
+
+.th-animate-pulse {
+  animation: th-pulse 2s ease-in-out infinite;
+}
+
+.th-animate-bounce {
+  animation: th-bounce 1s ease-in-out infinite;
+}
+
+.th-animate-shake {
+  animation: th-shake 0.5s ease-in-out;
+}
+
+.th-animate-glow {
+  animation: th-glow 2s ease-in-out infinite;
+}
+
+.th-animate-sparkle {
+  animation: th-sparkle 2s ease-in-out infinite;
+}
+
+.th-animate-float {
+  animation: th-float 3s ease-in-out infinite;
+}
+
+/* Fog effect for hidden cells */
+.th-fog-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.th-fog-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(31, 41, 55, 0.8) 0%,
+    rgba(55, 65, 81, 0.6) 50%,
+    rgba(31, 41, 55, 0.8) 100%
+  );
+  pointer-events: none;
+}
+

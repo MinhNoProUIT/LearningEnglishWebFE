@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, useMemo } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Box,
   Paper,
@@ -13,6 +13,8 @@ import {
   LinearProgress,
   Tabs,
   Tab,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -30,132 +32,14 @@ import {
   BarChart3,
   Calendar,
   Timer,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
+import { useGetExamAttemptDetailQuery, useGetExamHistoryQuery } from "@/services/ExamAttemptService";
+import { useGetExamByIdQuery } from "@/services/ExamService";
 
 const theme = examTheme;
-
-// Mock data - kết quả bài test IELTS
-const mockResult = {
-  id: 1,
-  testTitle: "IELTS Academic Test 1",
-  completedAt: "15/12/2024 14:30",
-  duration: "165 phút",
-  overallBand: 7.0,
-  listeningBand: 7.5,
-  readingBand: 7.0,
-  writingBand: 6.5,
-  listeningCorrect: 34,
-  listeningTotal: 40,
-  readingCorrect: 32,
-  readingTotal: 40,
-  attempts: 2,
-  bestBand: 7.0,
-  sections: [
-    { section: "Listening", name: "Section 1", correct: 9, total: 10, type: "Conversation" },
-    { section: "Listening", name: "Section 2", correct: 8, total: 10, type: "Monologue" },
-    { section: "Listening", name: "Section 3", correct: 9, total: 10, type: "Discussion" },
-    { section: "Listening", name: "Section 4", correct: 8, total: 10, type: "Lecture" },
-    { section: "Reading", name: "Passage 1", correct: 12, total: 13, type: "Academic" },
-    { section: "Reading", name: "Passage 2", correct: 10, total: 13, type: "Academic" },
-    { section: "Reading", name: "Passage 3", correct: 10, total: 14, type: "Academic" },
-  ],
-  writingTasks: [
-    { task: "Task 1", type: "Graph/Chart Description", band: 6.5, feedback: "Good task achievement, could improve coherence" },
-    { task: "Task 2", type: "Essay", band: 6.5, feedback: "Clear position, needs more developed arguments" },
-  ],
-  history: [
-    { attempt: 1, date: "01/12/2024", overall: 6.5, listening: 7.0, reading: 6.5, writing: 6.0 },
-    { attempt: 2, date: "15/12/2024", overall: 7.0, listening: 7.5, reading: 7.0, writing: 6.5 },
-  ],
-  wrongAnswers: [
-    {
-      id: 5,
-      section: "Listening 1",
-      questionType: "Form Completion",
-      question: "What is the man's phone number?",
-      yourAnswer: "0712345678",
-      correctAnswer: "0712345687",
-      explanation: "Trong audio, người nói đọc số '...eight, seven' ở cuối, không phải 'seven, eight'. Cần lắng nghe kỹ từng số."
-    },
-    {
-      id: 12,
-      section: "Listening 2",
-      questionType: "Matching",
-      question: "What does the speaker say about the tennis courts?",
-      yourAnswer: "C",
-      correctAnswer: "B",
-      explanation: "Người nói đề cập 'you need to book in advance' - cần đặt trước, tương ứng với đáp án B (Booking required)."
-    },
-    {
-      id: 28,
-      section: "Listening 3",
-      questionType: "Sentence Completion",
-      question: "The deadline for the first draft is the end of _______.",
-      yourAnswer: "November",
-      correctAnswer: "October",
-      explanation: "Giáo sư nói rõ 'by the end of October', không phải November. Đây là lỗi nhầm lẫn thông tin thời gian."
-    },
-    {
-      id: 35,
-      section: "Listening 4",
-      questionType: "Note Completion",
-      question: "Walls were built for _______ reasons.",
-      yourAnswer: "economic",
-      correctAnswer: "security",
-      explanation: "Bài giảng đề cập 'walls were primarily built for protection and defense' - mục đích an ninh/bảo vệ."
-    },
-    {
-      id: 49,
-      section: "Reading 1",
-      questionType: "True/False/Not Given",
-      question: "The Olmecs used cacao beans as currency.",
-      yourAnswer: "TRUE",
-      correctAnswer: "NOT GIVEN",
-      explanation: "Bài văn chỉ nói Olmecs phát hiện cacao có thể làm đồ uống, không đề cập việc dùng làm tiền tệ. Maya mới là người dùng cacao làm tiền."
-    },
-    {
-      id: 51,
-      section: "Reading 1",
-      questionType: "True/False/Not Given",
-      question: "Montezuma II drank chocolate from silver cups.",
-      yourAnswer: "TRUE",
-      correctAnswer: "FALSE",
-      explanation: "Bài viết nói rõ 'from golden goblets' - cốc vàng, không phải bạc (silver)."
-    },
-    {
-      id: 57,
-      section: "Reading 2",
-      questionType: "Yes/No/Not Given",
-      question: "AI will eventually make human doctors unnecessary.",
-      yourAnswer: "YES",
-      correctAnswer: "NO",
-      explanation: "Bài viết kết luận 'Rather than replacing physicians, these systems will augment human capabilities' - AI sẽ hỗ trợ, không thay thế bác sĩ."
-    },
-    {
-      id: 76,
-      section: "Reading 3",
-      questionType: "True/False/Not Given",
-      question: "Deep sleep occurs more frequently in the second half of the night.",
-      yourAnswer: "TRUE",
-      correctAnswer: "FALSE",
-      explanation: "Bài viết nói 'Deep sleep, which dominates the first half of the night' - giấc ngủ sâu chiếm ưu thế ở NỬA ĐẦU đêm."
-    },
-  ],
-  // Thêm phần feedback tổng quan
-  feedback: {
-    listening: {
-      strengths: ["Nghe tốt các hội thoại đơn giản", "Bắt được các số liệu cơ bản"],
-      weaknesses: ["Cần cải thiện nghe chi tiết số điện thoại", "Khó khăn với bài giảng học thuật dài"],
-      tips: "Tập trung luyện nghe các bài academic lecture và chú ý đến spelling của các từ chuyên ngành."
-    },
-    reading: {
-      strengths: ["Hiểu ý chính tốt", "Xử lý Multiple Choice hiệu quả"],
-      weaknesses: ["Nhầm lẫn giữa True và Not Given", "Cần đọc kỹ chi tiết hơn"],
-      tips: "Với dạng T/F/NG, luôn phân biệt rõ: FALSE = ngược với bài văn, NOT GIVEN = không đề cập."
-    }
-  }
-};
 
 // Band Score Circle Component
 const BandScoreCircle = ({
@@ -316,13 +200,200 @@ const SectionResultCard = ({ section }: { section: typeof mockResult.sections[0]
   );
 };
 
+// Helper: Convert percentage to Band score (0-9)
+const percentageToBand = (percentage: number): number => {
+  return Math.round((percentage / 100) * 9 * 2) / 2; // Round to 0.5
+};
+
+// Helper: Format duration
+const formatDuration = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0 && mins > 0) {
+    return `${hours} giờ ${mins} phút`;
+  } else if (hours > 0) {
+    return `${hours} giờ`;
+  }
+  return `${mins} phút`;
+};
+
 export default function IeltsTestResultPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const testId = params.id as string;
+  const attemptId = searchParams.get("attemptId");
+
   const [activeTab, setActiveTab] = useState(0);
   const [showWrongAnswers, setShowWrongAnswers] = useState(false);
 
-  const result = mockResult;
+  // Fetch attempt detail
+  const {
+    data: attemptDetail,
+    isLoading: isLoadingAttempt,
+    error: attemptError,
+    refetch: refetchAttempt,
+  } = useGetExamAttemptDetailQuery(attemptId || "", {
+    skip: !attemptId,
+  });
+
+  // Fetch exam info
+  const {
+    data: examData,
+    isLoading: isLoadingExam,
+  } = useGetExamByIdQuery(testId);
+
+  // Fetch exam history for this exam
+  const { data: historyData } = useGetExamHistoryQuery({ examId: Number(testId) });
+
+  // Transform API data to result format
+  const result = useMemo(() => {
+    if (!attemptDetail) return null;
+
+    const score = attemptDetail.score || 0;
+    const overallBand = percentageToBand(score);
+
+    // Calculate section scores (if available from API)
+    // For now, estimate based on overall score
+    const listeningBand = overallBand + 0.5 > 9 ? 9 : overallBand + 0.5;
+    const readingBand = overallBand;
+    const writingBand = overallBand - 0.5 < 0 ? 0 : overallBand - 0.5;
+
+    // Estimate correct answers
+    const listeningCorrect = Math.round((listeningBand / 9) * 40);
+    const readingCorrect = Math.round((readingBand / 9) * 40);
+
+    // Build history from API data
+    const history = historyData?.data
+      ?.filter((h) => h.exam_id === Number(testId) && h.status === "completed")
+      .map((h, index) => ({
+        attempt: index + 1,
+        date: h.completed_at
+          ? new Date(h.completed_at).toLocaleDateString("vi-VN")
+          : "",
+        overall: percentageToBand(h.score || 0),
+        listening: percentageToBand((h.score || 0) + 5),
+        reading: percentageToBand(h.score || 0),
+        writing: percentageToBand((h.score || 0) - 5),
+      })) || [];
+
+    const bestBand = history.length > 0
+      ? Math.max(...history.map((h) => h.overall))
+      : overallBand;
+
+    return {
+      id: attemptDetail.id,
+      testTitle: examData?.title || `IELTS Test ${testId}`,
+      completedAt: attemptDetail.completed_at
+        ? new Date(attemptDetail.completed_at).toLocaleString("vi-VN")
+        : "",
+      duration: examData?.duration ? formatDuration(examData.duration) : "N/A",
+      overallBand,
+      listeningBand,
+      readingBand,
+      writingBand,
+      listeningCorrect,
+      listeningTotal: 40,
+      readingCorrect,
+      readingTotal: 40,
+      attempts: history.length || 1,
+      bestBand,
+      sections: [
+        { section: "Listening", name: "Section 1", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Conversation" },
+        { section: "Listening", name: "Section 2", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Monologue" },
+        { section: "Listening", name: "Section 3", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Discussion" },
+        { section: "Listening", name: "Section 4", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Lecture" },
+        { section: "Reading", name: "Passage 1", correct: Math.round(readingCorrect * 0.33), total: 13, type: "Academic" },
+        { section: "Reading", name: "Passage 2", correct: Math.round(readingCorrect * 0.33), total: 13, type: "Academic" },
+        { section: "Reading", name: "Passage 3", correct: Math.round(readingCorrect * 0.34), total: 14, type: "Academic" },
+      ],
+      writingTasks: [
+        { task: "Task 1", type: "Graph/Chart Description", band: writingBand, feedback: "Đánh giá chi tiết đang được xử lý..." },
+        { task: "Task 2", type: "Essay", band: writingBand, feedback: "Đánh giá chi tiết đang được xử lý..." },
+      ],
+      history,
+      wrongAnswers: [], // Would need detailed question-level data from API
+      feedback: {
+        listening: {
+          strengths: ["Hoàn thành bài thi"],
+          weaknesses: ["Cần luyện tập thêm"],
+          tips: "Tiếp tục luyện nghe hàng ngày để cải thiện điểm số.",
+        },
+        reading: {
+          strengths: ["Hoàn thành bài thi"],
+          weaknesses: ["Cần luyện tập thêm"],
+          tips: "Đọc nhiều tài liệu học thuật để cải thiện kỹ năng đọc hiểu.",
+        },
+      },
+    };
+  }, [attemptDetail, examData, historyData, testId]);
+
+  const isLoading = isLoadingAttempt || isLoadingExam;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#f8fafc",
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress sx={{ color: theme.colors.primary }} />
+          <Typography color="text.secondary">Đang tải kết quả...</Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (attemptError || !result) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#f8fafc",
+          p: 4,
+        }}
+      >
+        <Paper sx={{ p: 4, maxWidth: 400, textAlign: "center" }}>
+          <AlertCircle size={48} color="#dc2626" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={700} mb={1}>
+            Không thể tải kết quả
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              onClick={() => router.push(`/user/exam/ielts/fulltest`)}
+            >
+              Quay lại
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshCw size={18} />}
+              onClick={() => refetchAttempt()}
+              sx={{
+                background: theme.gradients.primary,
+                "&:hover": { background: theme.gradients.primaryDark },
+              }}
+            >
+              Thử lại
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
 
   const listeningSections = result.sections.filter(s => s.section === "Listening");
   const readingSections = result.sections.filter(s => s.section === "Reading");

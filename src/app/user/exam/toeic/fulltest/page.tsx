@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -12,6 +12,8 @@ import {
   TextField,
   InputAdornment,
   Tooltip,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Clock,
@@ -28,6 +30,7 @@ import {
   Star,
   Headphones,
   Eye,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -38,6 +41,9 @@ import {
   type TestStatus,
   type Difficulty,
 } from "@/components/exam";
+import { useGetAllExamsQuery } from "@/services/ExamService";
+import { useGetExamHistoryQuery } from "@/services/ExamAttemptService";
+import { IExam, IExamAttemptHistory } from "@/models/Exam";
 
 // Theme shorthand for easier usage
 const theme = {
@@ -66,165 +72,61 @@ interface TestItem {
   bestScore?: number;
 }
 
-// ================== MOCK DATA ==================
-const toeicTests: TestItem[] = [
-  {
-    id: 1,
-    title: "TOEIC Test 1",
-    status: "completed",
-    score: 875,
-    maxScore: 990,
-    completedDate: "15/12/2024",
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Trung bình",
-    attempts: 3,
-    bestScore: 875,
-  },
-  {
-    id: 2,
-    title: "TOEIC Test 2",
-    status: "completed",
-    score: 820,
-    maxScore: 990,
-    completedDate: "10/12/2024",
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Trung bình",
-    attempts: 2,
-    bestScore: 820,
-  },
-  {
-    id: 3,
-    title: "TOEIC Test 3",
-    status: "in_progress",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Trung bình",
-    attempts: 1,
-  },
-  {
-    id: 4,
-    title: "TOEIC Test 4",
-    status: "not_started",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 5,
-    title: "TOEIC Test 5",
-    status: "not_started",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 6,
-    title: "TOEIC Test 6",
-    status: "not_started",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 7,
-    title: "TOEIC Test 7",
-    status: "not_started",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Trung bình",
-    attempts: 0,
-  },
-  {
-    id: 8,
-    title: "TOEIC Test 8",
-    status: "not_started",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 9,
-    title: "TOEIC Test 9",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 10,
-    title: "TOEIC Test 10",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 11,
-    title: "TOEIC Test 11",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 12,
-    title: "TOEIC Test 12",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 13,
-    title: "TOEIC Test 13",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 14,
-    title: "TOEIC Test 14",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-  {
-    id: 15,
-    title: "TOEIC Test 15",
-    status: "locked",
-    maxScore: 990,
-    duration: "120 phút",
-    questions: 200,
-    difficulty: "Khó",
-    attempts: 0,
-  },
-];
+// ================== HELPER FUNCTIONS ==================
+
+// Map level code to difficulty label
+const mapLevelToDifficulty = (levelCode?: string): Difficulty => {
+  if (!levelCode) return "Trung bình";
+  const code = levelCode.toUpperCase();
+  if (code === "A1" || code === "A2" || code === "EASY") return "Dễ";
+  if (code === "B1" || code === "B2" || code === "MEDIUM") return "Trung bình";
+  if (code === "C1" || code === "C2" || code === "HARD") return "Khó";
+  return "Trung bình";
+};
+
+// Transform API exam to TestItem
+const transformExamToTestItem = (
+  exam: IExam,
+  historyMap: Map<number, IExamAttemptHistory[]>
+): TestItem => {
+  const examHistory = historyMap.get(exam.id) || [];
+  const completedAttempts = examHistory.filter(h => h.status === "COMPLETED");
+  const hasInProgress = examHistory.some(h => h.status === "IN_PROGRESS");
+
+  // Calculate best score from history
+  const bestScore = completedAttempts.length > 0
+    ? Math.max(...completedAttempts.map(h => h.total_score))
+    : undefined;
+
+  // Get latest completed attempt for score display
+  const latestCompleted = completedAttempts.sort(
+    (a, b) => new Date(b.submit_time).getTime() - new Date(a.submit_time).getTime()
+  )[0];
+
+  // Determine status
+  let status: TestStatus = "not_started";
+  if (hasInProgress) {
+    status = "in_progress";
+  } else if (completedAttempts.length > 0) {
+    status = "completed";
+  }
+
+  return {
+    id: exam.id,
+    title: exam.title,
+    status,
+    score: latestCompleted?.total_score,
+    maxScore: exam.total_score || 990,
+    completedDate: latestCompleted
+      ? new Date(latestCompleted.submit_time).toLocaleDateString("vi-VN")
+      : undefined,
+    duration: exam.duration_minutes ? `${exam.duration_minutes} phút` : "120 phút",
+    questions: exam.questions_count || 200,
+    difficulty: mapLevelToDifficulty(exam.level?.code),
+    attempts: examHistory.length,
+    bestScore,
+  };
+};
 
 // ================== COMPONENTS ==================
 
@@ -397,6 +299,42 @@ export default function ToeicFullTestPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
+  // Fetch exams from API (TOEIC type = 1)
+  const {
+    data: examsData,
+    isLoading: isLoadingExams,
+    error: examsError,
+    refetch: refetchExams,
+  } = useGetAllExamsQuery({ exam_type_id: 1, limit: 100 });
+
+  // Fetch user's exam history
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    refetch: refetchHistory,
+  } = useGetExamHistoryQuery({ limit: 1000 });
+
+  const isLoading = isLoadingExams || isLoadingHistory;
+
+  // Create history map for quick lookup
+  const historyMap = useMemo(() => {
+    const map = new Map<number, IExamAttemptHistory[]>();
+    if (historyData?.data) {
+      historyData.data.forEach((history) => {
+        const existing = map.get(history.exam_id) || [];
+        existing.push(history);
+        map.set(history.exam_id, existing);
+      });
+    }
+    return map;
+  }, [historyData]);
+
+  // Transform exams to TestItems
+  const toeicTests: TestItem[] = useMemo(() => {
+    if (!examsData?.data) return [];
+    return examsData.data.map((exam) => transformExamToTestItem(exam, historyMap));
+  }, [examsData, historyMap]);
+
   const completedTests = toeicTests.filter((t) => t.status === "completed");
   const avgScore = completedTests.length > 0
     ? Math.round(completedTests.reduce((acc, t) => acc + (t.score || 0), 0) / completedTests.length)
@@ -408,6 +346,11 @@ export default function ToeicFullTestPage() {
     const matchStatus = filterStatus === "all" || test.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  const handleRefresh = () => {
+    refetchExams();
+    refetchHistory();
+  };
 
   return (
     <Box sx={{ bgcolor: theme.colors.bgLight, minHeight: "100vh" }}>
@@ -487,7 +430,7 @@ export default function ToeicFullTestPage() {
             </Box>
 
             <Chip
-              label="15 bài test"
+              label={`${toeicTests.length} bài test`}
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
@@ -503,13 +446,53 @@ export default function ToeicFullTestPage() {
 
       {/* Main Content */}
       <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 }, mt: -8, position: "relative", zIndex: 10 }}>
+        {/* Loading State */}
+        {isLoading && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 6,
+              textAlign: "center",
+              borderRadius: 3,
+              bgcolor: "white",
+              border: "1px solid #e5e7eb",
+              mb: 4,
+            }}
+          >
+            <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+            <Typography variant="body1" color="text.secondary">
+              Đang tải danh sách bài test...
+            </Typography>
+          </Paper>
+        )}
+
+        {/* Error State */}
+        {examsError && !isLoading && (
+          <Alert
+            severity="error"
+            sx={{ mb: 4, borderRadius: 2 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                startIcon={<RefreshCw size={16} />}
+                onClick={handleRefresh}
+              >
+                Thử lại
+              </Button>
+            }
+          >
+            Không thể tải danh sách bài test. Vui lòng thử lại sau.
+          </Alert>
+        )}
+
         {/* Stats */}
         <Grid container spacing={2} mb={4}>
           <Grid size={{ xs: 6, md: 3 }}>
             <StatsCard
               icon={<CheckCircle size={24} color="white" />}
               label="Đã hoàn thành"
-              value={`${completedTests.length}/15`}
+              value={`${completedTests.length}/${toeicTests.length}`}
               color={theme.primary}
             />
           </Grid>
@@ -533,7 +516,7 @@ export default function ToeicFullTestPage() {
             <StatsCard
               icon={<BarChart2 size={24} color="white" />}
               label="Tiến độ"
-              value={`${Math.round((completedTests.length / 15) * 100)}%`}
+              value={toeicTests.length > 0 ? `${Math.round((completedTests.length / toeicTests.length) * 100)}%` : "0%"}
               color={theme.accent}
             />
           </Grid>

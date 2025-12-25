@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Box,
@@ -20,6 +20,7 @@ import {
   Radio,
   RadioGroup,
   FormControlLabel,
+  CircularProgress,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -38,8 +39,17 @@ import {
   PenTool,
   FileText,
   BookMarked,
+  RefreshCw,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import {
+  useStartExamMutation,
+  useSaveProgressMutation,
+  useSubmitExamMutation,
+  useGetInProgressAttemptQuery,
+} from "@/services/ExamAttemptService";
+import { IExam, IExamSection, IQuestionGroup, IQuestion } from "@/models/Exam";
 
 const theme = examTheme;
 
@@ -487,6 +497,110 @@ Is there anything I should bring?`,
 
 const mockQuestions = generateMockQuestions();
 
+// ================== API DATA TRANSFORMERS ==================
+
+// Transform API exam data to local Question format
+const transformApiToQuestions = (exam: IExam): Question[] => {
+  const questions: Question[] = [];
+
+  if (!exam.sections) return questions;
+
+  exam.sections.forEach((section) => {
+    section.question_groups?.forEach((group) => {
+      if (group.questions && group.questions.length > 0) {
+        // Check if this is a grouped question (multiple questions per passage/audio)
+        if (group.questions.length > 1 && (group.content_text || group.media_url)) {
+          // Create a grouped question
+          const firstQ = group.questions[0];
+          questions.push({
+            id: firstQ.id,
+            partId: section.id,
+            type: getQuestionType(section.skill_type, group.media_type),
+            imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
+            audioUrl: group.media_type === "AUDIO" ? group.media_url : undefined,
+            passage: group.content_text || undefined,
+            conversationText: section.skill_type === "LISTENING" && group.media_type === "AUDIO" ? group.script_text : undefined,
+            subQuestions: group.questions.map((q) => ({
+              id: q.id,
+              questionText: q.question_text || "",
+              options: q.options.map((opt, idx) => ({
+                label: String.fromCharCode(65 + idx), // A, B, C, D
+                text: opt.option_text,
+              })),
+            })),
+          });
+        } else {
+          // Single questions
+          group.questions.forEach((q) => {
+            questions.push({
+              id: q.id,
+              partId: section.id,
+              type: getQuestionType(section.skill_type, group.media_type),
+              imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
+              audioUrl: group.media_type === "AUDIO" ? group.media_url : (q.audio_url || undefined),
+              passage: group.content_text || undefined,
+              questionText: q.question_text || "",
+              options: q.options.map((opt, idx) => ({
+                label: String.fromCharCode(65 + idx),
+                text: opt.option_text,
+              })),
+            });
+          });
+        }
+      }
+    });
+  });
+
+  return questions;
+};
+
+// Transform API sections to local Part format
+const transformApiToParts = (exam: IExam): Part[] => {
+  if (!exam.sections) return [];
+
+  let questionNumber = 1;
+
+  return exam.sections.map((section, idx) => {
+    const questionCount = section.question_groups?.reduce(
+      (acc, g) => acc + (g.questions?.length || 0),
+      0
+    ) || 0;
+
+    const startQuestion = questionNumber;
+    const endQuestion = questionNumber + questionCount - 1;
+    questionNumber = endQuestion + 1;
+
+    return {
+      id: section.id,
+      name: section.title || `Part ${idx + 1}`,
+      category: section.skill_type === "LISTENING" ? "Listening" as const : "Reading" as const,
+      questionCount,
+      startQuestion,
+      endQuestion,
+      icon: getPartIcon(section.skill_type, idx),
+      instructions: section.instructions || "",
+    };
+  });
+};
+
+const getQuestionType = (skillType: string, mediaType?: string): string => {
+  if (skillType === "LISTENING") {
+    if (mediaType === "IMAGE") return "photograph";
+    return "listening";
+  }
+  return "reading";
+};
+
+const getPartIcon = (skillType: string, index: number): string => {
+  const listeningIcons = ["Image", "MessageSquare", "Users", "Volume2"];
+  const readingIcons = ["PenTool", "FileText", "BookMarked"];
+
+  if (skillType === "LISTENING") {
+    return listeningIcons[index % listeningIcons.length];
+  }
+  return readingIcons[index % readingIcons.length];
+};
+
 // Part Icon mapping
 const partIcons: Record<string, React.ReactNode> = {
   Image: <ImageIcon size={18} />,
@@ -746,41 +860,148 @@ const QuestionNavigator = ({
 export default function ToeicTestPage() {
   const router = useRouter();
   const params = useParams();
-  const testId = params.id;
+  const testId = params.id as string;
 
+  // ==================== API HOOKS ====================
+  // Fetch exam data
+  const {
+    data: examData,
+    isLoading: isLoadingExam,
+    error: examError,
+    refetch: refetchExam,
+  } = useGetExamByIdQuery(testId);
+
+  // Check for in-progress attempt
+  const {
+    data: inProgressAttempt,
+    isLoading: isLoadingAttempt,
+  } = useGetInProgressAttemptQuery(testId);
+
+  // Mutations
+  const [startExam] = useStartExamMutation();
+  const [saveProgress] = useSaveProgressMutation();
+  const [submitExam] = useSubmitExamMutation();
+
+  // ==================== LOCAL STATE ====================
+  const [attemptId, setAttemptId] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [listeningProgress, setListeningProgress] = useState(1); // Câu Listening cao nhất đã đến
+  const [listeningProgress, setListeningProgress] = useState(1);
+  const [isStarting, setIsStarting] = useState(false);
+  const [examStarted, setExamStarted] = useState(false);
 
   // Audio states for Listening section
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
-  const [audioDuration] = useState(10); // Mock: 10 seconds for demo (real: 30-90s)
+  const [audioDuration] = useState(10);
   const [audioEnded, setAudioEnded] = useState(false);
   const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
-  const countdownStartedRef = useRef(false); // Track if countdown already started
+  const countdownStartedRef = useRef(false);
 
   // Refs to avoid stale closures in useEffect
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
   const listeningProgressRef = useRef(listeningProgress);
 
-  // Listening section: câu 1-100, Reading section: câu 101-200
-  const LISTENING_END = 100;
-  const AUTO_ADVANCE_DELAY = 5; // seconds
+  // ==================== DERIVED DATA FROM API ====================
+  // Transform API data to local format, or use mock data as fallback
+  const examQuestions = useMemo(() => {
+    if (examData && examData.sections && examData.sections.length > 0) {
+      return transformApiToQuestions(examData);
+    }
+    return mockQuestions; // Fallback to mock data
+  }, [examData]);
 
-  // Get all question IDs in order - useMemo to keep stable reference
-  const allQuestionIds = React.useMemo(() => mockQuestions.flatMap((q) => {
+  const examParts = useMemo(() => {
+    if (examData && examData.sections && examData.sections.length > 0) {
+      return transformApiToParts(examData);
+    }
+    return parts; // Fallback to mock data
+  }, [examData]);
+
+  // Determine listening end based on actual data
+  const LISTENING_END = useMemo(() => {
+    const listeningParts = examParts.filter(p => p.category === "Listening");
+    if (listeningParts.length > 0) {
+      return Math.max(...listeningParts.map(p => p.endQuestion));
+    }
+    return 100; // Default TOEIC listening end
+  }, [examParts]);
+
+  const AUTO_ADVANCE_DELAY = 5;
+
+  // Get all question IDs in order
+  const allQuestionIds = useMemo(() => examQuestions.flatMap((q) => {
     if (q.subQuestions) {
       return q.subQuestions.map((sq) => sq.id);
     }
     return [q.id];
-  }), []);
+  }), [examQuestions]);
 
-  const currentQuestionId = allQuestionIds[currentQuestionIndex];
+  const currentQuestionId = allQuestionIds[currentQuestionIndex] || 1;
+
+  // ==================== EFFECTS ====================
+
+  // Initialize attempt on mount
+  useEffect(() => {
+    const initAttempt = async () => {
+      if (inProgressAttempt) {
+        // Resume existing attempt
+        setAttemptId(inProgressAttempt.id);
+        setExamStarted(true);
+        // Restore saved answers
+        if (inProgressAttempt.saved_answers) {
+          const restoredAnswers: Record<number, string> = {};
+          inProgressAttempt.saved_answers.forEach((sa) => {
+            if (sa.selected_option_id) {
+              // Map option ID to label (A, B, C, D) - simplified
+              restoredAnswers[sa.question_id] = sa.text_answer || "A";
+            }
+          });
+          setAnswers(restoredAnswers);
+        }
+      } else if (examData && !attemptId && !isStarting && !examStarted) {
+        // Start new attempt
+        setIsStarting(true);
+        try {
+          const result = await startExam({ examId: Number(testId) }).unwrap();
+          setAttemptId(result.id);
+          setExamStarted(true);
+        } catch (error) {
+          console.error("Failed to start exam:", error);
+        } finally {
+          setIsStarting(false);
+        }
+      }
+    };
+
+    if (!isLoadingExam && !isLoadingAttempt) {
+      initAttempt();
+    }
+  }, [examData, inProgressAttempt, isLoadingExam, isLoadingAttempt, attemptId, isStarting, examStarted, testId, startExam]);
+
+  // Auto-save progress every 30 seconds
+  useEffect(() => {
+    if (!attemptId || Object.keys(answers).length === 0) return;
+
+    const saveInterval = setInterval(async () => {
+      try {
+        const answersArray = Object.entries(answers).map(([questionId, answer]) => ({
+          questionId: Number(questionId),
+          selectedOptionId: undefined, // Would need to map answer label to option ID
+          textAnswer: answer,
+        }));
+        await saveProgress({ id: attemptId, data: { answers: answersArray } });
+      } catch (error) {
+        console.error("Failed to auto-save progress:", error);
+      }
+    }, 30000);
+
+    return () => clearInterval(saveInterval);
+  }, [attemptId, answers, saveProgress]);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -797,7 +1018,7 @@ export default function ToeicTestPage() {
 
   // Find the question or subquestion
   const findQuestionData = (questionId: number) => {
-    for (const q of mockQuestions) {
+    for (const q of examQuestions) {
       if (q.id === questionId && !q.subQuestions) {
         return { question: q, subQuestion: null, parentQuestion: null };
       }
@@ -813,7 +1034,7 @@ export default function ToeicTestPage() {
 
   const { question: currentQuestion, subQuestion, parentQuestion } = findQuestionData(currentQuestionId);
 
-  const currentPart = parts.find(
+  const currentPart = examParts.find(
     (p) => currentQuestionId >= p.startQuestion && currentQuestionId <= p.endQuestion
   );
 
@@ -881,12 +1102,31 @@ export default function ToeicTestPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!attemptId) {
+      console.error("No attempt ID available");
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
-      router.push(`/user/exam/toeic/fulltest/${testId}/result`);
-    }, 1500);
+    try {
+      // First save current progress
+      const answersArray = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId: Number(questionId),
+        selectedOptionId: undefined,
+        textAnswer: answer,
+      }));
+      await saveProgress({ id: attemptId, data: { answers: answersArray } });
+
+      // Then submit the exam
+      await submitExam(attemptId).unwrap();
+
+      // Navigate to result page
+      router.push(`/user/exam/toeic/fulltest/${testId}/result?attemptId=${attemptId}`);
+    } catch (error) {
+      console.error("Failed to submit exam:", error);
+      setIsSubmitting(false);
+    }
   };
 
   const handleTimeUp = useCallback(() => {
@@ -966,8 +1206,78 @@ export default function ToeicTestPage() {
   }, [audioEnded, isListeningSection, allQuestionIds]);
 
   const answeredCount = Object.keys(answers).length;
-  const totalQuestions = 200;
+  const totalQuestions = allQuestionIds.length || 200;
   const progress = (answeredCount / totalQuestions) * 100;
+
+  // Loading state
+  if (isLoadingExam || isLoadingAttempt || isStarting) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            {isStarting ? "Đang bắt đầu bài thi..." : "Đang tải bài thi..."}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Vui lòng đợi trong giây lát
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (examError) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}>
+          <AlertTriangle size={48} color="#dc2626" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            Không thể tải bài thi
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Đã có lỗi xảy ra khi tải bài thi. Vui lòng thử lại.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowLeft size={18} />}
+              onClick={() => router.push(`/user/exam/toeic/fulltest/${testId}`)}
+            >
+              Quay lại
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshCw size={18} />}
+              onClick={() => refetchExam()}
+              sx={{
+                background: theme.gradients.primary,
+                "&:hover": { background: theme.gradients.primaryDark },
+              }}
+            >
+              Thử lại
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
@@ -989,7 +1299,7 @@ export default function ToeicTestPage() {
               </IconButton>
               <Box>
                 <Typography variant="subtitle1" fontWeight={700}>
-                  TOEIC Test {testId}
+                  {examData?.title || `TOEIC Test ${testId}`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {currentPart?.name}
@@ -998,7 +1308,7 @@ export default function ToeicTestPage() {
             </Stack>
 
             <Stack direction="row" spacing={2} alignItems="center">
-              <Timer initialTime={120 * 60} onTimeUp={handleTimeUp} />
+              <Timer initialTime={(examData?.duration_minutes || 120) * 60} onTimeUp={handleTimeUp} />
 
               <Box sx={{ display: { xs: "none", md: "block" } }}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -1387,7 +1697,7 @@ export default function ToeicTestPage() {
                     <Button
                       variant="outlined"
                       startIcon={<ChevronLeft size={18} />}
-                      disabled={currentQuestionId === 101} // Câu đầu của Reading
+                      disabled={currentQuestionId === LISTENING_END + 1} // Câu đầu của Reading
                       onClick={() => handleNavigate("prev")}
                       sx={{
                         borderColor: "#e5e7eb",
@@ -1425,7 +1735,7 @@ export default function ToeicTestPage() {
           <Grid size={{ xs: 12, md: 3 }} sx={{ display: { xs: "none", md: "block" } }}>
             <Box sx={{ position: "sticky", top: 120 }}>
               <QuestionNavigator
-                parts={parts}
+                parts={examParts}
                 answers={answers}
                 flaggedQuestions={flaggedQuestions}
                 currentQuestion={currentQuestionId}

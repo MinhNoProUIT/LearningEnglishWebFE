@@ -11,7 +11,7 @@ import { Mutex } from "async-mutex";
 import type { RootState } from "@/redux/store";
 
 // ==================== CONSTANTS ====================
-const AUTH_BASE_URL = "https://englishapp-uit.onrender.com/auth";
+const AUTH_BASE_URL = "https://english-app-backend-production-5ecc.up.railway.app/auth";
 
 // Mutex để tránh race condition khi multiple requests gặp 401 cùng lúc
 const mutex = new Mutex();
@@ -35,28 +35,28 @@ const getTokenFromState = (getState: () => unknown): string | null => {
 
 /**
  * Factory function để tạo baseQuery với interceptor
- * @param baseUrl - Base URL cho API (ví dụ: https://englishapp-uit.onrender.com/api/grammar-topic)
+ * @param baseUrl - Base URL cho API (ví dụ: https://english-app-backend-production-5ecc.up.railway.app/api/grammar-topic)
  * @returns BaseQuery function với refresh token logic
  *
  * ==================== GIẢI THÍCH ABSOLUTE URL ====================
  *
  * Khi gọi API refresh token, ta cần dùng URL tuyệt đối vì:
  * 1. baseUrl hiện tại có thể là của grammar/quiz/course API
- *    (ví dụ: https://englishapp-uit.onrender.com/api/grammar-topic)
+ *    (ví dụ: https://english-app-backend-production-5ecc.up.railway.app/api/grammar-topic)
  *
- * 2. API refresh nằm ở https://englishapp-uit.onrender.com/auth/refresh
+ * 2. API refresh nằm ở https://english-app-backend-production-5ecc.up.railway.app/auth/refresh
  *    hoàn toàn khác domain path
  *
  * 3. Trong RTK Query's fetchBaseQuery, khi `url` bắt đầu bằng "http://" hoặc "https://",
  *    nó sẽ IGNORE baseUrl và dùng url đó làm full path
  *
  * 4. Ví dụ:
- *    - baseUrl: "https://englishapp-uit.onrender.com/api/grammar-topic"
- *    - url: "https://englishapp-uit.onrender.com/auth/refresh" (absolute)
- *    -> Kết quả: fetch tới "https://englishapp-uit.onrender.com/auth/refresh"
+ *    - baseUrl: "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-topic"
+ *    - url: "https://english-app-backend-production-5ecc.up.railway.app/auth/refresh" (absolute)
+ *    -> Kết quả: fetch tới "https://english-app-backend-production-5ecc.up.railway.app/auth/refresh"
  *
  *    - Nếu url: "/refresh" (relative)
- *    -> Kết quả: fetch tới "https://englishapp-uit.onrender.com/api/grammar-topic/refresh" (SAI!)
+ *    -> Kết quả: fetch tới "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-topic/refresh" (SAI!)
  */
 export const createBaseQuery = (baseUrl: string) => {
   // Base query gốc với prepareHeaders để attach token
@@ -109,7 +109,7 @@ export const createBaseQuery = (baseUrl: string) => {
             // Sử dụng URL tuyệt đối để ghi đè baseUrl hiện tại
             const refreshResult = await baseQuery(
               {
-                url: `${AUTH_BASE_URL}/refresh`, // URL tuyệt đối: https://englishapp-uit.onrender.com/auth/refresh
+                url: `${AUTH_BASE_URL}/refresh`, // URL tuyệt đối: https://english-app-backend-production-5ecc.up.railway.app/auth/refresh
                 method: "POST",
                 body: { refreshToken },
               },

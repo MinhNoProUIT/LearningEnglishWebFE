@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { IGrammarVideo, IGrammarVideoCreate, IGrammarVideoUpdate } from "../models/GrammarVideo";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/grammar-video";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-video";
 
 export const grammarVideoApi = createApi({
   reducerPath: "grammarVideoApi",

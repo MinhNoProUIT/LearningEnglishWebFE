@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Box,
@@ -23,6 +23,8 @@ import {
   TextField,
   Checkbox,
   FormGroup,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -40,8 +42,17 @@ import {
   CheckSquare,
   Edit3,
   List,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import {
+  useStartExamMutation,
+  useSaveProgressMutation,
+  useSubmitExamMutation,
+  useGetInProgressAttemptQuery,
+} from "@/services/ExamAttemptService";
 
 const theme = examTheme;
 
@@ -926,6 +937,22 @@ export default function IeltsTestPage() {
   const params = useParams();
   const testId = params.id as string;
 
+  // API Hooks
+  const {
+    data: examData,
+    isLoading: isLoadingExam,
+    error: examError,
+    refetch: refetchExam,
+  } = useGetExamByIdQuery(testId);
+
+  const { data: inProgressAttempt, isLoading: isLoadingProgress } =
+    useGetInProgressAttemptQuery(testId);
+
+  const [startExam, { isLoading: isStartingExam }] = useStartExamMutation();
+  const [saveProgress] = useSaveProgressMutation();
+  const [submitExam] = useSubmitExamMutation();
+
+  const [attemptId, setAttemptId] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
@@ -933,6 +960,75 @@ export default function IeltsTestPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [listeningProgress, setListeningProgress] = useState(1);
+  const [examStarted, setExamStarted] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+
+  // Initialize exam or resume in-progress attempt
+  useEffect(() => {
+    const initializeExam = async () => {
+      if (isLoadingExam || isLoadingProgress) return;
+
+      // If there's an in-progress attempt, resume it
+      if (inProgressAttempt) {
+        setAttemptId(inProgressAttempt.id);
+        setExamStarted(true);
+
+        // Restore saved answers if available
+        if (inProgressAttempt.answers) {
+          try {
+            const savedAnswers =
+              typeof inProgressAttempt.answers === "string"
+                ? JSON.parse(inProgressAttempt.answers)
+                : inProgressAttempt.answers;
+            setAnswers(savedAnswers);
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        // Calculate remaining time
+        if (inProgressAttempt.started_at && examData?.duration) {
+          const startTime = new Date(inProgressAttempt.started_at).getTime();
+          const elapsed = Math.floor((Date.now() - startTime) / 1000 / 60);
+          const remaining = Math.max(0, examData.duration - elapsed);
+          setTimeRemaining(remaining);
+        }
+      } else if (examData && !examStarted) {
+        // Start a new exam attempt
+        try {
+          const result = await startExam({ exam_id: examData.id }).unwrap();
+          setAttemptId(result.id);
+          setExamStarted(true);
+          setTimeRemaining(examData.duration);
+        } catch (error) {
+          console.error("Failed to start exam:", error);
+        }
+      }
+    };
+
+    initializeExam();
+  }, [examData, inProgressAttempt, isLoadingExam, isLoadingProgress, examStarted, startExam]);
+
+  // Auto-save progress periodically
+  useEffect(() => {
+    if (!attemptId || Object.keys(answers).length === 0) return;
+
+    const saveTimer = setTimeout(async () => {
+      try {
+        await saveProgress({
+          id: attemptId,
+          data: {
+            answers: answers,
+            current_question: currentQuestionIndex,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to save progress:", error);
+      }
+    }, 5000); // Auto-save every 5 seconds after answer change
+
+    return () => clearTimeout(saveTimer);
+  }, [answers, attemptId, currentQuestionIndex, saveProgress]);
 
   // Audio states
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -1043,11 +1139,30 @@ export default function IeltsTestPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!attemptId) return;
+
     setIsSubmitting(true);
-    setTimeout(() => {
-      router.push(`/user/exam/ielts/fulltest/${testId}/result`);
-    }, 1500);
+    try {
+      // Save final progress before submitting
+      await saveProgress({
+        id: attemptId,
+        data: {
+          answers: answers,
+          current_question: currentQuestionIndex,
+        },
+      });
+
+      // Submit the exam
+      const result = await submitExam(attemptId).unwrap();
+
+      // Navigate to result page
+      router.push(`/user/exam/ielts/fulltest/${testId}/result?attemptId=${attemptId}`);
+    } catch (error) {
+      console.error("Failed to submit exam:", error);
+      setIsSubmitting(false);
+      // Could show error notification here
+    }
   };
 
   const handleTimeUp = useCallback(() => {
@@ -1123,6 +1238,73 @@ export default function IeltsTestPage() {
   const answeredCount = Object.values(answers).filter((a) => a && a.trim() !== "").length;
   const totalQuestions = 80;
   const progress = (answeredCount / totalQuestions) * 100;
+
+  // Loading state
+  if (isLoadingExam || isLoadingProgress || isStartingExam) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#f8fafc",
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress sx={{ color: theme.colors.primary }} />
+          <Typography color="text.secondary">
+            {isStartingExam ? "Đang bắt đầu bài thi..." : "Đang tải bài thi..."}
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (examError) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#f8fafc",
+          p: 4,
+        }}
+      >
+        <Paper sx={{ p: 4, maxWidth: 400, textAlign: "center" }}>
+          <AlertTriangle size={48} color="#dc2626" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={700} mb={1}>
+            Không thể tải bài thi
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              onClick={() => router.push(`/user/exam/ielts/fulltest/${testId}`)}
+            >
+              Quay lại
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshCw size={18} />}
+              onClick={() => refetchExam()}
+              sx={{
+                background: theme.gradients.primary,
+                "&:hover": { background: theme.gradients.primaryDark },
+              }}
+            >
+              Thử lại
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
 
   // Render question based on type
   const renderQuestion = () => {

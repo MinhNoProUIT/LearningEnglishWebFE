@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Clock,
@@ -9,11 +8,15 @@ import {
   FileText,
   ChevronRight,
   ArrowLeft,
-  Headphones,
   Users,
   TrendingUp,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
-import { examTheme, DifficultyBadge, type Difficulty } from "@/components/exam";
+import { DifficultyBadge, type Difficulty } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import { useGetExamHistoryQuery } from "@/services/ExamAttemptService";
 
 // ================== TYPES ==================
 type TestStructure = {
@@ -37,123 +40,117 @@ type TestInfo = {
   avgCompletionRate?: number;
 };
 
-// ================== MOCK DATA ==================
-const toeicTestsInfo: Record<number, TestInfo> = {
-  1: {
-    id: 1,
-    title: "TOEIC Test 1 - ETS 2024",
-    duration: 120,
-    parts: 7,
-    questions: 200,
-    category: "TOEIC Listening & Reading",
-    difficulty: "Trung bình",
-    description:
-      "Đề thi mô phỏng TOEIC Listening & Reading theo format ETS 2024. Phù hợp để luyện kỹ năng làm bài đúng thời gian và quản lý tốc độ làm bài.",
-    structure: [
-      {
-        part: "Listening",
-        name: "Part 1 - Photographs",
-        questions: 6,
-        brief: "Nhìn hình và chọn mô tả đúng.",
-      },
-      {
-        part: "Listening",
-        name: "Part 2 - Question & Response",
-        questions: 25,
-        brief: "Nghe câu hỏi và chọn đáp án chính xác.",
-      },
-      {
-        part: "Listening",
-        name: "Part 3 - Conversations",
-        questions: 39,
-        brief: "Nghe đoạn hội thoại 2-3 người và trả lời câu hỏi.",
-      },
-      {
-        part: "Listening",
-        name: "Part 4 - Talks",
-        questions: 30,
-        brief: "Nghe bài nói chuyện và trả lời câu hỏi.",
-      },
-      {
-        part: "Reading",
-        name: "Part 5 - Incomplete Sentences",
-        questions: 30,
-        brief: "Chọn từ/cụm từ phù hợp để hoàn thành câu.",
-      },
-      {
-        part: "Reading",
-        name: "Part 6 - Text Completion",
-        questions: 16,
-        brief: "Điền từ/câu phù hợp vào chỗ trống trong đoạn văn.",
-      },
-      {
-        part: "Reading",
-        name: "Part 7 - Reading Comprehension",
-        questions: 54,
-        brief: "Đọc hiểu đoạn văn và trả lời câu hỏi.",
-      },
-    ],
-    totalAttempts: 12345,
-    avgCompletionRate: 73,
-  },
-  2: {
-    id: 2,
-    title: "TOEIC Test 2 - ETS 2024",
-    duration: 120,
-    parts: 7,
-    questions: 200,
-    category: "TOEIC Listening & Reading",
-    difficulty: "Trung bình",
-    description:
-      "Đề thi mô phỏng TOEIC Listening & Reading theo format ETS 2024. Đề thi chất lượng cao với độ khó chuẩn.",
-    structure: [
-      { part: "Listening", name: "Part 1 - Photographs", questions: 6, brief: "Nhìn hình và chọn mô tả đúng." },
-      { part: "Listening", name: "Part 2 - Question & Response", questions: 25, brief: "Nghe câu hỏi và chọn đáp án chính xác." },
-      { part: "Listening", name: "Part 3 - Conversations", questions: 39, brief: "Nghe đoạn hội thoại và trả lời câu hỏi." },
-      { part: "Listening", name: "Part 4 - Talks", questions: 30, brief: "Nghe bài nói chuyện và trả lời câu hỏi." },
-      { part: "Reading", name: "Part 5 - Incomplete Sentences", questions: 30, brief: "Chọn từ phù hợp để hoàn thành câu." },
-      { part: "Reading", name: "Part 6 - Text Completion", questions: 16, brief: "Điền từ/câu vào chỗ trống." },
-      { part: "Reading", name: "Part 7 - Reading Comprehension", questions: 54, brief: "Đọc hiểu và trả lời câu hỏi." },
-    ],
-    totalAttempts: 9876,
-    avgCompletionRate: 71,
-  },
+// ================== HELPER FUNCTIONS ==================
+
+// Map level code to difficulty label
+const mapLevelToDifficulty = (levelCode?: string): Difficulty => {
+  if (!levelCode) return "Trung bình";
+  const code = levelCode.toUpperCase();
+  if (code === "A1" || code === "A2" || code === "EASY") return "Dễ";
+  if (code === "B1" || code === "B2" || code === "MEDIUM") return "Trung bình";
+  if (code === "C1" || code === "C2" || code === "HARD") return "Khó";
+  return "Trung bình";
 };
 
-// Default test info for tests not in the mock data
-const getDefaultTestInfo = (id: number): TestInfo => ({
-  id,
-  title: `TOEIC Test ${id}`,
-  duration: 120,
-  parts: 7,
-  questions: 200,
-  category: "TOEIC Listening & Reading",
-  difficulty: "Trung bình",
-  description: "Đề thi mô phỏng TOEIC Listening & Reading. Phù hợp để luyện kỹ năng làm bài đúng thời gian.",
-  structure: [
-    { part: "Listening", name: "Part 1 - Photographs", questions: 6, brief: "Nhìn hình và chọn mô tả đúng." },
-    { part: "Listening", name: "Part 2 - Question & Response", questions: 25, brief: "Nghe câu hỏi và chọn đáp án." },
-    { part: "Listening", name: "Part 3 - Conversations", questions: 39, brief: "Nghe đoạn hội thoại và trả lời câu hỏi." },
-    { part: "Listening", name: "Part 4 - Talks", questions: 30, brief: "Nghe bài nói chuyện và trả lời câu hỏi." },
-    { part: "Reading", name: "Part 5 - Incomplete Sentences", questions: 30, brief: "Chọn từ phù hợp để hoàn thành câu." },
-    { part: "Reading", name: "Part 6 - Text Completion", questions: 16, brief: "Điền từ/câu vào chỗ trống." },
-    { part: "Reading", name: "Part 7 - Reading Comprehension", questions: 54, brief: "Đọc hiểu và trả lời câu hỏi." },
-  ],
-  totalAttempts: Math.floor(Math.random() * 10000) + 1000,
-  avgCompletionRate: Math.floor(Math.random() * 20) + 65,
-});
+// Default TOEIC structure
+const getDefaultToeicStructure = (): TestStructure[] => [
+  { part: "Listening", name: "Part 1 - Photographs", questions: 6, brief: "Nhìn hình và chọn mô tả đúng." },
+  { part: "Listening", name: "Part 2 - Question & Response", questions: 25, brief: "Nghe câu hỏi và chọn đáp án." },
+  { part: "Listening", name: "Part 3 - Conversations", questions: 39, brief: "Nghe đoạn hội thoại và trả lời câu hỏi." },
+  { part: "Listening", name: "Part 4 - Talks", questions: 30, brief: "Nghe bài nói chuyện và trả lời câu hỏi." },
+  { part: "Reading", name: "Part 5 - Incomplete Sentences", questions: 30, brief: "Chọn từ phù hợp để hoàn thành câu." },
+  { part: "Reading", name: "Part 6 - Text Completion", questions: 16, brief: "Điền từ/câu vào chỗ trống." },
+  { part: "Reading", name: "Part 7 - Reading Comprehension", questions: 54, brief: "Đọc hiểu và trả lời câu hỏi." },
+];
 
 // ================== COMPONENT ==================
 export default function ToeicTestInfoPage() {
   const params = useParams();
   const router = useRouter();
-  const testId = Number(params.id);
+  const testId = params.id as string;
 
-  const test = toeicTestsInfo[testId] || getDefaultTestInfo(testId);
+  // Fetch exam detail from API
+  const {
+    data: examData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetExamByIdQuery(testId);
+
+  // Fetch history for this exam to get attempt stats
+  const { data: historyData } = useGetExamHistoryQuery({ examId: Number(testId), limit: 100 });
+
+  // Calculate stats from history
+  const totalAttempts = historyData?.data?.length || 0;
+  const completedAttempts = historyData?.data?.filter(h => h.status === "COMPLETED") || [];
+  const avgCompletionRate = completedAttempts.length > 0
+    ? Math.round(completedAttempts.reduce((acc, h) => acc + h.percentage, 0) / completedAttempts.length)
+    : 0;
+
+  // Transform API data to TestInfo format
+  const test: TestInfo | null = examData ? {
+    id: examData.id,
+    title: examData.title,
+    duration: examData.duration_minutes || 120,
+    parts: examData.sections?.length || 7,
+    questions: examData.questions_count || 200,
+    category: examData.exam_type?.name || "TOEIC Listening & Reading",
+    difficulty: mapLevelToDifficulty(examData.level?.code),
+    description: examData.description || "Đề thi mô phỏng TOEIC Listening & Reading. Phù hợp để luyện kỹ năng làm bài đúng thời gian.",
+    structure: examData.sections?.map(section => ({
+      part: section.skill_type === "LISTENING" ? "Listening" : "Reading",
+      name: section.title || section.skill_type,
+      questions: section.question_groups?.reduce((acc, g) => acc + (g.questions?.length || 0), 0) || 0,
+      brief: section.instructions || "",
+    })) || getDefaultToeicStructure(),
+    totalAttempts,
+    avgCompletionRate,
+  } : null;
 
   const handleStartTest = () => {
     router.push(`/user/exam/toeic/fulltest/${testId}/test`);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Đang tải thông tin bài thi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !test) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Không thể tải bài thi</h2>
+          <p className="text-gray-600 mb-6">Đã có lỗi xảy ra khi tải thông tin bài thi. Vui lòng thử lại.</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => router.push("/user/exam/toeic/fulltest")}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+            >
+              <ArrowLeft className="w-4 h-4 inline mr-2" />
+              Quay lại
+            </button>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition"
+            >
+              <RefreshCw className="w-4 h-4 inline mr-2" />
+              Thử lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 text-gray-800">

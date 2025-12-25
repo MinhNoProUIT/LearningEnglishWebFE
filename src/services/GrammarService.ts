@@ -13,7 +13,7 @@ import {
 } from "./../models/Grammar";
 import { createBaseQuery } from "./api";
 
-const apiPath = "https://englishapp-uit.onrender.com/api/grammar-topic";
+const apiPath = "https://english-app-backend-production-5ecc.up.railway.app/api/grammar-topic";
 
 export const grammarTopicApi = createApi({
   reducerPath: "grammarTopicApi",
