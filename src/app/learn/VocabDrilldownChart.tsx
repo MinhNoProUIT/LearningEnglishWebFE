@@ -25,85 +25,144 @@ const VocabDrilldownChart: React.FC = () => {
       { label: "5", value: 452, groupId: "level5" },
     ];
 
-    // Bảng màu cho từng level 1–5
-    const levelColors = ["#ef4444", "#f59e0b", "#60a5fa", "#2563eb", "#4f46e5"];
+    // Bảng màu gradient cho từng level 1–5
+    const levelColors = [
+      { start: "#ef4444", end: "#dc2626" }, // red gradient
+      { start: "#f59e0b", end: "#d97706" }, // orange gradient
+      { start: "#3b82f6", end: "#2563eb" }, // blue gradient
+      { start: "#8b5cf6", end: "#7c3aed" }, // purple gradient
+      { start: "#10b981", end: "#059669" }, // green gradient
+    ];
 
     // Dữ liệu drilldown demo, bạn sửa lại theo logic của bạn
     const drilldownData: {
       dataGroupId: string;
       data: [string, number][];
     }[] = [
-      {
-        dataGroupId: "level1",
-        data: [
-          ["Từ 1", 0],
-          ["Từ 2", 0],
-        ],
-      },
-      {
-        dataGroupId: "level2",
-        data: [
-          ["Từ 1", 0],
-          ["Từ 2", 0],
-        ],
-      },
-      {
-        dataGroupId: "level3",
-        data: [
-          ["Từ dễ", 1],
-          ["Từ khó", 0],
-        ],
-      },
-      {
-        dataGroupId: "level4",
-        data: [
-          ["Nhóm 1", 10],
-          ["Nhóm 2", 20],
-        ],
-      },
-      {
-        dataGroupId: "level5",
-        data: [
-          ["Nhóm 1", 200],
-          ["Nhóm 2", 252],
-        ],
-      },
-    ];
+        {
+          dataGroupId: "level1",
+          data: [
+            ["Từ 1", 0],
+            ["Từ 2", 0],
+          ],
+        },
+        {
+          dataGroupId: "level2",
+          data: [
+            ["Từ 1", 0],
+            ["Từ 2", 0],
+          ],
+        },
+        {
+          dataGroupId: "level3",
+          data: [
+            ["Từ dễ", 1],
+            ["Từ khó", 0],
+          ],
+        },
+        {
+          dataGroupId: "level4",
+          data: [
+            ["Nhóm 1", 10],
+            ["Nhóm 2", 20],
+          ],
+        },
+        {
+          dataGroupId: "level5",
+          data: [
+            ["Nhóm 1", 200],
+            ["Nhóm 2", 252],
+          ],
+        },
+      ];
 
     const baseOption: echarts.EChartsOption = {
       grid: {
-        left: "5%",
-        right: "5%",
-        bottom: "12%",
-        top: "10%",
+        left: "8%",
+        right: "8%",
+        bottom: "15%",
+        top: "12%",
       },
       tooltip: {
         trigger: "axis",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        borderColor: "#e5e7eb",
+        borderWidth: 2,
+        textStyle: {
+          color: "#1f2937",
+          fontSize: 13,
+        },
+        padding: 12,
+        shadowBlur: 10,
+        shadowColor: "rgba(0, 0, 0, 0.1)",
       },
       xAxis: {
         type: "category",
         data: mainData.map((d) => d.label),
-        axisLine: { lineStyle: { color: "#ccc" } },
-        axisLabel: { color: "#555" },
+        axisLine: {
+          lineStyle: {
+            color: "#9ca3af",
+            width: 2,
+          }
+        },
+        axisLabel: {
+          color: "#374151",
+          fontSize: 14,
+          fontWeight: 600,
+        },
       },
       yAxis: {
         type: "value",
         name: "Số từ",
-        axisLine: { lineStyle: { color: "#ccc" } },
-        axisLabel: { color: "#555" },
-        splitLine: { lineStyle: { type: "dashed" } },
+        nameTextStyle: {
+          color: "#6b7280",
+          fontSize: 13,
+          fontWeight: 600,
+          padding: [0, 0, 0, 10],
+        },
+        axisLine: {
+          lineStyle: {
+            color: "#9ca3af",
+            width: 2,
+          }
+        },
+        axisLabel: {
+          color: "#374151",
+          fontSize: 12,
+        },
+        splitLine: {
+          lineStyle: {
+            type: "dashed",
+            color: "#e5e7eb",
+          }
+        },
       },
       animationDurationUpdate: 500,
+      animationEasing: "cubicOut",
       series: {
         type: "bar",
         id: "vocabLevels",
         dataGroupId: "",
+        barWidth: "50%",
         data: mainData.map((d, index) => ({
           value: d.value,
           groupId: d.groupId,
           itemStyle: {
-            color: levelColors[index], // mỗi cột 1 màu
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: levelColors[index].start },
+                { offset: 1, color: levelColors[index].end },
+              ],
+            } as any,
             borderRadius: [8, 8, 0, 0],
+            shadowBlur: 10,
+            shadowColor: "rgba(0, 0, 0, 0.1)",
+            shadowOffsetY: 4,
           },
         })),
         universalTransition: {
@@ -114,9 +173,9 @@ const VocabDrilldownChart: React.FC = () => {
           show: true,
           position: "top",
           formatter: "{c} từ",
-          color: "#1f2933",
-          fontSize: 12,
-          fontWeight: 600,
+          color: "#1f2937",
+          fontSize: 13,
+          fontWeight: 700,
         },
       },
     };
@@ -144,12 +203,31 @@ const VocabDrilldownChart: React.FC = () => {
             type: "bar",
             id: "vocabLevels",
             dataGroupId: subData.dataGroupId,
+            barWidth: "50%",
             data: subData.data.map((item, index) => ({
               value: item[1],
               itemStyle: {
-                // có thể recycle bảng màu ở trên
-                color: levelColors[index % levelColors.length],
+                color: {
+                  type: "linear",
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    {
+                      offset: 0,
+                      color: levelColors[index % levelColors.length].start
+                    },
+                    {
+                      offset: 1,
+                      color: levelColors[index % levelColors.length].end
+                    },
+                  ],
+                } as any,
                 borderRadius: [8, 8, 0, 0],
+                shadowBlur: 10,
+                shadowColor: "rgba(0, 0, 0, 0.1)",
+                shadowOffsetY: 4,
               },
             })),
             universalTransition: {
@@ -160,25 +238,51 @@ const VocabDrilldownChart: React.FC = () => {
               show: true,
               position: "top",
               formatter: "{c} từ",
-              fontSize: 12,
-              fontWeight: 600,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#1f2937",
             },
           },
           graphic: [
             {
-              type: "text",
+              type: "group",
               left: 20,
               top: 10,
-              style: {
-                text: "◀ Back",
-                fontSize: 14,
-                fontWeight: 600,
-                fill: "#2563eb",
-                // cursor: "pointer", // nếu muốn hover thành pointer thì mở dòng này
-              },
-              onclick: function () {
-                myChart.setOption(baseOption);
-              },
+              children: [
+                {
+                  type: "rect",
+                  shape: {
+                    width: 80,
+                    height: 32,
+                    r: 16,
+                  },
+                  style: {
+                    fill: "#3b82f6",
+                    shadowBlur: 8,
+                    shadowColor: "rgba(59, 130, 246, 0.3)",
+                    shadowOffsetY: 2,
+                  },
+                  cursor: "pointer",
+                  onclick: function () {
+                    myChart.setOption(baseOption);
+                  },
+                },
+                {
+                  type: "text",
+                  left: 10,
+                  top: 8,
+                  style: {
+                    text: "◀ Back",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fill: "#ffffff",
+                  },
+                  cursor: "pointer",
+                  onclick: function () {
+                    myChart.setOption(baseOption);
+                  },
+                },
+              ],
             },
           ],
         });
