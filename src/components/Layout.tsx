@@ -30,7 +30,7 @@ const HIDE_TOPNAV_ONLY_PREFIXES = [
   // thêm route tùy nhu cầu...
   "/learn",
   "/vocabulary",
-  "/post"
+  "/post",
 ];
 
 const startsWithAny = (pathname: string, prefixes: string[]) =>
@@ -55,6 +55,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const hideTopNav =
     hideBothByRoute || hideTopNavByRoute || isFullscreenStudy || !showTopNav;
   const topPadding = (hideHeader ? 0 : HEADER_H) + (hideTopNav ? 0 : NAV_H);
+
+  const isAuthPage = pathname?.startsWith("/authentication");
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       {!hideHeader && <Header />}
@@ -77,7 +79,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         >
           {children}
         </Box>
-        <Chat />
+        {!isAuthPage && <Chat />}
       </Box>
     </div>
   );

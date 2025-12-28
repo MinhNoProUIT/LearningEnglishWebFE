@@ -1,7 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, Mic, Sparkles, Star, Lightbulb, X, Plus, Trash2, MessageSquare } from "lucide-react";
+import {
+  Send,
+  Mic,
+  Sparkles,
+  Star,
+  Lightbulb,
+  X,
+  Plus,
+  Trash2,
+  MessageSquare,
+} from "lucide-react";
 import {
   useCreateSessionMutation,
   useGetSessionsQuery,
@@ -24,9 +34,10 @@ const ChatbotUI = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // RTK Query hooks - only fetch when chat is open
-  const { data: sessionsData, isLoading: isLoadingSessions } = useGetSessionsQuery(undefined, {
-    skip: !isOpen,
-  });
+  const { data: sessionsData, isLoading: isLoadingSessions } =
+    useGetSessionsQuery(undefined, {
+      skip: !isOpen,
+    });
   const { data: suggestions } = useGetSuggestionsQuery(undefined, {
     skip: !isOpen,
   });
@@ -35,13 +46,20 @@ const ChatbotUI = () => {
     { skip: !isOpen || !currentSessionId }
   );
 
-  const [createSession, { isLoading: isCreatingSession }] = useCreateSessionMutation();
+  const [createSession, { isLoading: isCreatingSession }] =
+    useCreateSessionMutation();
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const [deleteSession] = useDeleteSessionMutation();
   const [clearMessages] = useClearMessagesMutation();
 
-  const sessions = useMemo(() => sessionsData?.data || [], [sessionsData?.data]);
-  const messages = useMemo(() => historyData?.data?.messages || [], [historyData?.data?.messages]);
+  const sessions = useMemo(
+    () => sessionsData?.data || [],
+    [sessionsData?.data]
+  );
+  const messages = useMemo(
+    () => historyData?.data?.messages || [],
+    [historyData?.data?.messages]
+  );
 
   // Sync messages from API to local state
   useEffect(() => {
@@ -77,25 +95,41 @@ const ChatbotUI = () => {
     if (isOpen && !currentSessionId && sessions.length > 0) {
       // Có session cũ → dùng session gần nhất
       setCurrentSessionId(sessions[0].id);
-    } else if (isOpen && !currentSessionId && sessions.length === 0 && !isLoadingSessions && localMessages.length === 0) {
+    } else if (
+      isOpen &&
+      !currentSessionId &&
+      sessions.length === 0 &&
+      !isLoadingSessions &&
+      localMessages.length === 0
+    ) {
       // Chưa có session và chưa có message → hiện welcome message mặc định
-      setLocalMessages([{
-        id: "welcome",
-        session_id: "",
-        sender: "AI",
-        content: "Xin chào bạn! 🌟✨ Mình là Evo - người bạn đồng hành học tiếng Anh của bạn!\n\nBạn cứ hỏi mình bất cứ điều gì về tiếng Anh nhé! 💪",
-        created_at: new Date().toISOString(),
-      }]);
+      setLocalMessages([
+        {
+          id: "welcome",
+          session_id: "",
+          sender: "AI",
+          content:
+            "Xin chào bạn! 🌟✨ Mình là Evo - người bạn đồng hành học tiếng Anh của bạn!\n\nBạn cứ hỏi mình bất cứ điều gì về tiếng Anh nhé! 💪",
+          created_at: new Date().toISOString(),
+        },
+      ]);
     }
-  }, [isOpen, currentSessionId, sessions, isLoadingSessions, localMessages.length]);
+  }, [
+    isOpen,
+    currentSessionId,
+    sessions,
+    isLoadingSessions,
+    localMessages.length,
+  ]);
 
   // Tạo session với title = tin nhắn đầu tiên
   const handleCreateSessionWithMessage = async (firstMessage: string) => {
     try {
       // Tạo title từ tin nhắn đầu tiên (cắt ngắn nếu quá dài)
-      const title = firstMessage.length > 50
-        ? firstMessage.substring(0, 50) + "..."
-        : firstMessage;
+      const title =
+        firstMessage.length > 50
+          ? firstMessage.substring(0, 50) + "..."
+          : firstMessage;
 
       const result = await createSession({ title }).unwrap();
       return result.session.id;
@@ -108,13 +142,16 @@ const ChatbotUI = () => {
   // Tạo session mới khi click nút +
   const handleCreateNewSession = async () => {
     setCurrentSessionId(null);
-    setLocalMessages([{
-      id: "welcome",
-      session_id: "",
-      sender: "AI",
-      content: "Xin chào bạn! 🌟✨ Mình là Evo - người bạn đồng hành học tiếng Anh của bạn!\n\nBạn cứ hỏi mình bất cứ điều gì về tiếng Anh nhé! 💪",
-      created_at: new Date().toISOString(),
-    }]);
+    setLocalMessages([
+      {
+        id: "welcome",
+        session_id: "",
+        sender: "AI",
+        content:
+          "Xin chào bạn! 🌟✨ Mình là Evo - người bạn đồng hành học tiếng Anh của bạn!\n\nBạn cứ hỏi mình bất cứ điều gì về tiếng Anh nhé! 💪",
+        created_at: new Date().toISOString(),
+      },
+    ]);
   };
 
   const handleSelectSession = (sessionId: string) => {
@@ -168,7 +205,9 @@ const ChatbotUI = () => {
         sessionId = await handleCreateSessionWithMessage(messageText);
         if (!sessionId) {
           // Tạo session thất bại
-          setLocalMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+          setLocalMessages((prev) =>
+            prev.filter((m) => m.id !== tempUserMessage.id)
+          );
           return;
         }
         setCurrentSessionId(sessionId);
@@ -187,7 +226,9 @@ const ChatbotUI = () => {
     } catch (error) {
       console.error("Failed to send message:", error);
       // Remove temp message on error
-      setLocalMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+      setLocalMessages((prev) =>
+        prev.filter((m) => m.id !== tempUserMessage.id)
+      );
     }
   };
 
@@ -203,16 +244,20 @@ const ChatbotUI = () => {
   };
 
   // Quick actions from suggestions or default
-  const quickActions = suggestions?.slice(0, 4).map((suggestion, index) => ({
-    icon: [
-      <Sparkles key={0} className="w-4 h-4 text-emerald-600" />,
-      <Mic key={1} className="w-4 h-4 text-emerald-600" />,
-      <Lightbulb key={2} className="w-4 h-4 text-emerald-600" />,
-      <Star key={3} className="w-4 h-4 text-emerald-600" />,
-    ][index],
-    label: suggestion.length > 25 ? suggestion.substring(0, 25) + "..." : suggestion,
-    prompt: suggestion,
-  })) || [];
+  const quickActions =
+    suggestions?.slice(0, 4).map((suggestion, index) => ({
+      icon: [
+        <Sparkles key={0} className="w-4 h-4 text-emerald-600" />,
+        <Mic key={1} className="w-4 h-4 text-emerald-600" />,
+        <Lightbulb key={2} className="w-4 h-4 text-emerald-600" />,
+        <Star key={3} className="w-4 h-4 text-emerald-600" />,
+      ][index],
+      label:
+        suggestion.length > 25
+          ? suggestion.substring(0, 25) + "..."
+          : suggestion,
+      prompt: suggestion,
+    })) || [];
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -274,11 +319,15 @@ const ChatbotUI = () => {
           {showSidebar && (
             <div className="absolute top-20 left-0 right-0 bg-white border-b border-gray-200 max-h-48 overflow-y-auto z-10 shadow-lg">
               <div className="p-2">
-                <p className="text-xs text-gray-500 px-2 mb-2">Cuộc trò chuyện gần đây</p>
+                <p className="text-xs text-gray-500 px-2 mb-2">
+                  Cuộc trò chuyện gần đây
+                </p>
                 {isLoadingSessions ? (
                   <p className="text-sm text-gray-400 px-2">Đang tải...</p>
                 ) : sessions.length === 0 ? (
-                  <p className="text-sm text-gray-400 px-2">Chưa có cuộc trò chuyện</p>
+                  <p className="text-sm text-gray-400 px-2">
+                    Chưa có cuộc trò chuyện
+                  </p>
                 ) : (
                   sessions.map((session: IChatSessionListItem) => (
                     <div
@@ -343,33 +392,77 @@ const ChatbotUI = () => {
                         </span>
                       </div>
                     )}
-                    <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-                      message.sender === "USER" ? "prose-invert" : "prose-gray"
-                    }`}>
+                    <div
+                      className={`text-sm leading-relaxed prose prose-sm max-w-none ${
+                        message.sender === "USER"
+                          ? "prose-invert"
+                          : "prose-gray"
+                      }`}
+                    >
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
-                          h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-1">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-base font-bold mt-2 mb-1">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-sm font-bold mt-1 mb-1">{children}</h3>,
-                          h4: ({ children }) => <h4 className="text-sm font-semibold mt-1 mb-1">{children}</h4>,
-                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          h1: ({ children }) => (
+                            <h1 className="text-lg font-bold mt-2 mb-1">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-base font-bold mt-2 mb-1">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-sm font-bold mt-1 mb-1">
+                              {children}
+                            </h3>
+                          ),
+                          h4: ({ children }) => (
+                            <h4 className="text-sm font-semibold mt-1 mb-1">
+                              {children}
+                            </h4>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-2 last:mb-0">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-inside mb-2 space-y-1">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-inside mb-2 space-y-1">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="ml-2">{children}</li>
+                          ),
                           code: ({ children }) => (
-                            <code className={`px-1 py-0.5 rounded text-xs ${
-                              message.sender === "USER" ? "bg-white/20" : "bg-gray-100 text-emerald-600"
-                            }`}>
+                            <code
+                              className={`px-1 py-0.5 rounded text-xs ${
+                                message.sender === "USER"
+                                  ? "bg-white/20"
+                                  : "bg-gray-100 text-emerald-600"
+                              }`}
+                            >
                               {children}
                             </code>
                           ),
-                          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                          em: ({ children }) => <em className="italic">{children}</em>,
+                          strong: ({ children }) => (
+                            <strong className="font-bold">{children}</strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic">{children}</em>
+                          ),
                           blockquote: ({ children }) => (
-                            <blockquote className={`border-l-2 pl-2 my-2 italic ${
-                              message.sender === "USER" ? "border-white/50" : "border-emerald-300 text-gray-600"
-                            }`}>
+                            <blockquote
+                              className={`border-l-2 pl-2 my-2 italic ${
+                                message.sender === "USER"
+                                  ? "border-white/50"
+                                  : "border-emerald-300 text-gray-600"
+                              }`}
+                            >
                               {children}
                             </blockquote>
                           ),
@@ -386,7 +479,9 @@ const ChatbotUI = () => {
                           ),
                           tbody: ({ children }) => <tbody>{children}</tbody>,
                           tr: ({ children }) => (
-                            <tr className="border-b border-gray-200">{children}</tr>
+                            <tr className="border-b border-gray-200">
+                              {children}
+                            </tr>
                           ),
                           th: ({ children }) => (
                             <th className="border border-gray-300 px-2 py-1 font-semibold text-left bg-emerald-100">
@@ -394,14 +489,16 @@ const ChatbotUI = () => {
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="border border-gray-300 px-2 py-1">{children}</td>
+                            <td className="border border-gray-300 px-2 py-1">
+                              {children}
+                            </td>
                           ),
                         }}
                       >
                         {message.content}
                       </ReactMarkdown>
                     </div>
-                                        <span
+                    <span
                       className={`text-xs mt-1 block ${
                         message.sender === "USER"
                           ? "text-emerald-100"

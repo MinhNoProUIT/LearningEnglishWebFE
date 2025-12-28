@@ -1,38 +1,31 @@
 // ==================== QUIZ ATTEMPT MODELS ====================
 
 // Answer cho mỗi câu hỏi khi submit
+// src/models/QuizAttempt.ts
+
 export interface IQuizAnswer {
   quiz_id: string;
-  selected_answer: string;
+  user_answer: string;
 }
 
-// Request body cho Submit API
 export interface IQuizAttemptSubmit {
   topic_id: string;
-  answers: IQuizAnswer[];
+  quiz_type: string;
+  attempts: IQuizAnswer[];
 }
 
-// Kết quả chi tiết từng câu hỏi sau khi submit
 export interface IQuizAnswerResult {
   quiz_id: string;
-  question: string;
-  selected_answer: string;
+  isCorrect: boolean;
+  user_answer: string;
   correct_answer: string;
-  is_correct: boolean;
   explanation: string;
 }
-
-// Response từ Submit API
 export interface IQuizAttemptResult {
-  id: string;
-  user_id: string;
-  topic_id: string;
+  total: number;
+  correct: number;
   score: number;
-  total_questions: number;
-  correct_answers: number;
-  answers: IQuizAnswerResult[];
-  completed_at: string;
-  created_at: string;
+  details: IQuizAnswerResult[];
 }
 
 // Item trong History list
