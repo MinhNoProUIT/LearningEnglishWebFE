@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import { IGrammarQuizForUser } from "@/models/GrammarQuiz";
 import { IQuizAnswerResult } from "@/models/QuizAttempt";
-import { useSubmitQuizAttemptMutation } from "@/services/QuizAttemptService";
+import {
+  useGetQuizHistoryByTopicQuery,
+  useSubmitQuizAttemptMutation,
+} from "@/services/QuizAttemptService";
 
 interface QuizSectionProps {
   quizzes: IGrammarQuizForUser[];
@@ -53,7 +56,11 @@ const getDifficultyLabel = (difficulty: string) => {
   }
 };
 
-const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }) => {
+const QuizSection: React.FC<QuizSectionProps> = ({
+  quizzes,
+  topicId,
+  isLoading,
+}) => {
   const [state, setState] = useState<QuizState>({
     currentIndex: 0,
     answers: {},
@@ -61,9 +68,16 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
 
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<IQuizAnswerResult[] | null>(null);
-  const [score, setScore] = useState<{ correct: number; total: number; percentage: number } | null>(null);
+  const [score, setScore] = useState<{
+    correct: number;
+    total: number;
+    percentage: number;
+  } | null>(null);
 
-  const [submitQuiz, { isLoading: isSubmitting }] = useSubmitQuizAttemptMutation();
+  const [submitQuiz, { isLoading: isSubmitting }] =
+    useSubmitQuizAttemptMutation();
+  const { data: historyList, isLoading: isLoadingHistory } =
+    useGetQuizHistoryByTopicQuery(topicId);
 
   // Check if all questions are answered
   const allAnswered = useMemo(() => {
@@ -113,18 +127,19 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
     try {
       const answersPayload = quizzes.map((quiz) => ({
         quiz_id: quiz.id,
-        selected_answer: state.answers[quiz.id],
+        user_answer: state.answers[quiz.id],
       }));
 
       const result = await submitQuiz({
         topic_id: topicId,
-        answers: answersPayload,
+        attempts: answersPayload,
+        quiz_type: "grammar",
       }).unwrap();
 
-      setResults(result.answers);
+      setResults(result.details);
       setScore({
-        correct: result.correct_answers,
-        total: result.total_questions,
+        correct: result.correct,
+        total: result.total,
         percentage: Math.round(result.score),
       });
       setShowResults(true);
@@ -142,6 +157,20 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
     setShowResults(false);
     setResults(null);
     setScore(null);
+  };
+
+  const handleScrollToQuestionResult = (index: number) => {
+    // Tạo ID tương ứng với index của câu hỏi (ví dụ: quiz-result-0, quiz-result-1)
+    const elementId = `quiz-result-${index}`;
+    const element = document.getElementById(elementId);
+
+    if (element) {
+      // Thực hiện cuộn mượt mà đến phần tử đó
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center", // Cuộn sao cho phần tử nằm giữa màn hình
+      });
+    }
   };
 
   if (isLoading) {
@@ -176,9 +205,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
           <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-400 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">
             <Trophy size={40} className="text-white" />
           </div>
-          <h3 className="text-3xl font-bold text-gray-900 mb-2">
-            Hoàn thành!
-          </h3>
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">Hoàn thành!</h3>
           <div className="text-6xl font-bold text-green-600 mb-2">
             {score.percentage}%
           </div>
@@ -189,7 +216,9 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
           {score.percentage >= 80 ? (
             <div className="flex items-center justify-center gap-2 text-green-600 mb-6">
               <Sparkles size={20} />
-              <span className="font-medium">Xuất sắc! Bạn đã nắm vững bài học này!</span>
+              <span className="font-medium">
+                Xuất sắc! Bạn đã nắm vững bài học này!
+              </span>
             </div>
           ) : score.percentage >= 50 ? (
             <p className="text-yellow-600 mb-6">
@@ -214,16 +243,19 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
 
         {/* Question Review with Results */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h4 className="font-semibold text-gray-700 mb-4">Chi tiết kết quả:</h4>
+          <h4 className="font-semibold text-gray-700 mb-4">
+            Chi tiết kết quả:
+          </h4>
 
           <div className="space-y-4">
             {quizzes.map((quiz, index) => {
               const result = results.find((r) => r.quiz_id === quiz.id);
-              const isCorrect = result?.is_correct;
+              const isCorrect = result?.isCorrect;
 
               return (
                 <div
                   key={quiz.id}
+                  id={`quiz-result-${index}`}
                   className={`p-4 rounded-xl border-2 ${
                     isCorrect
                       ? "border-green-300 bg-green-50"
@@ -249,8 +281,14 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
                       <div className="text-sm space-y-1">
                         <p>
                           <span className="text-gray-500">Bạn chọn: </span>
-                          <span className={isCorrect ? "text-green-700 font-medium" : "text-red-700 font-medium"}>
-                            {result?.selected_answer}
+                          <span
+                            className={
+                              isCorrect
+                                ? "text-green-700 font-medium"
+                                : "text-red-700 font-medium"
+                            }
+                          >
+                            {result?.user_answer}
                           </span>
                         </p>
                         {!isCorrect && (
@@ -277,19 +315,22 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
 
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h4 className="font-semibold text-gray-700 mb-4">Điều hướng nhanh:</h4>
+          <h4 className="font-semibold text-gray-700 mb-4">
+            Điều hướng nhanh:
+          </h4>
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
             {quizzes.map((quiz, index) => {
               const result = results.find((r) => r.quiz_id === quiz.id);
-              const isCorrect = result?.is_correct;
+              const isCorrect = result?.isCorrect;
 
               return (
                 <div
                   key={quiz.id}
-                  className={`w-10 h-10 rounded-lg font-semibold flex items-center justify-center ${
+                  onClick={() => handleScrollToQuestionResult(index)}
+                  className={`w-10 h-10 rounded-lg font-semibold flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     isCorrect
-                      ? "bg-green-500 text-white"
-                      : "bg-red-500 text-white"
+                      ? "bg-green-500 text-white focus:ring-green-500"
+                      : "bg-red-500 text-white focus:ring-red-500"
                   }`}
                 >
                   {index + 1}
@@ -337,9 +378,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
                 key={quiz.id}
                 onClick={() => handleGoToQuestion(index)}
                 className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                  isCurrent
-                    ? "ring-2 ring-green-500 ring-offset-2"
-                    : ""
+                  isCurrent ? "ring-2 ring-green-500 ring-offset-2" : ""
                 } ${
                   isAnswered
                     ? "bg-green-500 text-white"
@@ -380,14 +419,20 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
 
         {/* Options */}
         <div className="space-y-3">
-          {currentQuiz.options.map((option, index) => {
-            const isSelected = selectedAnswer === option;
-            const optionLetter = String.fromCharCode(65 + index); // A, B, C, D
+          {currentQuiz.options.map((option: any, index) => {
+            // FIX: Lấy text từ object option (nếu option là object)
+            const optionText =
+              typeof option === "object" ? option.text : option;
+
+            // So sánh dựa trên text thay vì so sánh object
+            const isSelected = selectedAnswer === optionText;
+            const optionLetter = String.fromCharCode(65 + index);
 
             return (
               <button
                 key={index}
-                onClick={() => handleSelectAnswer(currentQuiz.id, option)}
+                // FIX: Lưu text vào state thay vì lưu cả object
+                onClick={() => handleSelectAnswer(currentQuiz.id, optionText)}
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left cursor-pointer ${
                   isSelected
                     ? "bg-green-50 border-green-400 shadow-sm"
@@ -403,7 +448,8 @@ const QuizSection: React.FC<QuizSectionProps> = ({ quizzes, topicId, isLoading }
                 >
                   {optionLetter}
                 </span>
-                <span className="flex-1 font-medium">{option}</span>
+                {/* FIX: Chỉ render text */}
+                <span className="flex-1 font-medium">{optionText}</span>
               </button>
             );
           })}

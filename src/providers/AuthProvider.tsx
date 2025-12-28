@@ -60,10 +60,23 @@ export default function AuthProvider({ children }: AuthProviderProps) {
               role: result.role,
             })
           );
-        } catch (error) {
-          // Token invalid hoặc expired - logout
-          console.error("Failed to fetch user info:", error);
-          dispatch(logout());
+        } catch (error: any) {
+          // 1. Log chi tiết lỗi để debug (dùng JSON.stringify để bung hết object ra)
+          console.error(
+            "Failed to fetch user info (Chi tiết):",
+            JSON.stringify(error, null, 2)
+          );
+
+          // 2. Chỉ Logout nếu lỗi liên quan đến xác thực (401 hoặc 403)
+          // RTK Query thường trả về object error có dạng { status: number, data: ... }
+          if (error?.status === 401 || error?.status === 403) {
+            console.log("Token expired or invalid. Logging out...");
+            dispatch(logout());
+          } else {
+            // Nếu là lỗi 500 (Server) hoặc Network Error, thì KHÔNG logout
+            // Có thể hiện Toast thông báo lỗi mạng ở đây
+            console.warn("Server error or Network issue. Keeping session.");
+          }
         }
       }
     };
@@ -76,7 +89,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     (event: StorageEvent) => {
       // Khi Tab A xóa access token (logout)
       // Tab B sẽ nhận được event và tự động logout
-      if (event.key === AUTH_STORAGE_KEYS.ACCESS_TOKEN && event.newValue === null) {
+      if (
+        event.key === AUTH_STORAGE_KEYS.ACCESS_TOKEN &&
+        event.newValue === null
+      ) {
         dispatch(logout());
 
         // Redirect về login nếu không phải đang ở public routes
@@ -98,7 +114,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Khi Tab khác login, sync state
-      if (event.key === AUTH_STORAGE_KEYS.ACCESS_TOKEN && event.newValue !== null) {
+      if (
+        event.key === AUTH_STORAGE_KEYS.ACCESS_TOKEN &&
+        event.newValue !== null
+      ) {
         dispatch(hydrateFromStorage());
       }
     },
