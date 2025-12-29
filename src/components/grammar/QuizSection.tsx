@@ -76,8 +76,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({
 
   const [submitQuiz, { isLoading: isSubmitting }] =
     useSubmitQuizAttemptMutation();
-  const { data: historyList, isLoading: isLoadingHistory } =
-    useGetQuizHistoryByTopicQuery(topicId);
+  useGetQuizHistoryByTopicQuery(topicId);
 
   // Check if all questions are answered
   const allAnswered = useMemo(() => {
@@ -196,6 +195,57 @@ const QuizSection: React.FC<QuizSectionProps> = ({
     );
   }
 
+  // Helper function to parse options for any quiz
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getOptionsArray = (options: any): string[] => {
+    if (!options) return [];
+    if (Array.isArray(options)) {
+      return options.map(opt => {
+        if (typeof opt === "string") return opt;
+        if (typeof opt === "object" && opt !== null) {
+          return opt.text || opt.value || opt.label || opt.content || JSON.stringify(opt);
+        }
+        return String(opt);
+      });
+    }
+    if (typeof options === "string") {
+      try {
+        const parsed = JSON.parse(options);
+        return getOptionsArray(parsed);
+      } catch {
+        return [options];
+      }
+    }
+    if (typeof options === "object" && options !== null) {
+      const keys = Object.keys(options);
+      const isNumericKeys = keys.every(k => !isNaN(Number(k)));
+      if (isNumericKeys && keys.length > 0) {
+        return keys.sort((a, b) => Number(a) - Number(b)).map(k => String(options[k]));
+      }
+      return Object.values(options).map(v => String(v));
+    }
+    return [];
+  };
+
+  // Helper function to get option text from letter (A, B, C, D) or return original if not a letter
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getOptionTextFromAnswer = (answer: string, quizOptions: any): string => {
+    if (!answer) return "";
+
+    // Check if answer is a single letter A-Z
+    const letterMatch = answer.match(/^([A-Z])$/i);
+    if (letterMatch) {
+      const letterIndex = letterMatch[1].toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+      const options = getOptionsArray(quizOptions);
+      if (letterIndex >= 0 && letterIndex < options.length) {
+        return options[letterIndex];
+      }
+    }
+
+    // Return original answer if not a letter
+    return answer;
+  };
+
   // Show final results after submission
   if (showResults && results && score) {
     return (
@@ -252,6 +302,13 @@ const QuizSection: React.FC<QuizSectionProps> = ({
               const result = results.find((r) => r.quiz_id === quiz.id);
               const isCorrect = result?.isCorrect;
 
+              // Map letter answers (A, B, C, D) to actual option text
+              const userAnswerText = result?.user_answer || "";
+              const correctAnswerText = getOptionTextFromAnswer(
+                result?.correct_answer || "",
+                quiz.options
+              );
+
               return (
                 <div
                   key={quiz.id}
@@ -288,14 +345,14 @@ const QuizSection: React.FC<QuizSectionProps> = ({
                                 : "text-red-700 font-medium"
                             }
                           >
-                            {result?.user_answer}
+                            {userAnswerText}
                           </span>
                         </p>
                         {!isCorrect && (
                           <p>
                             <span className="text-gray-500">Đáp án đúng: </span>
                             <span className="text-green-700 font-medium">
-                              {result?.correct_answer}
+                              {correctAnswerText}
                             </span>
                           </p>
                         )}
@@ -345,6 +402,8 @@ const QuizSection: React.FC<QuizSectionProps> = ({
 
   const currentQuiz = quizzes[state.currentIndex];
   const selectedAnswer = state.answers[currentQuiz.id];
+
+  const currentOptions = getOptionsArray(currentQuiz.options);
 
   return (
     <div className="space-y-6">
@@ -419,19 +478,17 @@ const QuizSection: React.FC<QuizSectionProps> = ({
 
         {/* Options */}
         <div className="space-y-3">
-          {currentQuiz.options.map((option: any, index) => {
-            // FIX: Lấy text từ object option (nếu option là object)
+          {currentOptions.map((option, index) => {
+            // Lấy text từ object option (nếu option là object)
             const optionText =
-              typeof option === "object" ? option.text : option;
+              typeof option === "object" ? (option as { text: string }).text : option;
 
-            // So sánh dựa trên text thay vì so sánh object
             const isSelected = selectedAnswer === optionText;
             const optionLetter = String.fromCharCode(65 + index);
 
             return (
               <button
                 key={index}
-                // FIX: Lưu text vào state thay vì lưu cả object
                 onClick={() => handleSelectAnswer(currentQuiz.id, optionText)}
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left cursor-pointer ${
                   isSelected
@@ -448,7 +505,6 @@ const QuizSection: React.FC<QuizSectionProps> = ({
                 >
                   {optionLetter}
                 </span>
-                {/* FIX: Chỉ render text */}
                 <span className="flex-1 font-medium">{optionText}</span>
               </button>
             );

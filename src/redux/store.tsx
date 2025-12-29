@@ -30,6 +30,12 @@ import { practiceApi } from "@/services/PracticeService";
 // Game System APIs
 import { treasureHuntApi } from "@/services/TreasureHuntService";
 
+// Media Library APIs
+import { mediaApi } from "@/services/MediaService";
+import { authorApi } from "@/services/AuthorService";
+import { collectionApi } from "@/services/CollectionService";
+import { tagApi } from "@/services/TagService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -57,6 +63,11 @@ export const store = configureStore({
     [practiceApi.reducerPath]: practiceApi.reducer,
     // Game System
     [treasureHuntApi.reducerPath]: treasureHuntApi.reducer,
+    // Media Library
+    [mediaApi.reducerPath]: mediaApi.reducer,
+    [authorApi.reducerPath]: authorApi.reducer,
+    [collectionApi.reducerPath]: collectionApi.reducer,
+    [tagApi.reducerPath]: tagApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -80,7 +91,12 @@ export const store = configureStore({
       examAttemptApi.middleware,
       practiceApi.middleware,
       // Game System
-      treasureHuntApi.middleware
+      treasureHuntApi.middleware,
+      // Media Library
+      mediaApi.middleware,
+      authorApi.middleware,
+      collectionApi.middleware,
+      tagApi.middleware
     ),
 });
 
