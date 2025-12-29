@@ -83,6 +83,11 @@ const isTokenExpired = (token: string): boolean => {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Redirect root "/" to welcome page
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/authentication/welcome", request.url));
+  }
+
   // Get access token from cookie
   const accessToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 

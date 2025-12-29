@@ -95,6 +95,30 @@ export default function GrammarPage() {
 
   // Filter topics by level
   const filteredTopics = useMemo(() => {
+    // Nếu đang filter theo level cụ thể, sử dụng groupedData (đã được phân loại sẵn)
+    if (levelFilter !== "all" && groupedData) {
+      let topics = groupedData[levelFilter] || [];
+
+      // Filter by search term nếu có
+      if (searchTerm) {
+        topics = topics.filter(
+          (t) => t.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      // Convert to full topic format với description mặc định
+      return topics.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: "",
+        level: t.level,
+        isactive: true,
+        created_at: "",
+        updated_at: "",
+      }));
+    }
+
+    // Nếu filter = "all" hoặc không có groupedData, dùng allTopicsData
     if (!allTopicsData?.data) return [];
 
     let topics = allTopicsData.data;
@@ -108,15 +132,8 @@ export default function GrammarPage() {
       );
     }
 
-    // Filter by level - map CEFR levels to categories
-    if (levelFilter !== "all") {
-      topics = topics.filter(
-        (t) => mapLevelToCategory(t.level) === levelFilter
-      );
-    }
-
     return topics;
-  }, [allTopicsData, searchTerm, levelFilter]);
+  }, [allTopicsData, groupedData, searchTerm, levelFilter]);
 
   // Group topics by level
   const groupedTopics = useMemo(() => {
