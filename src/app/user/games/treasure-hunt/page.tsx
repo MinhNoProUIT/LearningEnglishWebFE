@@ -30,6 +30,7 @@ import {
   useGetDailyChallengeQuery,
   useStartGameMutation,
   useLazyResumeGameQuery,
+  useEndGameMutation,
 } from "@/services/TreasureHuntService";
 import { TreasureHuntDifficulty, TreasureHuntItemType } from "@/models/TreasureHunt";
 
@@ -44,6 +45,8 @@ export default function TreasureHuntHomePage() {
   const [selectedItems, setSelectedItems] = useState<TreasureHuntItemType[]>([]);
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // API hooks
   const { data: stats, isLoading: statsLoading } = useGetStatsQuery();
@@ -51,6 +54,25 @@ export default function TreasureHuntHomePage() {
   const { data: dailyChallenge, isLoading: dailyLoading } = useGetDailyChallengeQuery();
   const [startGame, { isLoading: startingGame }] = useStartGameMutation();
   const [triggerResume, { isLoading: resumingGame }] = useLazyResumeGameQuery();
+  const [endGame, { isLoading: endingGame }] = useEndGameMutation();
+
+  // Check for active session on mount
+  React.useEffect(() => {
+    const checkActiveSession = async () => {
+      try {
+        const result = await triggerResume().unwrap();
+        if (result && result.sessionId) {
+          setHasActiveSession(true);
+          setActiveSessionId(result.sessionId);
+        }
+      } catch {
+        // No active session - that's okay
+        setHasActiveSession(false);
+        setActiveSessionId(null);
+      }
+    };
+    checkActiveSession();
+  }, [triggerResume]);
 
   // Handlers
   const handleToggleItem = (itemType: TreasureHuntItemType) => {
@@ -104,6 +126,37 @@ export default function TreasureHuntHomePage() {
       router.push(`/user/games/treasure-hunt/play?sessionId=${result.sessionId}`);
     } catch {
       // No active session - that's okay
+      setHasActiveSession(false);
+      setActiveSessionId(null);
+    }
+  };
+
+  const handleAbandonAndStartNew = async () => {
+    if (!activeSessionId) return;
+
+    try {
+      setError(null);
+      // End the current session
+      await endGame({
+        sessionId: activeSessionId,
+        data: { reason: "ABANDONED" },
+      }).unwrap();
+
+      // Clear active session state
+      setHasActiveSession(false);
+      setActiveSessionId(null);
+
+      // Now start new game
+      const result = await startGame({
+        difficulty: selectedDifficulty,
+        isDailyChallenge: false,
+        selectedItems,
+      }).unwrap();
+
+      router.push(`/user/games/treasure-hunt/play?sessionId=${result.sessionId}`);
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
+      setError(error?.data?.message || "Không thể bắt đầu game mới. Vui lòng thử lại.");
     }
   };
 
@@ -483,6 +536,32 @@ export default function TreasureHuntHomePage() {
               </Alert>
             )}
 
+            {hasActiveSession && (
+              <Alert
+                severity="warning"
+                sx={{ mb: 3 }}
+                action={
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={handleResumeGame}
+                      disabled={resumingGame}
+                    >
+                      Tiếp tục
+                    </Button>
+                  </Box>
+                }
+              >
+                <Typography sx={{ fontWeight: 600, mb: 0.5 }}>
+                  Bạn có game đang chơi dở!
+                </Typography>
+                <Typography sx={{ fontSize: 13 }}>
+                  Bấm &quot;Tiếp tục&quot; để chơi tiếp, hoặc bấm &quot;Bắt đầu mới&quot; bên dưới để hủy game cũ và bắt đầu lại.
+                </Typography>
+              </Alert>
+            )}
+
             <DifficultySelector
               selectedDifficulty={selectedDifficulty}
               onSelect={setSelectedDifficulty}
@@ -505,20 +584,22 @@ export default function TreasureHuntHomePage() {
             </Button>
             <Button
               variant="contained"
-              onClick={handleStartGame}
-              disabled={startingGame}
+              onClick={hasActiveSession ? handleAbandonAndStartNew : handleStartGame}
+              disabled={startingGame || endingGame}
               sx={{
-                background: gameTheme.gradients.primary,
+                background: hasActiveSession ? "#ef4444" : gameTheme.gradients.primary,
                 color: "#fff",
                 fontWeight: 700,
                 px: 4,
                 "&:hover": {
-                  background: gameTheme.gradients.primaryDark,
+                  background: hasActiveSession ? "#dc2626" : gameTheme.gradients.primaryDark,
                 },
               }}
             >
-              {startingGame ? (
+              {startingGame || endingGame ? (
                 <CircularProgress size={20} sx={{ color: "#fff" }} />
+              ) : hasActiveSession ? (
+                "🔄 Bắt đầu mới"
               ) : (
                 "🚀 Bắt đầu"
               )}

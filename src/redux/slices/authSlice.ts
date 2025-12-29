@@ -34,44 +34,30 @@ interface SetCredentialsPayload {
 
 // ==================== HELPER FUNCTIONS ====================
 /**
- * ==================== GIẢI THÍCH COOKIE LOGIC ====================
+ * ==================== GIẢI THÍCH STORAGE LOGIC ====================
  *
- * Tại sao cần set Cookie cho accessToken?
+ * Sử dụng sessionStorage thay vì localStorage:
+ * - sessionStorage tự động xóa khi đóng tab/browser
+ * - sessionStorage vẫn giữ khi refresh (F5) hoặc navigate trong app
+ * - User phải đăng nhập lại khi mở tab mới hoặc quay lại web
  *
- * 1. Next.js Middleware chạy trên Edge Runtime (server-side)
- * 2. Edge Runtime KHÔNG thể access localStorage/sessionStorage
- * 3. Cookie là cách duy nhất để Middleware đọc được token
- *
- * Cách hoạt động:
- * - Client login thành công -> setCredentials được gọi
- * - setCredentials lưu token vào:
- *   a) Redux State (cho client-side access)
- *   b) localStorage (cho persist khi F5)
- *   c) Cookie (cho Middleware đọc)
- *
- * Cookie options:
- * - path=/: Cookie available cho toàn bộ site
- * - max-age: Thời gian sống của cookie (8 giờ như access token)
- * - SameSite=Lax: Bảo vệ CSRF, cho phép cookie gửi khi navigate từ external link
- * - Secure: Chỉ gửi qua HTTPS (bỏ qua trong development)
- *
- * LƯU Ý QUAN TRỌNG:
- * - KHÔNG set HttpOnly vì ta cần JavaScript đọc/xóa cookie
- * - Trong production, nên thêm Secure flag
+ * Cookie cho Next.js Middleware:
+ * - Next.js Middleware chạy trên Edge Runtime (server-side)
+ * - Edge Runtime KHÔNG thể access sessionStorage
+ * - Cookie là cách duy nhất để Middleware đọc được token
+ * - Sử dụng session cookie (không có max-age) để tự xóa khi đóng browser
  */
 
-// Helper để set cookie
-const setCookie = (name: string, value: string, days: number = 1): void => {
+// Helper để set session cookie (tự xóa khi đóng browser)
+const setSessionCookie = (name: string, value: string): void => {
   if (typeof document === "undefined") return;
 
-  const maxAge = days * 24 * 60 * 60; // Convert days to seconds
   const isProduction = process.env.NODE_ENV === "production";
 
-  // Cookie options
+  // Session cookie - không có max-age nên sẽ xóa khi đóng browser
   const cookieOptions = [
     `${name}=${encodeURIComponent(value)}`,
     "path=/",
-    `max-age=${maxAge}`,
     "SameSite=Lax",
   ];
 
@@ -105,38 +91,38 @@ export const getCookie = (name: string): string | null => {
   return null;
 };
 
-// Helper để lưu vào localStorage
-const saveToLocalStorage = (key: string, value: unknown): void => {
+// Helper để lưu vào sessionStorage (tự xóa khi đóng tab/browser)
+const saveToSessionStorage = (key: string, value: unknown): void => {
   if (typeof window === "undefined") return;
 
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    sessionStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error(`Failed to save ${key} to localStorage:`, error);
+    console.error(`Failed to save ${key} to sessionStorage:`, error);
   }
 };
 
-// Helper để lấy từ localStorage
-const getFromLocalStorage = <T>(key: string): T | null => {
+// Helper để lấy từ sessionStorage
+const getFromSessionStorage = <T>(key: string): T | null => {
   if (typeof window === "undefined") return null;
 
   try {
-    const item = localStorage.getItem(key);
+    const item = sessionStorage.getItem(key);
     return item ? JSON.parse(item) : null;
   } catch (error) {
-    console.error(`Failed to get ${key} from localStorage:`, error);
+    console.error(`Failed to get ${key} from sessionStorage:`, error);
     return null;
   }
 };
 
-// Helper để xóa từ localStorage
-const removeFromLocalStorage = (key: string): void => {
+// Helper để xóa từ sessionStorage
+const removeFromSessionStorage = (key: string): void => {
   if (typeof window === "undefined") return;
 
   try {
-    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch (error) {
-    console.error(`Failed to remove ${key} from localStorage:`, error);
+    console.error(`Failed to remove ${key} from sessionStorage:`, error);
   }
 };
 
@@ -156,7 +142,7 @@ export const authSlice = createSlice({
   reducers: {
     /**
      * Set credentials sau khi login/register thành công hoặc refresh token
-     * Lưu vào Redux State, localStorage và Cookie
+     * Lưu vào Redux State, sessionStorage và Cookie
      */
     setCredentials: (state, action: PayloadAction<SetCredentialsPayload>) => {
       const { user, accessToken, refreshToken, userId, role } = action.payload;
@@ -181,16 +167,15 @@ export const authSlice = createSlice({
       }
 
       // ==================== PERSIST TO STORAGE ====================
-      // 1. Lưu vào localStorage để persist khi F5
-      saveToLocalStorage(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-      saveToLocalStorage(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      // 1. Lưu vào sessionStorage (tự xóa khi đóng tab/browser)
+      saveToSessionStorage(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      saveToSessionStorage(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       if (state.user) {
-        saveToLocalStorage(AUTH_STORAGE_KEYS.USER, state.user);
+        saveToSessionStorage(AUTH_STORAGE_KEYS.USER, state.user);
       }
 
-      // 2. Set Cookie cho Next.js Middleware
-      // Cookie sống 1 ngày (có thể điều chỉnh theo access token expiry)
-      setCookie(AUTH_COOKIE_NAME, accessToken, 1);
+      // 2. Set Session Cookie cho Next.js Middleware (tự xóa khi đóng browser)
+      setSessionCookie(AUTH_COOKIE_NAME, accessToken);
     },
 
     /**
@@ -200,12 +185,12 @@ export const authSlice = createSlice({
       state.user = action.payload;
       state.isLoading = false;
 
-      // Persist user to localStorage
-      saveToLocalStorage(AUTH_STORAGE_KEYS.USER, action.payload);
+      // Persist user to sessionStorage
+      saveToSessionStorage(AUTH_STORAGE_KEYS.USER, action.payload);
     },
 
     /**
-     * Logout - Xóa tất cả state, localStorage và Cookie
+     * Logout - Xóa tất cả state, sessionStorage và Cookie
      */
     logout: (state) => {
       // Reset state
@@ -215,23 +200,23 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       state.isLoading = false;
 
-      // Xóa localStorage
-      removeFromLocalStorage(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-      removeFromLocalStorage(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
-      removeFromLocalStorage(AUTH_STORAGE_KEYS.USER);
+      // Xóa sessionStorage
+      removeFromSessionStorage(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      removeFromSessionStorage(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+      removeFromSessionStorage(AUTH_STORAGE_KEYS.USER);
 
       // Xóa Cookie
       deleteCookie(AUTH_COOKIE_NAME);
     },
 
     /**
-     * Hydrate state từ localStorage (gọi khi mount)
-     * Dùng để khôi phục auth state sau khi F5
+     * Hydrate state từ sessionStorage (gọi khi mount)
+     * Dùng để khôi phục auth state sau khi refresh (F5)
      */
     hydrateFromStorage: (state) => {
-      const accessToken = getFromLocalStorage<string>(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-      const refreshToken = getFromLocalStorage<string>(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
-      const user = getFromLocalStorage<IUser>(AUTH_STORAGE_KEYS.USER);
+      const accessToken = getFromSessionStorage<string>(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      const refreshToken = getFromSessionStorage<string>(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+      const user = getFromSessionStorage<IUser>(AUTH_STORAGE_KEYS.USER);
 
       if (accessToken && refreshToken) {
         state.accessToken = accessToken;
@@ -240,7 +225,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = true;
 
         // Đảm bảo cookie cũng được sync
-        setCookie(AUTH_COOKIE_NAME, accessToken, 1);
+        setSessionCookie(AUTH_COOKIE_NAME, accessToken);
       }
 
       state.isLoading = false;

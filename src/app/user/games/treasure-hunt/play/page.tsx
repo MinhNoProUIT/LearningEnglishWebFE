@@ -86,6 +86,7 @@ export default function TreasureHuntPlayPage() {
   const [error, setError] = useState<string | null>(null);
   const [compassDirection, setCompassDirection] = useState<{ direction: string; distance: number } | null>(null);
   const [torchMode, setTorchMode] = useState(false); // Mode để chọn ô khi dùng TORCH
+  const [treasureFound, setTreasureFound] = useState(false); // Đã tìm thấy kho báu - disable map
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -277,7 +278,7 @@ export default function TreasureHuntPlayPage() {
   // Handle cell click
   const handleCellClick = useCallback(
     async (position: number) => {
-      if (!sessionId || isMoving || currentQuestion || gameResult) return;
+      if (!sessionId || isMoving || currentQuestion || gameResult || treasureFound) return;
 
       // If in torch mode, use torch on selected cell instead of moving
       if (torchMode) {
@@ -354,18 +355,45 @@ export default function TreasureHuntPlayPage() {
             break;
 
           case CellType.TREASURE:
-            if (result.gameCompleted) {
-              setScore(result.newScore || score);
-              setMonkeyState("celebrating");
-              setMonkeyMessage("TÌM THẤY KHO BÁU! 🏆🎉");
+            // Immediately disable map when treasure found
+            setTreasureFound(true);
+            setScore(result.newScore || score);
+            setMonkeyState("celebrating");
+            setMonkeyMessage("TÌM THẤY KHO BÁU! 🏆🎉");
 
-              // End game with completion
-              const endResult = await endGame({
-                sessionId,
-                data: { reason: "COMPLETED" },
-              }).unwrap();
-              setGameResult(endResult);
-            }
+            // End game with completion after short delay to show celebration
+            setTimeout(async () => {
+              try {
+                const endResult = await endGame({
+                  sessionId,
+                  data: { reason: "COMPLETED" },
+                }).unwrap();
+                setGameResult(endResult);
+              } catch {
+                // If endGame fails (session already ended), create fallback result
+                setGameResult({
+                  finalScore: result.newScore || score,
+                  stars: 3,
+                  stats: {
+                    questionsAnswered,
+                    questionsCorrect,
+                    accuracy: questionsAnswered > 0 ? Math.round((questionsCorrect / questionsAnswered) * 100) : 0,
+                    gemsCollected,
+                    treasureFound: true,
+                    maxStreak: streak,
+                    timeSpent: timeLimit - timeRemaining,
+                  },
+                  ranking: {
+                    position: 1,
+                    totalPlayers: 100,
+                    percentile: 99,
+                    previousBest: 0,
+                    isNewRecord: true,
+                  },
+                  rewards: { gemsEarned: Math.floor((result.newScore || score) / 10) },
+                });
+              }
+            }, 2000);
             break;
 
           default:
@@ -378,7 +406,7 @@ export default function TreasureHuntPlayPage() {
         setTimeout(() => setMonkeyState("idle"), 2000);
       }
     },
-    [sessionId, isMoving, currentQuestion, gameResult, activeEffects, move, score, endGame, isAdjacent, playerPosition, torchMode, handleTorchReveal]
+    [sessionId, isMoving, currentQuestion, gameResult, treasureFound, activeEffects, move, score, endGame, isAdjacent, playerPosition, torchMode, handleTorchReveal, questionsAnswered, questionsCorrect, gemsCollected, streak, timeLimit, timeRemaining]
   );
 
   // Handle answer - with protection against double scoring
@@ -725,7 +753,7 @@ export default function TreasureHuntPlayPage() {
               playerPosition={playerPosition}
               mapSize={mapSize}
               onCellClick={handleCellClick}
-              disabled={isMoving || !!currentQuestion || !!gameResult}
+              disabled={isMoving || !!currentQuestion || !!gameResult || treasureFound}
               compassDirection={compassDirection}
               torchMode={torchMode}
               isBlinded={activeEffects.some((e) => e.type === TrapEffect.BLIND && e.remainingSeconds > 0)}

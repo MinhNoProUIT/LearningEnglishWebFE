@@ -12,35 +12,9 @@ import {
   selectIsAuthenticated,
   selectAccessToken,
   AUTH_STORAGE_KEYS,
-  AUTH_COOKIE_NAME,
 } from "@/redux/slices/authSlice";
 import { useLazyGetMeQuery } from "@/services/AuthService";
 import type { AppDispatch } from "@/redux/store";
-
-// ==================== HELPER FUNCTIONS ====================
-/**
- * Xóa cookie bằng cách set max-age=0
- */
-const deleteCookie = (name: string): void => {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
-};
-
-/**
- * Xóa tất cả auth data khỏi localStorage và cookie
- * Dùng trong beforeunload event khi user đóng tab/thoát web
- */
-const clearAuthStorage = (): void => {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.USER);
-    deleteCookie(AUTH_COOKIE_NAME);
-  } catch (error) {
-    console.error("Failed to clear auth storage:", error);
-  }
-};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -139,25 +113,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, [handleStorageChange]);
-
-  // ==================== CLEAR AUTH ON TAB/BROWSER CLOSE ====================
-  useEffect(() => {
-    /**
-     * Khi user đóng tab hoặc thoát browser:
-     * - Xóa accessToken, refreshToken, user khỏi localStorage
-     * - Xóa cookie
-     * - User sẽ phải đăng nhập lại khi quay lại web
-     */
-    const handleBeforeUnload = () => {
-      clearAuthStorage();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
 
   return <>{children}</>;
 }
