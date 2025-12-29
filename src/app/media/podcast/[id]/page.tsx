@@ -116,7 +116,9 @@ const formatDuration = (seconds: number): string => {
   const secs = seconds % 60;
 
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   }
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
@@ -147,6 +149,7 @@ export default function PodcastDetailPage() {
   const [volume, setVolume] = useState(80);
   const [hasIncrementedView, setHasIncrementedView] = useState(false);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   // RTK Query
   const {
@@ -232,7 +235,7 @@ export default function PodcastDetailPage() {
         playerRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [podcast?.youtube_video_id]);
 
   // Update current time
@@ -316,15 +319,33 @@ export default function PodcastDetailPage() {
           }}
         >
           <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-            <Skeleton variant="rectangular" width={100} height={36} sx={{ bgcolor: "rgba(255,255,255,0.2)" }} />
+            <Skeleton
+              variant="rectangular"
+              width={100}
+              height={36}
+              sx={{ bgcolor: "rgba(255,255,255,0.2)" }}
+            />
           </Box>
         </Box>
         <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 }, mt: 3 }}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 8 }}>
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb", mb: 3 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  border: "1px solid #e5e7eb",
+                  mb: 3,
+                }}
+              >
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
-                  <Skeleton variant="rectangular" width={200} height={200} sx={{ borderRadius: 3 }} />
+                  <Skeleton
+                    variant="rectangular"
+                    width={200}
+                    height={200}
+                    sx={{ borderRadius: 3 }}
+                  />
                   <Box sx={{ flex: 1 }}>
                     <Skeleton variant="text" sx={{ fontSize: "2rem", mb: 1 }} />
                     <Skeleton variant="text" width="60%" />
@@ -354,7 +375,11 @@ export default function PodcastDetailPage() {
             <Button
               startIcon={<ArrowLeft size={20} />}
               onClick={() => router.back()}
-              sx={{ color: "white", textTransform: "none", "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}
+              sx={{
+                color: "white",
+                textTransform: "none",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+              }}
             >
               Quay lại
             </Button>
@@ -363,23 +388,45 @@ export default function PodcastDetailPage() {
         <Box sx={{ maxWidth: 800, mx: "auto", px: { xs: 2, md: 4 }, mt: 10 }}>
           <Paper
             elevation={0}
-            sx={{ p: 6, textAlign: "center", borderRadius: 3, border: "1px solid #fecaca", bgcolor: "#fef2f2" }}
+            sx={{
+              p: 6,
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px solid #fecaca",
+              bgcolor: "#fef2f2",
+            }}
           >
-            <AlertCircle size={64} color="#ef4444" style={{ marginBottom: 24 }} />
-            <Typography variant="h5" fontWeight={600} color="error" gutterBottom>
+            <AlertCircle
+              size={64}
+              color="#ef4444"
+              style={{ marginBottom: 24 }}
+            />
+            <Typography
+              variant="h5"
+              fontWeight={600}
+              color="error"
+              gutterBottom
+            >
               Không tìm thấy podcast
             </Typography>
             <Typography variant="body1" color="text.secondary" mb={3}>
               Podcast bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="center">
-              <Button variant="outlined" startIcon={<RefreshCw size={18} />} onClick={() => refetch()}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshCw size={18} />}
+                onClick={() => refetch()}
+              >
                 Thử lại
               </Button>
               <Button
                 variant="contained"
                 onClick={() => router.push("/media")}
-                sx={{ bgcolor: theme.podcastPrimary, "&:hover": { bgcolor: "#6d28d9" } }}
+                sx={{
+                  bgcolor: theme.podcastPrimary,
+                  "&:hover": { bgcolor: "#6d28d9" },
+                }}
               >
                 Về trang Media
               </Button>
@@ -399,7 +446,10 @@ export default function PodcastDetailPage() {
         cursor: "pointer",
         transition: "all 0.2s ease",
         bgcolor: item.id === podcastId ? "#f5f3ff" : "transparent",
-        borderLeft: item.id === podcastId ? `3px solid ${theme.podcastPrimary}` : "3px solid transparent",
+        borderLeft:
+          item.id === podcastId
+            ? `3px solid ${theme.podcastPrimary}`
+            : "3px solid transparent",
         "&:hover": { bgcolor: "#f8fafc" },
       }}
     >
@@ -415,7 +465,9 @@ export default function PodcastDetailPage() {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            backgroundImage: item.thumbnail_url ? `url(${item.thumbnail_url})` : "none",
+            backgroundImage: item.thumbnail_url
+              ? `url(${item.thumbnail_url})`
+              : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -502,7 +554,9 @@ export default function PodcastDetailPage() {
                     flexShrink: 0,
                   }}
                 >
-                  {!podcast.thumbnail_url && <Headphones size={80} color="white" />}
+                  {!podcast.thumbnail_url && (
+                    <Headphones size={80} color="white" />
+                  )}
                 </Box>
 
                 {/* Info */}
@@ -517,15 +571,29 @@ export default function PodcastDetailPage() {
                       mb: 1,
                     }}
                   />
-                  <Typography variant="h5" fontWeight={700} color="grey.900" mb={1}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={700}
+                    color="grey.900"
+                    mb={1}
+                  >
                     {podcast.title}
                   </Typography>
 
                   {/* Author */}
-                  <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    mb={2}
+                  >
                     <Avatar
                       src={podcast.author.avatar}
-                      sx={{ width: 32, height: 32, bgcolor: theme.podcastPrimary }}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: theme.podcastPrimary,
+                      }}
                     >
                       {podcast.author.name[0]}
                     </Avatar>
@@ -560,7 +628,13 @@ export default function PodcastDetailPage() {
 
                   {/* Tags */}
                   {podcast.tags && podcast.tags.length > 0 && (
-                    <Stack direction="row" spacing={1} mt={2} flexWrap="wrap" useFlexGap>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      mt={2}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
                       {podcast.tags.map((tag) => (
                         <Chip
                           key={tag.id}
@@ -622,17 +696,27 @@ export default function PodcastDetailPage() {
                     {formatTime(currentTime)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {duration > 0 ? formatTime(duration - currentTime) : formatDuration(podcast.duration_seconds)}
+                    {duration > 0
+                      ? formatTime(duration - currentTime)
+                      : formatDuration(podcast.duration_seconds)}
                   </Typography>
                 </Stack>
               </Box>
 
               {/* Controls */}
-              <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="center"
+                spacing={2}
+              >
                 <IconButton size="small">
                   <Shuffle size={20} color="#6b7280" />
                 </IconButton>
-                <IconButton onClick={goToPreviousPodcast} disabled={!relatedPodcasts?.length}>
+                <IconButton
+                  onClick={goToPreviousPodcast}
+                  disabled={!relatedPodcasts?.length}
+                >
                   <SkipBack size={24} color="#4b5563" />
                 </IconButton>
                 <IconButton
@@ -647,9 +731,16 @@ export default function PodcastDetailPage() {
                     "&:disabled": { bgcolor: "#d1d5db" },
                   }}
                 >
-                  {isPlaying ? <Pause size={32} /> : <Play size={32} style={{ marginLeft: 3 }} />}
+                  {isPlaying ? (
+                    <Pause size={32} />
+                  ) : (
+                    <Play size={32} style={{ marginLeft: 3 }} />
+                  )}
                 </IconButton>
-                <IconButton onClick={goToNextPodcast} disabled={!relatedPodcasts || relatedPodcasts.length < 2}>
+                <IconButton
+                  onClick={goToNextPodcast}
+                  disabled={!relatedPodcasts || relatedPodcasts.length < 2}
+                >
                   <SkipForward size={24} color="#4b5563" />
                 </IconButton>
                 <IconButton size="small">
@@ -658,10 +749,24 @@ export default function PodcastDetailPage() {
               </Stack>
 
               {/* Volume & Actions */}
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mt={2}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ width: 150 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mt={2}
+              >
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ width: 150 }}
+                >
                   <IconButton size="small" onClick={() => setIsMuted(!isMuted)}>
-                    {isMuted ? <VolumeX size={20} color="#6b7280" /> : <Volume2 size={20} color="#6b7280" />}
+                    {isMuted ? (
+                      <VolumeX size={20} color="#6b7280" />
+                    ) : (
+                      <Volume2 size={20} color="#6b7280" />
+                    )}
                   </IconButton>
                   <Slider
                     value={isMuted ? 0 : volume}
@@ -680,7 +785,9 @@ export default function PodcastDetailPage() {
                 <Stack direction="row" spacing={1}>
                   <Button
                     variant={isLiked ? "contained" : "outlined"}
-                    startIcon={<Heart size={16} fill={isLiked ? "white" : "none"} />}
+                    startIcon={
+                      <Heart size={16} fill={isLiked ? "white" : "none"} />
+                    }
                     onClick={() => setIsLiked(!isLiked)}
                     size="small"
                     sx={{
@@ -713,17 +820,27 @@ export default function PodcastDetailPage() {
                   <IconButton size="small" sx={{ border: "1px solid #e5e7eb" }}>
                     <Share2 size={18} color="#6b7280" />
                   </IconButton>
-                  </Stack>
+                </Stack>
               </Stack>
 
               {!podcast.youtube_video_id && (
-                <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  textAlign="center"
+                  mt={2}
+                >
                   Podcast không khả dụng
                 </Typography>
               )}
 
               {podcast.youtube_video_id && !isPlayerReady && (
-                <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  textAlign="center"
+                  mt={2}
+                >
                   Đang tải player...
                 </Typography>
               )}
@@ -740,12 +857,51 @@ export default function PodcastDetailPage() {
                   mb: 3,
                 }}
               >
-                <Typography variant="h6" fontWeight={600} mb={2}>
+                <Typography variant="h6" fontWeight={600} mb={1.5}>
                   Mô tả
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    whiteSpace: "pre-line",
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    WebkitLineClamp: showFullDescription ? "unset" : 4, // 👈 4 dòng giống YouTube
+                    transition: "all 0.3s ease",
+                  }}
+                >
                   {podcast.description}
                 </Typography>
+
+                {/* Xem thêm / Thu gọn */}
+                {podcast.description.length > 200 && (
+                  <Button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    sx={{
+                      mt: 1,
+                      px: 0,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      color: theme.podcastPrimary,
+                      "&:hover": {
+                        bgcolor: "transparent",
+                        textDecoration: "underline",
+                      },
+                    }}
+                    endIcon={
+                      showFullDescription ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )
+                    }
+                  >
+                    {showFullDescription ? "Thu gọn" : "Xem thêm"}
+                  </Button>
+                )}
               </Paper>
             )}
 
@@ -786,7 +942,11 @@ export default function PodcastDetailPage() {
                 {showTranscript && (
                   <Box sx={{ p: 2, pt: 0 }}>
                     <Divider sx={{ mb: 2 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ whiteSpace: "pre-line" }}
+                    >
                       {podcast.transcript}
                     </Typography>
                   </Box>
@@ -824,7 +984,12 @@ export default function PodcastDetailPage() {
                     ))}
                   </Stack>
                 ) : (
-                  <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    textAlign="center"
+                    py={4}
+                  >
                     Không có podcast liên quan
                   </Typography>
                 )}

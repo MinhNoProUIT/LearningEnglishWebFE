@@ -60,6 +60,7 @@ export default function TopNavBar() {
       href: "/courses",
       allow: true,
     },
+    { label: "Media", href: "/media", allow: true },
     {
       label: "Tài liệu TOEIC",
       allow: true,
@@ -180,7 +181,7 @@ export default function TopNavBar() {
             {/* Logo trái */}
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Link
-                href="/"
+                href="/home"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
