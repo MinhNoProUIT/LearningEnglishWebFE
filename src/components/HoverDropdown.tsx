@@ -49,10 +49,13 @@ export function HoverDropdown({
   };
 
   const handlePointerLeave: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    const to = e.relatedTarget as Node | null;
-    if (containerRef.current && to && containerRef.current.contains(to)) {
-      return; // vẫn ở trong container -> không đóng
+    const container = containerRef.current;
+    const to = e.relatedTarget;
+
+    if (container && to instanceof Node && container.contains(to)) {
+      return; // vẫn hover trong dropdown
     }
+
     scheduleClose();
   };
 

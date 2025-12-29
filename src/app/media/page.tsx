@@ -56,7 +56,9 @@ const formatDuration = (seconds: number): string => {
   const secs = seconds % 60;
 
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   }
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
@@ -81,8 +83,6 @@ const getTypeColor = (type: MediaType) => {
       return { bg: "#ecfdf5", color: "#10b981" };
     case "podcast":
       return { bg: "#f5f3ff", color: "#7c3aed" };
-    case "music":
-      return { bg: "#fef3c7", color: "#d97706" };
     default:
       return { bg: "#f3f4f6", color: "#6b7280" };
   }
@@ -94,8 +94,6 @@ const getTypeIcon = (type: MediaType) => {
       return Video;
     case "podcast":
       return Headphones;
-    case "music":
-      return Music;
     default:
       return Video;
   }
@@ -113,7 +111,6 @@ export default function MediaPage() {
   const getMediaType = (): MediaType | undefined => {
     if (tabValue === 0) return "video";
     if (tabValue === 1) return "podcast";
-    if (tabValue === 2) return "music";
     return undefined;
   };
 
@@ -148,7 +145,10 @@ export default function MediaPage() {
     setPage(1);
   };
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (
+    _event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
     setPage(value);
   };
 
@@ -179,7 +179,9 @@ export default function MediaPage() {
             position: "relative",
             paddingTop: "56.25%",
             bgcolor: "#1f2937",
-            backgroundImage: media.thumbnail_url ? `url(${media.thumbnail_url})` : "none",
+            backgroundImage: media.thumbnail_url
+              ? `url(${media.thumbnail_url})`
+              : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -217,7 +219,13 @@ export default function MediaPage() {
           {/* Type badge */}
           <Chip
             icon={<TypeIcon size={12} />}
-            label={media.type === "video" ? "Video" : media.type === "podcast" ? "Podcast" : "Music"}
+            label={
+              media.type === "video"
+                ? "Video"
+                : media.type === "podcast"
+                ? "Podcast"
+                : "Music"
+            }
             size="small"
             sx={{
               position: "absolute",
@@ -387,15 +395,27 @@ export default function MediaPage() {
               },
             }}
           >
-            <Tab icon={<Video size={18} />} iconPosition="start" label="Video" />
-            <Tab icon={<Headphones size={18} />} iconPosition="start" label="Podcast" />
-            <Tab icon={<Music size={18} />} iconPosition="start" label="Âm nhạc" />
+            <Tab
+              icon={<Video size={18} />}
+              iconPosition="start"
+              label="Video"
+            />
+            <Tab
+              icon={<Headphones size={18} />}
+              iconPosition="start"
+              label="Podcast"
+            />
           </Tabs>
         </Paper>
 
         {/* Tags */}
         {tagsData && tagsData.length > 0 && (
-          <Stack direction="row" spacing={1} mb={3} sx={{ overflowX: "auto", pb: 1 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            mb={3}
+            sx={{ overflowX: "auto", pb: 1 }}
+          >
             <Chip
               label="Tất cả"
               onClick={() => handleTagClick(null)}
@@ -416,13 +436,18 @@ export default function MediaPage() {
                 label={tag.name}
                 onClick={() => handleTagClick(tag.id)}
                 sx={{
-                  bgcolor: selectedTag === tag.id ? theme.colors.primary : "white",
+                  bgcolor:
+                    selectedTag === tag.id ? theme.colors.primary : "white",
                   color: selectedTag === tag.id ? "white" : "#4b5563",
                   border: "1px solid",
-                  borderColor: selectedTag === tag.id ? theme.colors.primary : "#e5e7eb",
+                  borderColor:
+                    selectedTag === tag.id ? theme.colors.primary : "#e5e7eb",
                   fontWeight: 600,
                   "&:hover": {
-                    bgcolor: selectedTag === tag.id ? theme.colors.primaryDark : "#f9fafb",
+                    bgcolor:
+                      selectedTag === tag.id
+                        ? theme.colors.primaryDark
+                        : "#f9fafb",
                   },
                 }}
               />
@@ -432,7 +457,14 @@ export default function MediaPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 10 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              py: 10,
+            }}
+          >
             <CircularProgress sx={{ color: theme.colors.primary }} />
           </Box>
         )}
@@ -449,7 +481,11 @@ export default function MediaPage() {
               bgcolor: "#fef2f2",
             }}
           >
-            <AlertCircle size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+            <AlertCircle
+              size={48}
+              color="#ef4444"
+              style={{ marginBottom: 16 }}
+            />
             <Typography variant="h6" color="error" gutterBottom>
               Không thể tải dữ liệu
             </Typography>
@@ -476,7 +512,8 @@ export default function MediaPage() {
             {mediaData?.items && mediaData.items.length > 0 ? (
               <>
                 <Typography variant="body2" color="text.secondary" mb={2}>
-                  Hiển thị {mediaData.items.length} / {mediaData.pagination.total} kết quả
+                  Hiển thị {mediaData.items.length} /{" "}
+                  {mediaData.pagination.total} kết quả
                 </Typography>
 
                 <Grid container spacing={3}>
@@ -489,7 +526,9 @@ export default function MediaPage() {
 
                 {/* Pagination */}
                 {mediaData.pagination.totalPages > 1 && (
-                  <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+                  >
                     <Pagination
                       count={mediaData.pagination.totalPages}
                       page={page}
