@@ -636,19 +636,24 @@ export default function TreasureHuntPlayPage() {
           onQuit={() => setShowQuitDialog(true)}
         />
 
-        {/* Main game area */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "400px 1fr 150px" },
-            gap: 3,
-            mt: 3,
-            alignItems: "start",
-          }}
-        >
-          {/* Question Panel */}
-          <Box sx={{ order: { xs: 2, lg: 1 } }}>
-            {currentQuestion ? (
+        {/* Question Modal - Show on top when there's a question */}
+        {currentQuestion && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.7)",
+              zIndex: 1000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: 2,
+            }}
+          >
+            <Box sx={{ maxWidth: 500, width: "100%" }}>
               <QuestionPanel
                 question={currentQuestion}
                 onAnswer={handleAnswer}
@@ -656,29 +661,22 @@ export default function TreasureHuntPlayPage() {
                 disabled={isAnswering || !!answerResult}
                 showResult={answerResult}
               />
-            ) : (
-              <Box
-                sx={{
-                  p: 4,
-                  textAlign: "center",
-                  background: "#fff",
-                  borderRadius: gameTheme.borderRadius.xl,
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                <Typography sx={{ fontSize: 40, mb: 2 }}>🗺️</Typography>
-                <Typography sx={{ fontSize: 16, fontWeight: 600, color: "#374151", mb: 1 }}>
-                  Chọn một ô để khám phá
-                </Typography>
-                <Typography sx={{ fontSize: 14, color: "#6b7280" }}>
-                  Di chuyển đến các ô liền kề để tìm kho báu
-                </Typography>
-              </Box>
-            )}
+            </Box>
           </Box>
+        )}
 
-          {/* Game Map */}
-          <Box sx={{ order: { xs: 1, lg: 2 } }}>
+        {/* Main game area */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "1fr 150px" },
+            gap: 3,
+            mt: 3,
+            alignItems: "start",
+          }}
+        >
+          {/* Game Map - Center */}
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* Torch Mode Indicator */}
             {torchMode && (
               <Box
@@ -737,7 +735,6 @@ export default function TreasureHuntPlayPage() {
           {/* Monkey Mascot */}
           <Box
             sx={{
-              order: 3,
               display: { xs: "none", lg: "flex" },
               justifyContent: "center",
             }}
@@ -753,6 +750,19 @@ export default function TreasureHuntPlayPage() {
             />
           </Box>
         </Box>
+
+        {/* Instructions when no question */}
+        {!currentQuestion && (
+          <Box sx={{ mt: 3, p: 3, textAlign: "center", background: "#fff", borderRadius: gameTheme.borderRadius.xl, border: "1px solid #e5e7eb", maxWidth: 400, mx: "auto" }}>
+            <Typography sx={{ fontSize: 24, mb: 1 }}>🗺️</Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#374151", mb: 1 }}>
+              Chọn một ô để khám phá
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: "#6b7280" }}>
+              Click vào ô có viền xanh (🪨) kế bên bạn
+            </Typography>
+          </Box>
+        )}
 
         {/* Quit Dialog */}
         <Dialog
