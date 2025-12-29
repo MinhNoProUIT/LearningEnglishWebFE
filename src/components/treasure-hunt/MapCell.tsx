@@ -53,7 +53,7 @@ const getCellIcon = (cell: IVisibleCell, isPlayer: boolean): string => {
   // If cell is in fog state, show fog icon
   if (cell.state === CellState.FOG) return "🌫️";
 
-  // If cell is hidden (adjacent but not revealed), show rock
+  // If cell is hidden (adjacent but not revealed), show rock (clickable)
   if (cell.state === CellState.HIDDEN) return "🪨";
 
   // If cell is locked, show lock
@@ -89,7 +89,8 @@ const getCellBackground = (cell: IVisibleCell, isPlayer: boolean): string => {
     case CellState.FOG:
       return gameTheme.gradients.fog;
     case CellState.HIDDEN:
-      return "linear-gradient(135deg, #78716c 0%, #57534e 100%)";
+      // Brighter color for clickable hidden cells
+      return "linear-gradient(135deg, #a8a29e 0%, #78716c 100%)";
     case CellState.LOCKED:
       return gameTheme.gradients.danger;
     case CellState.REVEALED:
@@ -150,10 +151,28 @@ const MapCell: React.FC<MapCellProps> = ({
 }) => {
   // In torch mode, all unrevealed cells are clickable (except player position)
   const isTorchClickable = torchMode && !isPlayer && (cell.state === CellState.FOG || cell.state === CellState.HIDDEN);
-  const isClickable = isTorchClickable || (isAdjacent && !disabled && cell.state !== CellState.LOCKED && cell.state !== CellState.FOG);
+  // Adjacent cells that are HIDDEN or FOG should be clickable (player can move to them)
+  // Only LOCKED cells cannot be clicked
+  const isClickable = isTorchClickable || (isAdjacent && !disabled && !isPlayer && cell.state !== CellState.LOCKED);
   const icon = getCellIcon(cell, isPlayer);
   const background = getCellBackground(cell, isPlayer);
   const animation = getCellAnimation(cell, isPlayer, isAdjacent);
+
+  // Simple border style
+  const borderStyle = isPlayer
+    ? "3px solid #15803d"
+    : isTorchClickable
+    ? "3px dashed #fbbf24"
+    : isAdjacent && cell.state === CellState.HIDDEN
+    ? "3px solid #22c55e"
+    : "2px solid rgba(0,0,0,0.2)";
+
+  // Simple box shadow
+  const boxShadow = isPlayer
+    ? "0 0 15px rgba(34, 197, 94, 0.5)"
+    : isClickable
+    ? "0 4px 12px rgba(0,0,0,0.2)"
+    : "0 2px 8px rgba(0,0,0,0.1)";
 
   return (
     <Box
@@ -169,47 +188,17 @@ const MapCell: React.FC<MapCellProps> = ({
         cursor: isClickable ? "pointer" : "default",
         transition: "all 0.2s ease",
         animation,
-        boxShadow: isPlayer
-          ? gameTheme.shadows.glow
-          : isTorchClickable
-          ? "0 0 15px rgba(245, 158, 11, 0.5)"
-          : isAdjacent && cell.state === CellState.HIDDEN
-          ? "0 4px 15px rgba(0,0,0,0.3)"
-          : gameTheme.shadows.cell,
-        border: isPlayer
-          ? "3px solid #059669"
-          : isTorchClickable
-          ? "2px solid #f59e0b"
-          : isAdjacent && cell.state === CellState.HIDDEN
-          ? "2px solid rgba(255,255,255,0.3)"
-          : "2px solid rgba(0,0,0,0.1)",
-        opacity: cell.state === CellState.FOG && !torchMode ? 0.5 : 1,
+        boxShadow,
+        border: borderStyle,
+        opacity: cell.state === CellState.FOG && !torchMode ? 0.6 : 1,
         position: "relative",
         overflow: "hidden",
 
         "&:hover": isClickable
           ? {
               transform: "scale(1.1)",
-              boxShadow: gameTheme.shadows.cellHover,
-              border: "2px solid rgba(255,255,255,0.5)",
-            }
-          : {},
-
-        "&::before": isClickable
-          ? {
-              content: '""',
-              position: "absolute",
-              inset: 0,
-              background: "rgba(255,255,255,0.1)",
-              borderRadius: gameTheme.borderRadius.md,
-              opacity: 0,
-              transition: "opacity 0.2s",
-            }
-          : {},
-
-        "&:hover::before": isClickable
-          ? {
-              opacity: 1,
+              boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+              filter: "brightness(1.1)",
             }
           : {},
       }}

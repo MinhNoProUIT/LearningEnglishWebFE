@@ -197,7 +197,7 @@ const GameMap: React.FC<GameMapProps> = ({
         sx={{
           display: "flex",
           justifyContent: "center",
-          gap: 2,
+          gap: 1.5,
           mt: 2,
           flexWrap: "wrap",
           position: "relative",
@@ -205,12 +205,14 @@ const GameMap: React.FC<GameMapProps> = ({
         }}
       >
         {[
-          { icon: "⛏️", label: "Bạn" },
-          { icon: "🪨", label: "Ô ẩn" },
-          { icon: "🌫️", label: "Sương mù" },
-          { icon: "💎", label: "Kim cương" },
-          { icon: "💣", label: "Bẫy" },
-          { icon: "🏆", label: "Kho báu" },
+          { icon: "⛏️", label: "Bạn", bg: "#22c55e" },
+          { icon: "🪨", label: "Khám phá", bg: "#78716c" },
+          { icon: "🌫️", label: "Chưa mở", bg: "#475569" },
+          { icon: "💎", label: "Kim cương", bg: "#0ea5e9" },
+          { icon: "💠", label: "Đại kim cương", bg: "#a855f7" },
+          { icon: "💣", label: "Bẫy", bg: "#ef4444" },
+          { icon: "❓", label: "Câu hỏi", bg: "#a16207" },
+          { icon: "🏆", label: "Kho báu", bg: "#f59e0b" },
         ].map((item) => (
           <Box
             key={item.label}
@@ -218,14 +220,15 @@ const GameMap: React.FC<GameMapProps> = ({
               display: "flex",
               alignItems: "center",
               gap: 0.5,
-              background: "rgba(255,255,255,0.1)",
+              background: item.bg,
               borderRadius: gameTheme.borderRadius.sm,
               px: 1,
               py: 0.5,
+              border: "1px solid rgba(255,255,255,0.2)",
             }}
           >
-            <Typography sx={{ fontSize: 14 }}>{item.icon}</Typography>
-            <Typography sx={{ fontSize: 11, color: "#d6d3d1" }}>{item.label}</Typography>
+            <Typography sx={{ fontSize: 12 }}>{item.icon}</Typography>
+            <Typography sx={{ fontSize: 10, color: "#fff", fontWeight: 500 }}>{item.label}</Typography>
           </Box>
         ))}
       </Box>
