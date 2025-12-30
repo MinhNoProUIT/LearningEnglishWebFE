@@ -136,17 +136,17 @@ export default function IeltsTestInfoPage() {
             0
           ) || 0;
 
-          // Map section type to IELTS section names
-          let sectionName = section.section_type || "Section";
-          let displayName = section.title || section.section_type || "Section";
+          // Map skill_type to IELTS section names
+          let sectionName = section.skill_type || "Section";
+          let displayName = section.title || section.skill_type || "Section";
 
-          if (section.section_type?.toLowerCase().includes("listen")) {
+          if (section.skill_type?.toLowerCase().includes("listen")) {
             sectionName = "Listening";
             displayName = "Listening Test";
-          } else if (section.section_type?.toLowerCase().includes("read")) {
+          } else if (section.skill_type?.toLowerCase().includes("read")) {
             sectionName = "Reading";
             displayName = "Academic Reading";
-          } else if (section.section_type?.toLowerCase().includes("writ")) {
+          } else if (section.skill_type?.toLowerCase().includes("writ")) {
             sectionName = "Writing";
             displayName = "Academic Writing";
           }
@@ -154,7 +154,7 @@ export default function IeltsTestInfoPage() {
           return {
             section: sectionName,
             name: displayName,
-            duration: section.duration ? `${section.duration} phút` : "N/A",
+            duration: section.time_limit_minutes ? `${section.time_limit_minutes} phút` : "N/A",
             tasks: totalQuestions,
             brief: section.instructions || "",
           };
@@ -165,10 +165,10 @@ export default function IeltsTestInfoPage() {
       id: examData.id,
       title: examData.title,
       subtitle: examData.description || "IELTS Academic Test",
-      duration: formatDuration(examData.duration),
+      duration: formatDuration(examData.duration_minutes || 0),
       sections: structure.length,
       category: "IELTS Academic",
-      difficulty: mapLevelToDifficulty(examData.level),
+      difficulty: mapLevelToDifficulty(examData.level?.name || "medium"),
       description:
         examData.description ||
         "Đề thi IELTS Academic bao gồm các phần: Listening, Reading và Writing. Phù hợp cho người chuẩn bị thi IELTS.",

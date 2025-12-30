@@ -41,6 +41,15 @@ import { useGetExamByIdQuery } from "@/services/ExamService";
 
 const theme = examTheme;
 
+// Types
+interface SectionResult {
+  section: string;
+  name: string;
+  correct: number;
+  total: number;
+  type: string;
+}
+
 // Band Score Circle Component
 const BandScoreCircle = ({
   band,
@@ -116,7 +125,7 @@ const BandScoreCircle = ({
 };
 
 // Section Result Card
-const SectionResultCard = ({ section }: { section: typeof mockResult.sections[0] }) => {
+const SectionResultCard = ({ section }: { section: SectionResult }) => {
   const percentage = (section.correct / section.total) * 100;
   const sectionIcon = section.section === "Listening" ? <Headphones size={14} /> : <BookOpen size={14} />;
   const sectionColor = section.section === "Listening" ? "#1d4ed8" : "#92400e";
@@ -250,7 +259,7 @@ export default function IeltsTestResultPage() {
   const result = useMemo(() => {
     if (!attemptDetail) return null;
 
-    const score = attemptDetail.score || 0;
+    const score = attemptDetail.percentage || 0;
     const overallBand = percentageToBand(score);
 
     // Calculate section scores (if available from API)
@@ -265,16 +274,16 @@ export default function IeltsTestResultPage() {
 
     // Build history from API data
     const history = historyData?.data
-      ?.filter((h) => h.exam_id === Number(testId) && h.status === "completed")
+      ?.filter((h) => h.exam_id === Number(testId) && h.status === "COMPLETED")
       .map((h, index) => ({
         attempt: index + 1,
-        date: h.completed_at
-          ? new Date(h.completed_at).toLocaleDateString("vi-VN")
+        date: h.submit_time
+          ? new Date(h.submit_time).toLocaleDateString("vi-VN")
           : "",
-        overall: percentageToBand(h.score || 0),
-        listening: percentageToBand((h.score || 0) + 5),
-        reading: percentageToBand(h.score || 0),
-        writing: percentageToBand((h.score || 0) - 5),
+        overall: percentageToBand(h.percentage || 0),
+        listening: percentageToBand((h.percentage || 0) + 5),
+        reading: percentageToBand(h.percentage || 0),
+        writing: percentageToBand((h.percentage || 0) - 5),
       })) || [];
 
     const bestBand = history.length > 0
@@ -284,10 +293,10 @@ export default function IeltsTestResultPage() {
     return {
       id: attemptDetail.id,
       testTitle: examData?.title || `IELTS Test ${testId}`,
-      completedAt: attemptDetail.completed_at
-        ? new Date(attemptDetail.completed_at).toLocaleString("vi-VN")
+      completedAt: historyData?.data?.[0]?.submit_time
+        ? new Date(historyData.data[0].submit_time).toLocaleString("vi-VN")
         : "",
-      duration: examData?.duration ? formatDuration(examData.duration) : "N/A",
+      duration: examData?.duration_minutes ? formatDuration(examData.duration_minutes) : "N/A",
       overallBand,
       listeningBand,
       readingBand,

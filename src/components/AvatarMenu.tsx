@@ -18,17 +18,26 @@ import {
   Award,
   LogOut,
   HelpCircle,
+  ShieldCheck,
 } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, selectIsAdmin, selectUser } from "@/redux/slices/authSlice";
+import { useLogoutMutation } from "@/services/AuthService";
 
 const AvatarMenu = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const isAdmin = useSelector(selectIsAdmin);
+  const [logoutApi] = useLogoutMutation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  // Tạm hardcode dữ liệu
-  const avatarPath = "/avatar-default.png";
-  const fullName = "Trần Văn Minh";
-  const roles = ["Admin", "Manager"];
+  // Lấy thông tin từ user
+  const avatarPath = "/avatar-default.png"; // TODO: thêm avatar vào user model nếu cần
+  const fullName = user?.username || "Người dùng";
+  const email = user?.email || "";
+  const roles = isAdmin ? ["Admin"] : ["User"];
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -43,10 +52,19 @@ const AvatarMenu = () => {
     router.push(path);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleClose();
-    // Xử lý logout - xóa token, clear state, etc.
-    router.push("/authentication/welcome");
+    try {
+      // Gọi API logout để backend invalidate token
+      await logoutApi().unwrap();
+    } catch (error) {
+      // Vẫn logout ở client dù API lỗi
+      console.error("Logout API error:", error);
+    } finally {
+      // Xóa token, cookie, sessionStorage và redirect
+      dispatch(logout());
+      router.push("/authentication/welcome");
+    }
   };
 
   const menuItems = [
@@ -70,6 +88,16 @@ const AvatarMenu = () => {
       icon: <HelpCircle size={18} />,
       path: "/help",
     },
+    // Chỉ hiện nếu là admin
+    ...(isAdmin
+      ? [
+          {
+            label: "Trang quản trị",
+            icon: <ShieldCheck size={18} />,
+            path: "/admin",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -181,6 +209,9 @@ const AvatarMenu = () => {
         <Box sx={{ px: 2, py: 1.5 }}>
           <Typography variant="subtitle2" fontWeight={600}>
             {fullName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            {email}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {roles.join(", ")}

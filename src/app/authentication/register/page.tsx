@@ -5,12 +5,125 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Link,
+  Paper,
+  InputAdornment,
+  IconButton,
+  Alert,
+  CircularProgress,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+import { Visibility, VisibilityOff, CheckCircle } from "@mui/icons-material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 // Auth imports
 import { useRegisterMutation } from "@/services/AuthService";
 import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
+
+// ==================== THEME - Using CSS Variables ====================
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#2d5f4f", // var(--auth-primary)
+      light: "#4a7c6b", // var(--auth-primary-light)
+      dark: "#1a3d31", // var(--auth-primary-dark)
+    },
+    secondary: {
+      main: "#5fa89a", // var(--auth-secondary)
+    },
+    background: {
+      default: "#f0f5f3", // var(--auth-bg-light)
+    },
+  },
+  typography: {
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+  },
+});
+
+// Common styles using CSS variables
+const authStyles = {
+  pageBackground: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "var(--auth-gradient)",
+    position: "relative",
+    overflow: "hidden",
+    py: 4,
+  },
+  circle: {
+    position: "absolute",
+    borderRadius: "50%",
+    background: "var(--auth-circle-bg)",
+  },
+  paper: {
+    display: "flex",
+    maxWidth: 1100,
+    width: "90%",
+    borderRadius: 4,
+    overflow: "hidden",
+    position: "relative",
+    zIndex: 1,
+    backgroundColor: "white",
+  },
+  leftPanel: {
+    flex: 1,
+    background: "var(--auth-gradient-light)",
+    p: 6,
+    display: { xs: "none", md: "flex" },
+    flexDirection: "column",
+    justifyContent: "space-between",
+    position: "relative",
+  },
+  rightPanel: {
+    flex: 1,
+    background: "var(--auth-primary)",
+    p: { xs: 4, md: 5 },
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+  textField: {
+    mb: 2,
+    "& .MuiOutlinedInput-root": {
+      background: "var(--auth-input-bg)",
+      borderRadius: 2,
+      color: "white",
+      "& fieldset": { borderColor: "var(--auth-input-border)" },
+      "&:hover fieldset": { borderColor: "var(--auth-input-border-hover)" },
+      "&.Mui-focused fieldset": { borderColor: "var(--auth-secondary)" },
+    },
+    "& .MuiInputBase-input::placeholder": { color: "var(--auth-input-placeholder)", opacity: 1 },
+    "& .MuiFormHelperText-root": { color: "var(--auth-error-text)" },
+  },
+  submitButton: {
+    background: "var(--auth-secondary)",
+    color: "white",
+    py: 1.5,
+    borderRadius: 2,
+    textTransform: "none",
+    fontSize: 16,
+    fontWeight: 500,
+    mb: 2,
+    "&:hover": {
+      background: "var(--auth-secondary-hover)",
+    },
+    "&:disabled": {
+      background: "rgba(95, 168, 154, 0.5)",
+      color: "rgba(255, 255, 255, 0.7)",
+    },
+  },
+};
 
 // ==================== COMPONENT ====================
 const RegisterPage = () => {
@@ -35,7 +148,7 @@ const RegisterPage = () => {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
+      fullname: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -45,12 +158,9 @@ const RegisterPage = () => {
   // Watch password để hiển thị requirements
   const password = watch("password");
 
-  // Password requirements check
+  // Password requirements check (API chỉ yêu cầu 6 ký tự)
   const passwordRequirements = {
-    minLength: password?.length >= 8,
-    uppercase: /[A-Z]/.test(password || ""),
-    lowercase: /[a-z]/.test(password || ""),
-    number: /[0-9]/.test(password || ""),
+    minLength: password?.length >= 6,
   };
 
   // Clear API error after 5 seconds
@@ -75,10 +185,10 @@ const RegisterPage = () => {
     try {
       await registerUser(data).unwrap();
 
-      // Lưu email để hiển thị ở trang verify
+      // Lưu email để hiển thị ở trang verify OTP
       sessionStorage.setItem("verifyEmail", data.email);
 
-      // Redirect to verify email page
+      // Redirect to verify OTP page
       router.push(
         `/authentication/verify?email=${encodeURIComponent(data.email)}`
       );
@@ -93,304 +203,382 @@ const RegisterPage = () => {
     }
   };
 
+  // Background circles config
+  const circles = [
+    { size: 200, top: "10%", left: "5%" },
+    { size: 150, top: "60%", left: "15%" },
+    { size: 100, top: "20%", right: "10%" },
+    { size: 250, bottom: "10%", right: "5%" },
+    { size: 80, bottom: "30%", left: "8%" },
+  ];
+
   // ==================== RENDER ====================
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 relative overflow-hidden py-8 px-4">
-      {/* Background decorative circles */}
-      <div className="absolute w-56 h-56 rounded-full bg-green-200 opacity-20 top-[5%] left-[8%]"></div>
-      <div className="absolute w-44 h-44 rounded-full bg-emerald-200 opacity-20 top-[65%] left-[12%]"></div>
-      <div className="absolute w-32 h-32 rounded-full bg-teal-200 opacity-20 top-[15%] right-[15%]"></div>
-      <div className="absolute w-72 h-72 rounded-full bg-green-200 opacity-15 bottom-[8%] right-[10%]"></div>
-      <div className="absolute w-24 h-24 rounded-full bg-emerald-200 opacity-20 bottom-[35%] left-[5%]"></div>
-      <div className="absolute w-36 h-36 rounded-full bg-teal-200 opacity-15 top-[45%] right-[5%]"></div>
+    <ThemeProvider theme={theme}>
+      <Box sx={authStyles.pageBackground}>
+        {/* Background circles */}
+        {circles.map((circle, index) => (
+          <Box
+            key={index}
+            sx={{
+              ...authStyles.circle,
+              width: circle.size,
+              height: circle.size,
+              ...circle,
+            }}
+          />
+        ))}
 
-      {/* Main content */}
-      <div className="flex max-w-6xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10">
-        {/* Left side - Welcome message */}
-        <div className="hidden md:flex flex-1 bg-gradient-to-br from-green-50 to-emerald-50 p-12 flex-col justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <img
+        {/* Main content */}
+        <Paper elevation={10} sx={authStyles.paper}>
+          {/* Left side - Welcome message */}
+          <Box sx={authStyles.leftPanel}>
+            {/* Logo */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Image
                 src="/images/english-logo.jpg"
                 alt="Logo"
-                className="w-20 h-20 rounded-full object-cover shadow-lg"
+                width={80}
+                height={80}
+                style={{
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+                }}
               />
-            </div>
-          </div>
+            </Box>
 
-          {/* Welcome content */}
-          <div className="flex-1 flex flex-col justify-center">
-            <h1 className="text-5xl font-bold text-gray-800 mb-4 leading-tight">
-              Welcome to
-              <br />
-              Evolingo!
-            </h1>
-            <p className="text-gray-600 text-base mb-8 leading-relaxed">
-              Join our community and start your learning journey today. Create
-              your account to access all features.
-            </p>
+            {/* Welcome content */}
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", my: 4 }}>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 700,
+                  color: "var(--auth-primary)",
+                  mb: 2,
+                  lineHeight: 1.2,
+                }}
+              >
+                Welcome to
+                <br />
+                Evolingo!
+              </Typography>
+              <Typography
+                sx={{
+                  color: "var(--auth-primary-light)",
+                  fontSize: 15,
+                  mb: 4,
+                  lineHeight: 1.6,
+                }}
+              >
+                Join our community and start your learning journey today. Create
+                your account to access all features.
+              </Typography>
 
-            {/* Features list */}
-            <div className="flex flex-col gap-3">
-              {[
-                "Interactive learning experience",
-                "Track your progress",
-                "Connect with peers",
-                "Access premium content",
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <CheckCircle className="text-green-600 w-6 h-6 flex-shrink-0" />
-                  <span className="text-gray-700 text-[15px]">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+              {/* Features list */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {[
+                  "Interactive learning experience",
+                  "Track your progress",
+                  "Connect with peers",
+                  "Access premium content",
+                ].map((feature, index) => (
+                  <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckCircle sx={{ color: "var(--auth-secondary)", fontSize: 22 }} />
+                    <Typography sx={{ color: "var(--auth-primary)", fontSize: 14 }}>{feature}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
 
-          <div className="text-center">
-            <p className="text-gray-600 text-sm mb-3">
-              Already have an account?
-            </p>
-            <button
-              onClick={() => router.push("/authentication/login")}
-              className="px-8 py-2 border-2 border-green-600 text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+            {/* Sign In Link */}
+            <Box sx={{ textAlign: "center" }}>
+              <Typography sx={{ color: "var(--auth-primary-light)", fontSize: 14, mb: 1.5 }}>
+                Already have an account?
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => router.push("/authentication/login")}
+                sx={{
+                  borderColor: "var(--auth-primary)",
+                  color: "var(--auth-primary)",
+                  px: 4,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&:hover": {
+                    borderColor: "var(--auth-primary-dark)",
+                    backgroundColor: "rgba(45, 95, 79, 0.04)",
+                  },
+                }}
+              >
+                Sign In
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Right side - Registration form */}
+          <Box sx={authStyles.rightPanel}>
+            <Typography
+              variant="h4"
+              sx={{
+                color: "white",
+                fontWeight: 600,
+                mb: 1,
+              }}
             >
-              Sign In
-            </button>
-          </div>
-        </div>
+              Create Account
+            </Typography>
+            <Typography
+              sx={{
+                color: "var(--auth-text-white-muted)",
+                fontSize: 14,
+                mb: 3,
+              }}
+            >
+              Fill in your details to get started
+            </Typography>
 
-        {/* Right side - Registration form */}
-        <div className="flex-1 bg-white p-8 md:p-12 flex flex-col justify-center">
-          <h2 className="text-4xl font-semibold text-gray-800 mb-2">
-            Create Account
-          </h2>
-          <p className="text-gray-600 text-sm mb-8">
-            Fill in your details to get started
-          </p>
-
-          {/* API Error */}
-          {apiError && (
-            <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 border border-red-300 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-red-600 text-sm">{apiError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Username */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Username
-            </label>
-            <input
-              type="text"
-              placeholder="Choose a username"
-              {...register("username")}
-              disabled={isLoading}
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                errors.username ? "border-red-300 bg-red-50" : "border-gray-200"
-              } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
-            />
-            {errors.username && (
-              <p className="text-red-500 text-xs mb-4">{errors.username.message}</p>
+            {/* API Error Alert */}
+            {apiError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {apiError}
+              </Alert>
             )}
-            {!errors.username && <div className="mb-4"></div>}
 
-            {/* Email */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="your.email@example.com"
-              {...register("email")}
-              disabled={isLoading}
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                errors.email ? "border-red-300 bg-red-50" : "border-gray-200"
-              } focus:border-green-500 focus:bg-white focus:outline-none mb-1 transition-all`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mb-4">{errors.email.message}</p>
-            )}
-            {!errors.email && <div className="mb-4"></div>}
+            <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+              {/* Full Name Field */}
+              <Typography sx={{ color: "var(--auth-text-white)", mb: 1, fontSize: 14 }}>
+                Full Name
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Enter your full name"
+                {...register("fullname")}
+                error={!!errors.fullname}
+                helperText={errors.fullname?.message}
+                disabled={isLoading}
+                sx={{
+                  ...authStyles.textField,
+                  "& .MuiOutlinedInput-root": {
+                    ...authStyles.textField["& .MuiOutlinedInput-root"],
+                    "& fieldset": { borderColor: errors.fullname ? "var(--auth-error)" : "transparent" },
+                    "&:hover fieldset": { borderColor: errors.fullname ? "var(--auth-error)" : "var(--auth-input-border-hover)" },
+                    "&.Mui-focused fieldset": { borderColor: errors.fullname ? "var(--auth-error)" : "var(--auth-secondary)" },
+                  },
+                }}
+              />
 
-            {/* Password */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Password
-            </label>
-            <div className="relative mb-1">
-              <input
+              {/* Email Field */}
+              <Typography sx={{ color: "var(--auth-text-white)", mb: 1, fontSize: 14 }}>
+                Email Address
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="your.email@example.com"
+                {...register("email")}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                disabled={isLoading}
+                sx={{
+                  ...authStyles.textField,
+                  "& .MuiOutlinedInput-root": {
+                    ...authStyles.textField["& .MuiOutlinedInput-root"],
+                    "& fieldset": { borderColor: errors.email ? "var(--auth-error)" : "transparent" },
+                    "&:hover fieldset": { borderColor: errors.email ? "var(--auth-error)" : "var(--auth-input-border-hover)" },
+                    "&.Mui-focused fieldset": { borderColor: errors.email ? "var(--auth-error)" : "var(--auth-secondary)" },
+                  },
+                }}
+              />
+
+              {/* Password Field */}
+              <Typography sx={{ color: "var(--auth-text-white)", mb: 1, fontSize: 14 }}>
+                Password
+              </Typography>
+              <TextField
+                fullWidth
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a strong password"
                 {...register("password")}
+                error={!!errors.password}
+                helperText={errors.password?.message}
                 disabled={isLoading}
-                className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                  errors.password ? "border-red-300 bg-red-50" : "border-gray-200"
-                } focus:border-green-500 focus:bg-white focus:outline-none pr-12 transition-all`}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          sx={{ color: "var(--auth-text-white-muted)" }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{
+                  ...authStyles.textField,
+                  mb: 1,
+                  "& .MuiOutlinedInput-root": {
+                    ...authStyles.textField["& .MuiOutlinedInput-root"],
+                    "& fieldset": { borderColor: errors.password ? "var(--auth-error)" : "transparent" },
+                    "&:hover fieldset": { borderColor: errors.password ? "var(--auth-error)" : "var(--auth-input-border-hover)" },
+                    "&.Mui-focused fieldset": { borderColor: errors.password ? "var(--auth-error)" : "var(--auth-secondary)" },
+                  },
+                }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs mb-2">{errors.password.message}</p>
-            )}
 
-            {/* Password Requirements */}
-            {password && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-2">Password must have:</p>
-                <div className="grid grid-cols-2 gap-1">
-                  <div
-                    className={`text-xs flex items-center gap-1 ${
-                      passwordRequirements.minLength
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    <span>8+ characters</span>
-                  </div>
-                  <div
-                    className={`text-xs flex items-center gap-1 ${
-                      passwordRequirements.uppercase
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    <span>Uppercase letter</span>
-                  </div>
-                  <div
-                    className={`text-xs flex items-center gap-1 ${
-                      passwordRequirements.lowercase
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    <span>Lowercase letter</span>
-                  </div>
-                  <div
-                    className={`text-xs flex items-center gap-1 ${
-                      passwordRequirements.number
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    <span>Number</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            {!password && !errors.password && <div className="mb-4"></div>}
+              {/* Password Requirements */}
+              {password && (
+                <Box sx={{ mb: 2, p: 1.5, backgroundColor: "var(--auth-input-bg)", borderRadius: 2 }}>
+                  <Typography sx={{ color: "var(--auth-text-white-faint)", fontSize: 12, mb: 0.5 }}>
+                    Password must have:
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <CheckCircle
+                      sx={{
+                        fontSize: 14,
+                        color: passwordRequirements.minLength ? "var(--auth-secondary)" : "var(--auth-text-white-faint)",
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: 12,
+                        color: passwordRequirements.minLength ? "var(--auth-secondary)" : "var(--auth-text-white-faint)",
+                      }}
+                    >
+                      6+ characters
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
 
-            {/* Confirm Password */}
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Confirm Password
-            </label>
-            <div className="relative mb-1">
-              <input
+              {/* Confirm Password Field */}
+              <Typography sx={{ color: "var(--auth-text-white)", mb: 1, fontSize: 14 }}>
+                Confirm Password
+              </Typography>
+              <TextField
+                fullWidth
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Re-enter your password"
                 {...register("confirmPassword")}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
                 disabled={isLoading}
-                className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-gray-800 placeholder-gray-400 border-2 ${
-                  errors.confirmPassword
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200"
-                } focus:border-green-500 focus:bg-white focus:outline-none pr-12 transition-all`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-xs mb-4">
-                {errors.confirmPassword.message}
-              </p>
-            )}
-            {!errors.confirmPassword && <div className="mb-4"></div>}
-
-            {/* Terms checkbox */}
-            <label className="flex items-start gap-3 mb-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => {
-                  setAgreedToTerms(e.target.checked);
-                  if (termsError) setTermsError(null);
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                          sx={{ color: "var(--auth-text-white-muted)" }}
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
                 }}
-                disabled={isLoading}
-                className="mt-1 w-4 h-4 accent-green-500"
+                sx={{
+                  ...authStyles.textField,
+                  "& .MuiOutlinedInput-root": {
+                    ...authStyles.textField["& .MuiOutlinedInput-root"],
+                    "& fieldset": { borderColor: errors.confirmPassword ? "var(--auth-error)" : "transparent" },
+                    "&:hover fieldset": { borderColor: errors.confirmPassword ? "var(--auth-error)" : "var(--auth-input-border-hover)" },
+                    "&.Mui-focused fieldset": { borderColor: errors.confirmPassword ? "var(--auth-error)" : "var(--auth-secondary)" },
+                  },
+                }}
               />
-              <span className="text-gray-600 text-[13px]">
-                I agree to the{" "}
-                <a
-                  href="#"
-                  className="text-green-600 hover:underline font-medium"
-                >
-                  Terms and Conditions
-                </a>
-              </span>
-            </label>
-            {termsError && (
-              <p className="text-red-500 text-xs mb-4">{termsError}</p>
-            )}
-            {!termsError && <div className="mb-2"></div>}
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-base hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg mb-6 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] flex items-center justify-center"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                  Creating Account...
-                </>
-              ) : (
-                "Create Account"
+              {/* Terms checkbox */}
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={agreedToTerms}
+                    onChange={(e) => {
+                      setAgreedToTerms(e.target.checked);
+                      if (termsError) setTermsError(null);
+                    }}
+                    disabled={isLoading}
+                    sx={{
+                      color: "var(--auth-text-white-muted)",
+                      "&.Mui-checked": { color: "var(--auth-secondary)" },
+                    }}
+                  />
+                }
+                label={
+                  <Typography sx={{ color: "var(--auth-text-white-muted)", fontSize: 13 }}>
+                    I agree to the{" "}
+                    <Link href="#" sx={{ color: "var(--auth-secondary)", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+                      Terms and Conditions
+                    </Link>
+                  </Typography>
+                }
+                sx={{ mb: 1 }}
+              />
+              {termsError && (
+                <Typography sx={{ color: "var(--auth-error-text)", fontSize: 12, mb: 2 }}>{termsError}</Typography>
               )}
-            </button>
 
-            {/* Mobile: Sign In Link */}
-            <div className="md:hidden text-center mb-6">
-              <p className="text-gray-600 text-sm">
-                Already have an account?{" "}
-                <a
-                  href="/authentication/login"
-                  className="text-green-600 font-medium hover:underline"
-                >
-                  Sign In
-                </a>
-              </p>
-            </div>
-
-            {/* Support */}
-            <div className="text-center">
-              <p className="text-gray-500 text-[11px] mb-1">Need help?</p>
-              <a
-                href="mailto:tsc@maranatha.edu"
-                className="text-green-600 text-[11px] hover:underline font-medium"
+              {/* Submit Button */}
+              <Button
+                fullWidth
+                type="submit"
+                variant="contained"
+                disabled={isLoading}
+                sx={authStyles.submitButton}
               >
-                Contact us at tsc@maranatha.edu
-              </a>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+                {isLoading ? (
+                  <CircularProgress size={24} sx={{ color: "white" }} />
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+
+              {/* Mobile: Sign In Link */}
+              <Box sx={{ textAlign: "center", display: { xs: "block", md: "none" } }}>
+                <Typography sx={{ color: "var(--auth-text-white-muted)", fontSize: 14 }}>
+                  Already have an account?{" "}
+                  <Link
+                    href="/authentication/login"
+                    sx={{
+                      color: "var(--auth-secondary)",
+                      textDecoration: "none",
+                      fontWeight: 500,
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    Sign In
+                  </Link>
+                </Typography>
+              </Box>
+
+              {/* Contact Support */}
+              <Box sx={{ textAlign: "center", mt: 3 }}>
+                <Typography sx={{ color: "var(--auth-text-white-faint)", fontSize: 11 }}>
+                  Need help? Contact us at
+                </Typography>
+                <Link
+                  href="mailto:tsc@maranatha.edu"
+                  sx={{
+                    color: "var(--auth-text-white-faint)",
+                    fontSize: 11,
+                    textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  tsc@maranatha.edu
+                </Link>
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </ThemeProvider>
   );
 };
 

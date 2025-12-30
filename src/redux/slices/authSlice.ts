@@ -73,8 +73,9 @@ const setSessionCookie = (name: string, value: string): void => {
 const deleteCookie = (name: string): void => {
   if (typeof document === "undefined") return;
 
-  // Set max-age=0 để xóa cookie
+  // Xóa cookie bằng cách set expires về quá khứ và max-age=0
   document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
 };
 
 // Helper để lấy cookie
@@ -158,11 +159,12 @@ export const authSlice = createSlice({
         state.user = user;
       } else if (userId !== undefined) {
         // Tạo user từ userId và role (từ login response)
+        // API trả về "role" nhưng model dùng "isadmin"
         state.user = {
           id: userId,
           username: "",
           email: "",
-          role: role ?? false,
+          isadmin: role ?? false,
         };
       }
 
@@ -256,6 +258,6 @@ export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenti
 export const selectAccessToken = (state: RootState) => state.auth.accessToken;
 export const selectRefreshToken = (state: RootState) => state.auth.refreshToken;
 export const selectIsLoading = (state: RootState) => state.auth.isLoading;
-export const selectIsAdmin = (state: RootState) => state.auth.user?.role === true;
+export const selectIsAdmin = (state: RootState) => state.auth.user?.isadmin === true;
 
 export default authSlice.reducer;

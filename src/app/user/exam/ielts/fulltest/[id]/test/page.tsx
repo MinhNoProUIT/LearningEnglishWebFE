@@ -90,6 +90,8 @@ type Question = {
   // For fill-in-blank questions
   blankCount?: number;
   maxWords?: number;
+  // For summary completion
+  summaryText?: string;
   // Sub-questions for grouped questions
   subQuestions?: {
     id: number;
@@ -696,7 +698,7 @@ mockQuestions.push({
   passage: readingPassage3,
   passageTitle: "THE SCIENCE OF SLEEP",
   instructions: "Complete the summary below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
-  passage: `THE GLYMPHATIC SYSTEM
+  summaryText: `THE GLYMPHATIC SYSTEM
 
 Scientists discovered that during sleep, the brain has a cleaning mechanism called the glymphatic system. This system removes (73) _______ from the brain, including beta-amyloid protein linked to Alzheimer's disease. The system operates by circulating (74) _______ through channels around blood vessels. To make this process more efficient, brain cells (75) _______ during sleep, which creates additional space for waste removal.`,
   subQuestions: [
@@ -974,32 +976,36 @@ export default function IeltsTestPage() {
         setExamStarted(true);
 
         // Restore saved answers if available
-        if (inProgressAttempt.answers) {
+        if (inProgressAttempt.saved_answers && inProgressAttempt.saved_answers.length > 0) {
           try {
-            const savedAnswers =
-              typeof inProgressAttempt.answers === "string"
-                ? JSON.parse(inProgressAttempt.answers)
-                : inProgressAttempt.answers;
-            setAnswers(savedAnswers);
+            const restoredAnswers: Record<number, string> = {};
+            inProgressAttempt.saved_answers.forEach((ans) => {
+              if (ans.selected_option_id) {
+                restoredAnswers[ans.question_id] = String(ans.selected_option_id);
+              } else if (ans.text_answer) {
+                restoredAnswers[ans.question_id] = ans.text_answer;
+              }
+            });
+            setAnswers(restoredAnswers);
           } catch {
             // Ignore parse errors
           }
         }
 
         // Calculate remaining time
-        if (inProgressAttempt.started_at && examData?.duration) {
-          const startTime = new Date(inProgressAttempt.started_at).getTime();
+        if (inProgressAttempt.start_time && examData?.duration_minutes) {
+          const startTime = new Date(inProgressAttempt.start_time).getTime();
           const elapsed = Math.floor((Date.now() - startTime) / 1000 / 60);
-          const remaining = Math.max(0, examData.duration - elapsed);
+          const remaining = Math.max(0, examData.duration_minutes - elapsed);
           setTimeRemaining(remaining);
         }
       } else if (examData && !examStarted) {
         // Start a new exam attempt
         try {
-          const result = await startExam({ exam_id: examData.id }).unwrap();
+          const result = await startExam({ examId: examData.id }).unwrap();
           setAttemptId(result.id);
           setExamStarted(true);
-          setTimeRemaining(examData.duration);
+          setTimeRemaining(examData.duration_minutes || 0);
         } catch (error) {
           console.error("Failed to start exam:", error);
         }
@@ -1008,6 +1014,18 @@ export default function IeltsTestPage() {
 
     initializeExam();
   }, [examData, inProgressAttempt, isLoadingExam, isLoadingProgress, examStarted, startExam]);
+
+  // Helper to convert answers Record to IUserAnswer[]
+  const convertAnswersToPayload = (answersRecord: Record<number, string>) => {
+    return Object.entries(answersRecord).map(([questionId, answer]) => {
+      const numId = Number(questionId);
+      const numAnswer = Number(answer);
+      if (!isNaN(numAnswer)) {
+        return { questionId: numId, selectedOptionId: numAnswer };
+      }
+      return { questionId: numId, textAnswer: answer };
+    });
+  };
 
   // Auto-save progress periodically
   useEffect(() => {
@@ -1018,8 +1036,7 @@ export default function IeltsTestPage() {
         await saveProgress({
           id: attemptId,
           data: {
-            answers: answers,
-            current_question: currentQuestionIndex,
+            answers: convertAnswersToPayload(answers),
           },
         });
       } catch (error) {
@@ -1028,7 +1045,7 @@ export default function IeltsTestPage() {
     }, 5000); // Auto-save every 5 seconds after answer change
 
     return () => clearTimeout(saveTimer);
-  }, [answers, attemptId, currentQuestionIndex, saveProgress]);
+  }, [answers, attemptId, saveProgress]);
 
   // Audio states
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -1148,13 +1165,12 @@ export default function IeltsTestPage() {
       await saveProgress({
         id: attemptId,
         data: {
-          answers: answers,
-          current_question: currentQuestionIndex,
+          answers: convertAnswersToPayload(answers),
         },
       });
 
       // Submit the exam
-      const result = await submitExam(attemptId).unwrap();
+      await submitExam(attemptId).unwrap();
 
       // Navigate to result page
       router.push(`/user/exam/ielts/fulltest/${testId}/result?attemptId=${attemptId}`);

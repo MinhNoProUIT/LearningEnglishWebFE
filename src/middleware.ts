@@ -107,8 +107,16 @@ export function middleware(request: NextRequest) {
     // Check admin routes
     if (matchesRoute(pathname, ADMIN_ROUTES)) {
       const payload = decodeJWT(accessToken!);
-      // Giả sử role = true là admin
-      if (!payload || payload.role !== true) {
+      // Check nhiều field có thể chứa role admin
+      const isAdmin =
+        payload?.role === true ||
+        payload?.isadmin === true ||
+        payload?.isAdmin === true ||  // JWT trả về isAdmin (camelCase)
+        payload?.is_admin === true ||
+        payload?.Role === true ||
+        payload?.IsAdmin === true;
+
+      if (!payload || !isAdmin) {
         // User không phải admin -> redirect về home
         return NextResponse.redirect(new URL("/home", request.url));
       }

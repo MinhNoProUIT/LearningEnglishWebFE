@@ -65,8 +65,8 @@ const transformExamToTestItem = (
   attemptHistory: IExamAttemptHistory[]
 ): TestItem => {
   const examAttempts = attemptHistory.filter((a) => a.exam_id === exam.id);
-  const completedAttempts = examAttempts.filter((a) => a.status === "completed");
-  const inProgressAttempt = examAttempts.find((a) => a.status === "in_progress");
+  const completedAttempts = examAttempts.filter((a) => a.status === "COMPLETED");
+  const inProgressAttempt = examAttempts.find((a) => a.status === "IN_PROGRESS");
 
   let status: TestStatus = "not_started";
   let score: number | undefined;
@@ -77,17 +77,17 @@ const transformExamToTestItem = (
     status = "completed";
     const latestCompleted = completedAttempts.sort(
       (a, b) =>
-        new Date(b.completed_at || 0).getTime() -
-        new Date(a.completed_at || 0).getTime()
+        new Date(b.submit_time || 0).getTime() -
+        new Date(a.submit_time || 0).getTime()
     )[0];
     // Convert percentage score to Band score (0-9)
-    const percentScore = latestCompleted.score || 0;
+    const percentScore = latestCompleted.percentage || 0;
     score = Math.round((percentScore / 100) * 9 * 2) / 2; // Round to 0.5
-    completedDate = latestCompleted.completed_at
-      ? new Date(latestCompleted.completed_at).toLocaleDateString("vi-VN")
+    completedDate = latestCompleted.submit_time
+      ? new Date(latestCompleted.submit_time).toLocaleDateString("vi-VN")
       : undefined;
     bestScore = Math.max(
-      ...completedAttempts.map((a) => Math.round(((a.score || 0) / 100) * 9 * 2) / 2)
+      ...completedAttempts.map((a) => Math.round(((a.percentage || 0) / 100) * 9 * 2) / 2)
     );
   } else if (inProgressAttempt) {
     status = "in_progress";
@@ -104,9 +104,9 @@ const transformExamToTestItem = (
     score,
     maxScore: 9,
     completedDate,
-    duration: `${exam.duration} phút`,
+    duration: `${exam.duration_minutes || 0} phút`,
     sections,
-    difficulty: mapLevelToDifficulty(exam.level),
+    difficulty: mapLevelToDifficulty(exam.level?.name || "medium"),
     attempts: examAttempts.length,
     bestScore,
   };
