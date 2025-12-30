@@ -52,12 +52,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       if (isAuthenticated && accessToken) {
         try {
           const result = await triggerGetMe().unwrap();
+          // API /me trả về "role" nhưng model IUser dùng "isadmin"
           dispatch(
             setUser({
               id: result.id,
               username: result.username,
               email: result.email,
-              role: result.role,
+              isadmin: result.role, // map role -> isadmin
             })
           );
         } catch (error: any) {

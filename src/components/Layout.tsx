@@ -22,6 +22,7 @@ const HIDE_CHROME_PREFIXES = [
   "/video",
   "/learn",
   "/vocabulary",
+  "/admin",
 ];
 
 const HIDE_TOPNAV_ONLY_PREFIXES = [

@@ -20,15 +20,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 // ==================== REGISTER SCHEMA ====================
 export const registerSchema = z
   .object({
-    username: z
-      .string()
-      .min(1, "Username is required")
-      .min(3, "Username must be at least 3 characters")
-      .max(30, "Username must be less than 30 characters")
-      .regex(
-        /^[a-zA-Z0-9_]+$/,
-        "Username can only contain letters, numbers, and underscores"
-      ),
     email: z
       .string()
       .min(1, "Email is required")
@@ -36,11 +27,13 @@ export const registerSchema = z
     password: z
       .string()
       .min(1, "Password is required")
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
+    fullname: z
+      .string()
+      .min(1, "Full name is required")
+      .min(2, "Full name must be at least 2 characters")
+      .max(100, "Full name must be less than 100 characters"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -48,6 +41,21 @@ export const registerSchema = z
   });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
+
+// ==================== VERIFY OTP SCHEMA ====================
+export const verifyOTPSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  otp: z
+    .string()
+    .min(1, "OTP is required")
+    .length(6, "OTP must be exactly 6 digits")
+    .regex(/^\d+$/, "OTP must contain only numbers"),
+});
+
+export type VerifyOTPFormData = z.infer<typeof verifyOTPSchema>;
 
 // ==================== FORGOT PASSWORD SCHEMA ====================
 export const forgotPasswordSchema = z.object({

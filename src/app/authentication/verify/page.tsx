@@ -1,17 +1,56 @@
 "use client";
+// src/app/authentication/verify/page.tsx
+// ==================== VERIFY OTP PAGE ====================
 
 import React, { useState, useEffect } from "react";
-import { Mail, ArrowLeft, BookOpen, AlertCircle } from "lucide-react";
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Alert,
+  CircularProgress,
+  Link,
+} from "@mui/material";
+import { Mail, ArrowBack, CheckCircle } from "@mui/icons-material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
+import { useVerifyOTPMutation, useResendOTPMutation } from "@/services/AuthService";
 
+// ==================== THEME ====================
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#2d5f4f",
+      light: "#4a7c6b",
+      dark: "#1a3d31",
+    },
+    secondary: {
+      main: "#5fa89a",
+    },
+    background: {
+      default: "#f0f5f3",
+    },
+  },
+  typography: {
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+  },
+});
+
+// ==================== COMPONENT ====================
 export default function VerifyEmailPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
+
+  // RTK Query mutations
+  const [verifyOTP, { isLoading: isVerifying }] = useVerifyOTPMutation();
+  const [resendOTP, { isLoading: isResending }] = useResendOTPMutation();
 
   useEffect(() => {
     // Get email from URL params or session storage
@@ -35,6 +74,14 @@ export default function VerifyEmailPage() {
     }
   }, [countdown, canResend]);
 
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newOtp = [...otp];
@@ -56,196 +103,370 @@ export default function VerifyEmailPage() {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim();
+
+    // Check if pasted data is exactly 6 digits
+    if (/^\d{6}$/.test(pastedData)) {
+      const digits = pastedData.split("");
+      setOtp(digits);
+      setError("");
+
+      // Focus on the last input
+      const lastInput = document.getElementById("otp-5");
+      lastInput?.focus();
+    }
+  };
+
   const handleVerify = async () => {
     if (!otp.every((digit) => digit !== "")) {
       setError("Please enter the complete verification code");
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
     try {
       const otpCode = otp.join("");
 
-      // Replace with your API endpoint
-      // const response = await fetch('/api/verify-email', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, otp: otpCode })
-      // });
+      await verifyOTP({ email, otp: otpCode }).unwrap();
 
-      // if (!response.ok) {
-      //   throw new Error('Invalid OTP');
-      // }
+      // Clear stored email
+      sessionStorage.removeItem("verifyEmail");
 
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        // Clear stored email
-        sessionStorage.removeItem("verifyEmail");
-        // Redirect to login with success message
-        router.push("/authentication/login?verified=true");
-      }, 1500);
-    } catch (err) {
-      setIsLoading(false);
-      setError("Invalid verification code. Please try again.");
+      // Redirect to login with success message
+      router.push("/authentication/login?verified=true");
+    } catch (err: unknown) {
+      const error = err as { data?: { error?: string; message?: string } };
+      const errorMessage =
+        error.data?.error ||
+        error.data?.message ||
+        "Invalid verification code. Please try again.";
+      setError(errorMessage);
     }
   };
 
   const handleResend = async () => {
-    if (!canResend) return;
+    if (!canResend || isResending) return;
 
-    setCanResend(false);
-    setCountdown(60);
-    setOtp(["", "", "", "", "", ""]);
     setError("");
 
-    // Replace with your API endpoint
-    // await fetch('/api/resend-verification', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email })
-    // });
+    try {
+      await resendOTP({ email }).unwrap();
+
+      // Reset countdown
+      setCanResend(false);
+      setCountdown(60);
+      setOtp(["", "", "", "", "", ""]);
+      setSuccessMessage("Verification code has been resent to your email!");
+
+      // Focus on first input
+      const firstInput = document.getElementById("otp-0");
+      firstInput?.focus();
+    } catch (err: unknown) {
+      const error = err as { data?: { error?: string; message?: string } };
+      const errorMessage =
+        error.data?.error ||
+        error.data?.message ||
+        "Failed to resend OTP. Please try again.";
+      setError(errorMessage);
+    }
   };
 
+  // Background circles config
+  const circles = [
+    { size: 200, top: "10%", left: "5%" },
+    { size: 150, top: "60%", left: "15%" },
+    { size: 100, top: "20%", right: "10%" },
+    { size: 250, bottom: "10%", right: "5%" },
+    { size: 80, bottom: "30%", left: "8%" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg mb-4">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800">Evolingo</h1>
-          <p className="text-gray-600 mt-2">Verify your account</p>
-        </div>
+    <ThemeProvider theme={theme}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--auth-gradient)",
+          position: "relative",
+          overflow: "hidden",
+          py: 4,
+        }}
+      >
+        {/* Background circles */}
+        {circles.map((circle, index) => (
+          <Box
+            key={index}
+            sx={{
+              position: "absolute",
+              width: circle.size,
+              height: circle.size,
+              borderRadius: "50%",
+              background: "var(--auth-circle-bg)",
+              ...circle,
+            }}
+          />
+        ))}
 
-        <div className="bg-white rounded-3xl shadow-2xl p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-green-100 rounded-full -mr-20 -mt-20 opacity-50"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-100 rounded-full -ml-16 -mb-16 opacity-50"></div>
-
-          <div className="relative z-10">
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                  <Mail className="w-8 h-8 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Verify Your Email
-                </h2>
-                <p className="text-gray-600 mt-2">
-                  We've sent a 6-digit verification code to
-                </p>
-                <p className="text-green-600 font-semibold mt-1">{email}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
-                    Enter Verification Code
-                  </label>
-                  <div className="flex justify-center gap-2">
-                    {otp.map((digit, index) => (
-                      <input
-                        key={index}
-                        id={`otp-${index}`}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                        disabled={isLoading}
-                        className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors disabled:opacity-50"
-                      />
-                    ))}
-                  </div>
-                  {error && (
-                    <div className="flex items-center justify-center mt-3 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {error}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleVerify}
-                  disabled={isLoading || !otp.every((digit) => digit !== "")}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Verifying...
-                    </span>
-                  ) : (
-                    "Verify Email"
-                  )}
-                </button>
-              </div>
-
-              <div className="text-center space-y-3">
-                <p className="text-sm text-gray-600">
-                  Didn't receive the code?{" "}
-                  {canResend ? (
-                    <button
-                      onClick={handleResend}
-                      className="text-green-600 hover:text-green-700 font-medium"
-                    >
-                      Resend Code
-                    </button>
-                  ) : (
-                    <span className="text-gray-400">
-                      Resend in {countdown}s
-                    </span>
-                  )}
-                </p>
-
-                <div className="pt-2 border-t border-gray-200">
-                  <button
-                    onClick={() => router.push("/authentication/register")}
-                    className="inline-flex items-center text-green-600 hover:text-green-700 font-medium text-sm"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Registration
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            Need help?{" "}
-            <a
-              href="mailto:tsc@maranatha.edu"
-              className="text-green-600 hover:text-green-700 font-medium"
+        {/* Main content */}
+        <Paper
+          elevation={10}
+          sx={{
+            maxWidth: 480,
+            width: "90%",
+            borderRadius: 4,
+            overflow: "hidden",
+            position: "relative",
+            zIndex: 1,
+            backgroundColor: "white",
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              background: "var(--auth-primary)",
+              p: 4,
+              textAlign: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                backgroundColor: "var(--auth-input-bg)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 2,
+              }}
             >
-              Contact Support
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
+              <Mail sx={{ fontSize: 40, color: "var(--auth-secondary)" }} />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                color: "white",
+                fontWeight: 600,
+                mb: 1,
+              }}
+            >
+              Verify Your Email
+            </Typography>
+            <Typography
+              sx={{
+                color: "var(--auth-text-white-muted)",
+                fontSize: 14,
+              }}
+            >
+              We&apos;ve sent a 6-digit verification code to
+            </Typography>
+            <Typography
+              sx={{
+                color: "var(--auth-secondary)",
+                fontWeight: 600,
+                fontSize: 15,
+                mt: 0.5,
+              }}
+            >
+              {email}
+            </Typography>
+          </Box>
+
+          {/* Content */}
+          <Box sx={{ p: 4 }}>
+            {/* Success Message */}
+            {successMessage && (
+              <Alert
+                severity="success"
+                icon={<CheckCircle />}
+                sx={{ mb: 3 }}
+              >
+                {successMessage}
+              </Alert>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* OTP Input */}
+            <Typography
+              sx={{
+                color: "var(--auth-primary)",
+                fontSize: 14,
+                fontWeight: 500,
+                textAlign: "center",
+                mb: 2,
+              }}
+            >
+              Enter Verification Code
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 1,
+                mb: 3,
+              }}
+              onPaste={handlePaste}
+            >
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  disabled={isVerifying}
+                  style={{
+                    width: 50,
+                    height: 56,
+                    textAlign: "center",
+                    fontSize: 24,
+                    fontWeight: 600,
+                    border: `2px solid ${digit ? "var(--auth-secondary)" : "#e0e0e0"}`,
+                    borderRadius: 12,
+                    outline: "none",
+                    transition: "all 0.2s",
+                    color: "var(--auth-primary)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--auth-secondary)";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(95, 168, 154, 0.2)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = digit ? "var(--auth-secondary)" : "#e0e0e0";
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+              ))}
+            </Box>
+
+            {/* Verify Button */}
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleVerify}
+              disabled={isVerifying || !otp.every((digit) => digit !== "")}
+              sx={{
+                background: "var(--auth-secondary)",
+                color: "white",
+                py: 1.5,
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: 16,
+                fontWeight: 500,
+                mb: 3,
+                "&:hover": {
+                  background: "var(--auth-secondary-hover)",
+                },
+                "&:disabled": {
+                  background: "rgba(95, 168, 154, 0.5)",
+                  color: "rgba(255, 255, 255, 0.7)",
+                },
+              }}
+            >
+              {isVerifying ? (
+                <CircularProgress size={24} sx={{ color: "white" }} />
+              ) : (
+                "Verify Email"
+              )}
+            </Button>
+
+            {/* Resend OTP */}
+            <Box sx={{ textAlign: "center", mb: 3 }}>
+              <Typography sx={{ color: "#666", fontSize: 14 }}>
+                Didn&apos;t receive the code?{" "}
+                {canResend ? (
+                  <Button
+                    onClick={handleResend}
+                    disabled={isResending}
+                    sx={{
+                      color: "var(--auth-secondary)",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      p: 0,
+                      minWidth: "auto",
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
+                    {isResending ? "Sending..." : "Resend Code"}
+                  </Button>
+                ) : (
+                  <Typography
+                    component="span"
+                    sx={{ color: "#999", fontSize: 14 }}
+                  >
+                    Resend in {countdown}s
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+
+            {/* Back to Register */}
+            <Box
+              sx={{
+                textAlign: "center",
+                pt: 2,
+                borderTop: "1px solid #e0e0e0",
+              }}
+            >
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => router.push("/authentication/register")}
+                sx={{
+                  color: "var(--auth-primary)",
+                  textTransform: "none",
+                  fontWeight: 500,
+                  "&:hover": {
+                    backgroundColor: "rgba(45, 95, 79, 0.04)",
+                  },
+                }}
+              >
+                Back to Registration
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Footer */}
+          <Box
+            sx={{
+              textAlign: "center",
+              pb: 3,
+              px: 4,
+            }}
+          >
+            <Typography sx={{ color: "#999", fontSize: 11 }}>
+              Need help?{" "}
+              <Link
+                href="mailto:tsc@maranatha.edu"
+                sx={{
+                  color: "var(--auth-secondary)",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                Contact Support
+              </Link>
+            </Typography>
+          </Box>
+        </Paper>
+      </Box>
+    </ThemeProvider>
   );
 }

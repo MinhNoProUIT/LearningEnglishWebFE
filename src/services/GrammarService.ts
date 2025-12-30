@@ -52,7 +52,7 @@ export const grammarTopicApi = createApi({
     // GET /GetById/:id
     getTopicById: builder.query<IGrammarTopicGetById, string>({
       query: (id) => `GetById/${id}`,
-      transformResponse: (response: { data: IGrammarTopicGetById }) => response.data,
+      // API trả về object trực tiếp, không wrap trong { data: ... }
       providesTags: (_result, _error, id) => [{ type: "GrammarTopic", id }],
     }),
 

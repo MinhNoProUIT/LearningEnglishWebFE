@@ -1,13 +1,23 @@
 // ==================== USER ====================
+// User object từ database (bảng users)
 export interface IUser {
   id: string;
   username: string;
   email: string;
-  role: boolean; // true = admin, false = user thường
-  is_verified?: boolean;
+  fullname?: string | null;
+  birthday?: string | null;
+  gender?: boolean | null; // true = Nam, false = Nữ
+  address?: string | null;
+  phonenumber?: string | null;
+  created_date?: string;
   isactive?: boolean;
-  isadmin?: boolean;
+  isadmin: boolean; // true = admin, false = user thường
   balance?: number;
+  image_url?: string;
+  is_block?: boolean;
+  is_verified?: boolean;
+  firebase_uid?: string;
+  isPremium?: boolean;
 }
 
 // ==================== REQUEST PAYLOADS ====================
@@ -17,10 +27,19 @@ export interface ILoginPayload {
 }
 
 export interface IRegisterPayload {
-  username: string;
   email: string;
   password: string;
   confirmPassword: string;
+  fullname?: string;
+}
+
+export interface IVerifyOTPPayload {
+  email: string;
+  otp: string;
+}
+
+export interface IResendOTPPayload {
+  email: string;
 }
 
 export interface IChangePasswordPayload {
@@ -51,7 +70,14 @@ export interface ILoginResponse {
 
 export interface IRegisterResponse {
   message: string;
-  user: IUser;
+}
+
+export interface IVerifyOTPResponse {
+  message: string;
+}
+
+export interface IResendOTPResponse {
+  message: string;
 }
 
 export interface ILogoutResponse {

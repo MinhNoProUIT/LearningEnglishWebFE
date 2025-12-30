@@ -254,7 +254,18 @@ interface PartResult {
   name: string;
   correct: number;
   total: number;
-  category: "Listening" | "Reading";
+  category: string;
+}
+
+interface FeedbackSection {
+  strengths: string[];
+  weaknesses: string[];
+  tips: string[];
+}
+
+interface Feedback {
+  listening: FeedbackSection;
+  reading: FeedbackSection;
 }
 
 interface WrongAnswer {
@@ -285,6 +296,7 @@ interface ResultData {
   parts: PartResult[];
   history: IExamAttemptHistory[];
   wrongAnswers: WrongAnswer[];
+  feedback?: Feedback;
 }
 
 // ==================== DATA TRANSFORMERS ====================

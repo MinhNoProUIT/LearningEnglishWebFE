@@ -8,6 +8,10 @@ import type {
   ILoginResponse,
   IRegisterPayload,
   IRegisterResponse,
+  IVerifyOTPPayload,
+  IVerifyOTPResponse,
+  IResendOTPPayload,
+  IResendOTPResponse,
   ILogoutResponse,
   IGetMeResponse,
   IChangePasswordPayload,
@@ -16,6 +20,8 @@ import type {
   IForgotPasswordResponse,
   IResetPasswordPayload,
   IResetPasswordResponse,
+  IRefreshTokenPayload,
+  IRefreshTokenResponse,
 } from "@/models/Auth";
 
 // ==================== AUTH API ====================
@@ -42,6 +48,26 @@ export const authApi = createApi({
         url: "/register",
         method: "POST",
         body: userData,
+      }),
+    }),
+
+    // ==================== VERIFY OTP ====================
+    // POST /auth/verify-otp
+    verifyOTP: builder.mutation<IVerifyOTPResponse, IVerifyOTPPayload>({
+      query: (data) => ({
+        url: "/verify-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // ==================== RESEND OTP ====================
+    // POST /auth/resend-otp
+    resendOTP: builder.mutation<IResendOTPResponse, IResendOTPPayload>({
+      query: (data) => ({
+        url: "/resend-otp",
+        method: "POST",
+        body: data,
       }),
     }),
 
@@ -94,6 +120,16 @@ export const authApi = createApi({
         body: data,
       }),
     }),
+
+    // ==================== REFRESH TOKEN ====================
+    // POST /auth/refresh
+    refreshToken: builder.mutation<IRefreshTokenResponse, IRefreshTokenPayload>({
+      query: (data) => ({
+        url: "/refresh",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -101,10 +137,13 @@ export const authApi = createApi({
 export const {
   useLoginMutation,
   useRegisterMutation,
+  useVerifyOTPMutation,
+  useResendOTPMutation,
   useLogoutMutation,
   useGetMeQuery,
   useLazyGetMeQuery,
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useRefreshTokenMutation,
 } = authApi;
