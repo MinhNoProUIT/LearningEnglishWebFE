@@ -89,7 +89,7 @@ export default function ChangePasswordPage() {
           router.push("/dashboard");
         }, 2000);
       }, 1500);
-    } catch (err) {
+    } catch {
       setIsLoading(false);
       setError(
         "Failed to change password. Please check your current password and try again."

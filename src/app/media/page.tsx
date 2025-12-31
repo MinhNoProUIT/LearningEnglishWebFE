@@ -24,7 +24,6 @@ import {
   Headphones,
   Video,
   User,
-  Music,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";

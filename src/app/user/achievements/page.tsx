@@ -476,8 +476,8 @@ export default function AchievementsView() {
                     Weekly Challenge
                   </h3>
                   <p className="text-sm opacity-95 mb-4 text-white/90">
-                    Complete 5 lessons this week to earn the "Consistent
-                    Learner" badge
+                    Complete 5 lessons this week to earn the &quot;Consistent
+                    Learner&quot; badge
                   </p>
                   <div className="flex items-center gap-3 text-sm bg-white/20 backdrop-blur-sm px-4 py-3 rounded-lg">
                     <span className="font-semibold">Progress: 3/5 lessons</span>

@@ -4,16 +4,11 @@ import {
   Box,
   Typography,
   Link,
-  TextField,
-  InputAdornment,
-  Button,
 } from "@mui/material";
 import ProductCard from "./ProductCard";
 
 import { useEffect, useState } from "react";
-import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
-import { SearchIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import HistoryModal from "./HistoryModal";

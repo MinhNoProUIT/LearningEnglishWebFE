@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -17,6 +17,7 @@ import {
   LinearProgress,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import {
   Clock,
@@ -33,6 +34,11 @@ import {
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { examTheme } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import {
+  useStartPracticeMutation,
+  useSubmitPracticeMutation,
+} from "@/services/PracticeService";
 
 const theme = {
   primary: examTheme.gradients.primary,
@@ -40,32 +46,6 @@ const theme = {
   primaryDark: examTheme.gradients.primaryDark,
   colors: examTheme.colors,
 };
-
-// Mock test data
-const getWritingTestContent = (id: string) => ({
-  id: parseInt(id),
-  title: `Writing Test ${id}`,
-  totalTime: 60 * 60, // 60 minutes in seconds
-  task1: {
-    type: "Bar Chart",
-    timeRecommended: 20,
-    minWords: 150,
-    instruction:
-      "The bar chart below shows the water consumption in different countries in 2010, 2015, and 2020.",
-    description:
-      "Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
-    imageUrl: "/images/ielts/writing/bar-chart-water.png", // placeholder
-  },
-  task2: {
-    topic: "Education & Technology",
-    timeRecommended: 40,
-    minWords: 250,
-    instruction: "Write about the following topic:",
-    question:
-      "Some people believe that technology has made education more accessible, while others argue that it has created new challenges. Discuss both views and give your opinion.",
-    note: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
-  },
-});
 
 // Word count helper
 const countWords = (text: string) => {
@@ -86,18 +66,116 @@ export default function WritingTestPage() {
   const router = useRouter();
   const params = useParams();
   const testId = params.id as string;
-  const testContent = getWritingTestContent(testId);
 
+  // Fetch exam data
+  const { data: examData, isLoading, error } = useGetExamByIdQuery(testId);
+  const [startPractice] = useStartPracticeMutation();
+  const [submitPractice] = useSubmitPracticeMutation();
+
+  const [practiceId, setPracticeId] = useState<number | null>(null);
   const [activeTask, setActiveTask] = useState(0);
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState(testContent.totalTime);
+  const [timeRemaining, setTimeRemaining] = useState(60 * 60); // Default 60 minutes
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Build test content from API data
+  const testContent = useMemo(() => {
+    if (!examData) return null;
+
+    const section1 = examData.sections?.[0];
+    const section2 = examData.sections?.[1];
+    const group1 = section1?.question_groups?.[0];
+    const group2 = section2?.question_groups?.[0];
+
+    return {
+      id: examData.id,
+      title: examData.title,
+      totalTime: (examData.duration_minutes || 60) * 60,
+      task1: {
+        sectionId: section1?.id,
+        type: section1?.title || "Task 1",
+        timeRecommended: section1?.time_limit_minutes || 20,
+        minWords: 150,
+        instruction: section1?.instructions || "",
+        description: group1?.content_text || "",
+        imageUrl: group1?.media_url || "",
+      },
+      task2: {
+        sectionId: section2?.id,
+        topic: section2?.title || "Task 2",
+        timeRecommended: section2?.time_limit_minutes || 40,
+        minWords: 250,
+        instruction: section2?.instructions || "Write about the following topic:",
+        question: group2?.content_text || "",
+        note: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
+      },
+    };
+  }, [examData]);
+
+  // Initialize time from exam data
+  useEffect(() => {
+    if (testContent) {
+      setTimeRemaining(testContent.totalTime);
+    }
+  }, [testContent]);
 
   const task1Words = countWords(task1Answer);
   const task2Words = countWords(task2Answer);
+
+  // Loading state
+  if (isLoading || !testContent) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+          <Typography variant="h6" fontWeight={600}>
+            Đang tải bài test...
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <AlertCircle size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Không thể tải bài test
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => router.push("/user/exam/ielts/writing")}
+            sx={{ background: theme.primary }}
+          >
+            Quay lại
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
   // Timer
   useEffect(() => {

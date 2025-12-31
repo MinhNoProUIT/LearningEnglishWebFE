@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -12,10 +12,10 @@ import {
   Tabs,
   LinearProgress,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import {
   ArrowLeft,
-  Pencil,
   FileText,
   Edit3,
   Target,
@@ -24,13 +24,14 @@ import {
   AlertCircle,
   Lightbulb,
   RotateCcw,
-  Download,
-  Share2,
   Award,
   BookOpen,
 } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { examTheme } from "@/components/exam";
+import { useGetPracticeDetailQuery } from "@/services/PracticeService";
+import { useGetExamByIdQuery } from "@/services/ExamService";
+import { IPracticeDetailResponse } from "@/models/Exam";
 
 const theme = {
   primary: examTheme.gradients.primary,
@@ -40,95 +41,6 @@ const theme = {
   hero: examTheme.gradients.hero,
   colors: examTheme.colors,
 };
-
-// Mock result data
-const getWritingResultData = (id: string) => ({
-  id: parseInt(id),
-  title: `Writing Test ${id}`,
-  subtitle: `Cambridge 18 - Test ${id}`,
-  completedDate: "19/12/2024",
-  timeUsed: "52 phút",
-  overallBand: 7.0,
-  task1: {
-    band: 6.5,
-    type: "Bar Chart",
-    wordCount: 172,
-    minWords: 150,
-    scores: {
-      taskAchievement: 7.0,
-      coherenceCohesion: 6.5,
-      lexicalResource: 6.5,
-      grammaticalRange: 6.5,
-    },
-    answer: `The bar chart illustrates the water consumption in four different countries (USA, China, India, and Brazil) across three years: 2010, 2015, and 2020.
-
-Overall, the USA had the highest water consumption throughout the period, while India showed the most significant increase. All countries experienced growth in their water usage over the decade.
-
-In 2010, the USA consumed approximately 450 billion cubic meters of water, which was significantly higher than other countries. China followed with around 350 billion, while India and Brazil used about 200 and 150 billion cubic meters respectively.
-
-By 2020, the USA's consumption had risen to 500 billion cubic meters. Notably, India's water usage doubled to 400 billion, surpassing China's 420 billion. Brazil showed modest growth, reaching 200 billion cubic meters.
-
-In conclusion, while the USA maintained its position as the largest water consumer, India demonstrated the fastest growth rate during this period.`,
-    feedback: {
-      strengths: [
-        "Mô tả xu hướng chính rõ ràng và logic",
-        "Sử dụng số liệu cụ thể để hỗ trợ mô tả",
-        "Cấu trúc bài viết tốt với mở bài, thân bài và kết luận",
-      ],
-      improvements: [
-        "Cần thêm các cụm từ so sánh đa dạng hơn",
-        "Một số lỗi nhỏ về mạo từ (a/the)",
-        "Có thể thêm phần phân tích xu hướng chi tiết hơn",
-      ],
-      tips: "Hãy sử dụng thêm các cụm từ như 'in comparison', 'whereas', 'by contrast' để tăng độ đa dạng trong so sánh.",
-    },
-  },
-  task2: {
-    band: 7.5,
-    topic: "Education & Technology",
-    wordCount: 287,
-    minWords: 250,
-    scores: {
-      taskResponse: 7.5,
-      coherenceCohesion: 7.5,
-      lexicalResource: 7.5,
-      grammaticalRange: 7.5,
-    },
-    answer: `In the modern era, technology has revolutionized the education sector in numerous ways. While some argue that it has democratized learning, others believe it has introduced new challenges. This essay will discuss both perspectives before presenting my own opinion.
-
-On one hand, technology has undeniably made education more accessible. Online courses and digital resources have broken down geographical barriers, allowing students from remote areas to access quality education. For instance, platforms like Coursera and Khan Academy offer free courses from prestigious universities. Moreover, adaptive learning software can personalize education to individual student needs, potentially improving learning outcomes.
-
-On the other hand, technology has created significant challenges in education. The digital divide means that students from low-income families may lack access to necessary devices and internet connectivity. Additionally, the abundance of information online can be overwhelming, and distinguishing reliable sources from misinformation requires critical thinking skills that not all students possess. There are also concerns about reduced face-to-face interaction and its impact on social skill development.
-
-In my opinion, while technology presents certain challenges, its benefits to education outweigh the drawbacks. The key lies in implementing technology thoughtfully, ensuring equal access for all students, and teaching digital literacy skills alongside traditional subjects. Schools should integrate technology as a tool to enhance, not replace, traditional teaching methods.
-
-In conclusion, technology has transformed education in both positive and negative ways. By addressing the challenges proactively, we can harness technology's potential to create a more inclusive and effective educational system.`,
-    feedback: {
-      strengths: [
-        "Cấu trúc bài viết rõ ràng với mở bài, thân bài và kết luận",
-        "Đưa ra cả hai quan điểm một cách cân bằng",
-        "Sử dụng ví dụ cụ thể (Coursera, Khan Academy)",
-        "Kết luận khẳng định rõ quan điểm cá nhân",
-      ],
-      improvements: [
-        "Có thể thêm nhiều từ vựng academic hơn",
-        "Một vài câu phức hợp có thể được cải thiện",
-        "Phần kết luận có thể sâu sắc hơn",
-      ],
-      tips: "Hãy thử sử dụng thêm các cấu trúc câu phức như 'Not only... but also', 'It is worth noting that...' để tăng điểm ngữ pháp.",
-    },
-  },
-  overallFeedback: {
-    summary:
-      "Bài viết của bạn thể hiện khả năng viết tốt với cấu trúc rõ ràng và ý tưởng được phát triển logic. Task 2 mạnh hơn Task 1, cho thấy bạn có thế mạnh trong việc viết essay.",
-    nextSteps: [
-      "Luyện thêm Task 1 với các loại biểu đồ khác nhau",
-      "Mở rộng vốn từ vựng academic writing",
-      "Thực hành viết trong thời gian giới hạn để cải thiện tốc độ",
-      "Đọc các bài mẫu band 8-9 để học hỏi cấu trúc và từ vựng",
-    ],
-  },
-});
 
 const BandDescriptor = ({
   label,
@@ -173,13 +85,160 @@ const BandDescriptor = ({
   );
 };
 
+// Helper function to count words
+const countWords = (text: string): number => {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+};
+
+// Helper function to transform API response to UI format
+const transformPracticeDetailToResultData = (
+  practiceDetail: IPracticeDetailResponse,
+  examTitle: string
+) => {
+  // Extract task answers from question_groups
+  const task1Group = practiceDetail.question_groups?.[0];
+  const task2Group = practiceDetail.question_groups?.[1];
+
+  const task1Answer = task1Group?.questions?.[0]?.user_answer as unknown as { text_answer?: string };
+  const task2Answer = task2Group?.questions?.[0]?.user_answer as unknown as { text_answer?: string };
+
+  const task1Text = task1Answer?.text_answer || "";
+  const task2Text = task2Answer?.text_answer || "";
+
+  // Calculate band scores from score_obtained/max_score
+  const overallBand = practiceDetail.max_score > 0
+    ? Math.round((practiceDetail.score_obtained / practiceDetail.max_score) * 9 * 2) / 2
+    : 0;
+
+  // Default scores structure - in a real scenario, this would come from AI feedback
+  const defaultScores = {
+    taskAchievement: overallBand,
+    taskResponse: overallBand,
+    coherenceCohesion: overallBand,
+    lexicalResource: overallBand,
+    grammaticalRange: overallBand,
+  };
+
+  return {
+    title: examTitle || practiceDetail.section_title,
+    subtitle: "IELTS Academic Writing",
+    completedDate: new Date().toLocaleDateString("vi-VN"),
+    timeUsed: "60 phút",
+    overallBand,
+    task1: {
+      band: overallBand,
+      wordCount: countWords(task1Text),
+      answer: task1Text,
+      scores: defaultScores,
+      feedback: {
+        strengths: practiceDetail.strengths || ["Bài viết được hoàn thành"],
+        improvements: practiceDetail.weaknesses || ["Cần luyện tập thêm"],
+        tips: practiceDetail.suggestions?.[0] || "Tiếp tục luyện tập để cải thiện kỹ năng viết.",
+      },
+    },
+    task2: {
+      band: overallBand,
+      wordCount: countWords(task2Text),
+      answer: task2Text,
+      scores: defaultScores,
+      feedback: {
+        strengths: practiceDetail.strengths || ["Bài viết được hoàn thành"],
+        improvements: practiceDetail.weaknesses || ["Cần luyện tập thêm"],
+        tips: practiceDetail.suggestions?.[1] || practiceDetail.suggestions?.[0] || "Tiếp tục luyện tập để cải thiện kỹ năng viết.",
+      },
+    },
+    overallFeedback: {
+      summary: practiceDetail.ai_feedback || "Bài viết đã được hoàn thành. Hãy tiếp tục luyện tập để nâng cao kỹ năng.",
+      nextSteps: practiceDetail.suggestions || [
+        "Luyện tập thêm các dạng bài Task 1",
+        "Mở rộng vốn từ vựng academic",
+        "Thực hành viết trong giới hạn thời gian",
+      ],
+    },
+  };
+};
+
 export default function WritingResultPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const testId = params.id as string;
-  const resultData = getWritingResultData(testId);
+  const practiceId = searchParams.get("practiceId");
+
+  // Fetch practice detail
+  const {
+    data: practiceDetail,
+    isLoading: isLoadingPractice,
+    error: practiceError,
+  } = useGetPracticeDetailQuery(practiceId!, {
+    skip: !practiceId,
+  });
+
+  // Fetch exam data for title
+  const {
+    data: examData,
+    isLoading: isLoadingExam,
+  } = useGetExamByIdQuery(testId);
 
   const [activeTab, setActiveTab] = useState(0);
+
+  // Transform API data to UI format
+  const resultData = useMemo(() => {
+    if (!practiceDetail) return null;
+    return transformPracticeDetailToResultData(
+      practiceDetail,
+      examData?.title || ""
+    );
+  }, [practiceDetail, examData]);
+
+  // Loading state
+  if (isLoadingPractice || isLoadingExam) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: theme.colors.bgLight,
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress sx={{ color: theme.colors.primary }} />
+          <Typography color="text.secondary">Đang tải kết quả...</Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // Error or no practiceId
+  if (practiceError || !practiceId || !resultData) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: theme.colors.bgLight,
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <AlertCircle size={48} color="#dc2626" />
+          <Typography variant="h6" color="error">
+            Không thể tải kết quả
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={() => router.push("/user/exam/ielts/writing")}
+          >
+            Quay lại danh sách
+          </Button>
+        </Stack>
+      </Box>
+    );
+  }
 
   const getBandColor = (score: number) => {
     if (score >= 7.5) return "#059669";

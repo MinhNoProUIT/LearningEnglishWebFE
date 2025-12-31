@@ -5,6 +5,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import { authSlice } from "./slices/authSlice";
 import { toastSlice } from "./slices/toastSlice";
 import { sidebarSlice } from "./slices/sidebarSlice";
+import { countNewNotificationSlice } from "./slices/countNewNotificationSlice";
+import { notificationsSlice } from "./slices/notificationsSlice";
 import { courseApi } from "@/services/CourseService";
 import uiReducer from "./slices/uiSlide";
 import { grammarTopicApi } from "@/services/GrammarService";
@@ -42,6 +44,8 @@ export const store = configureStore({
     [authSlice.name]: authSlice.reducer,
     [toastSlice.name]: toastSlice.reducer,
     [sidebarSlice.name]: sidebarSlice.reducer,
+    [countNewNotificationSlice.name]: countNewNotificationSlice.reducer,
+    [notificationsSlice.name]: notificationsSlice.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [grammarTopicApi.reducerPath]: grammarTopicApi.reducer,
     [grammarRuleApi.reducerPath]: grammarRuleApi.reducer,

@@ -312,7 +312,7 @@ export default function PostFeed() {
                                     <span className="font-medium">Nghĩa:</span> {post.englishTip.meaning}
                                 </p>
                                 <p className="text-sm text-gray-600 italic">
-                                    "{post.englishTip.example}"
+                                    &quot;{post.englishTip.example}&quot;
                                 </p>
                             </div>
                         )}

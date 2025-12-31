@@ -5,15 +5,11 @@ import {
   BookOpen,
   GraduationCap,
   Target,
-  TrendingUp,
-  Clock,
   Award,
   Zap,
   ChevronRight,
   Headphones,
   Brain,
-  Users,
-  BarChart3,
 } from "lucide-react";
 import {
   Box,
