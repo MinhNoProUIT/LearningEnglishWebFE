@@ -42,138 +42,6 @@ import {
 
 const theme = examTheme;
 
-// Mock data - kết quả bài test
-const mockResult = {
-  id: 1,
-  testTitle: "TOEIC Test 1",
-  completedAt: "15/12/2024 14:30",
-  duration: "118 phút",
-  totalScore: 875,
-  maxScore: 990,
-  listeningScore: 445,
-  readingScore: 430,
-  listeningMax: 495,
-  readingMax: 495,
-  correctAnswers: 175,
-  totalQuestions: 200,
-  attempts: 3,
-  bestScore: 875,
-  parts: [
-    { part: 1, name: "Photographs", correct: 5, total: 6, category: "Listening" },
-    { part: 2, name: "Question-Response", correct: 22, total: 25, category: "Listening" },
-    { part: 3, name: "Conversations", correct: 35, total: 39, category: "Listening" },
-    { part: 4, name: "Talks", correct: 27, total: 30, category: "Listening" },
-    { part: 5, name: "Incomplete Sentences", correct: 28, total: 30, category: "Reading" },
-    { part: 6, name: "Text Completion", correct: 14, total: 16, category: "Reading" },
-    { part: 7, name: "Reading Comprehension", correct: 44, total: 54, category: "Reading" },
-  ],
-  history: [
-    { attempt: 1, date: "01/12/2024", score: 720, listening: 360, reading: 360 },
-    { attempt: 2, date: "08/12/2024", score: 810, listening: 410, reading: 400 },
-    { attempt: 3, date: "15/12/2024", score: 875, listening: 445, reading: 430 },
-  ],
-  // Mock câu hỏi sai để xem lại
-  wrongAnswers: [
-    {
-      id: 6,
-      part: 1,
-      partName: "Photographs",
-      question: "What is the woman doing?",
-      yourAnswer: "B",
-      correctAnswer: "C",
-      explanation: "Trong hình, người phụ nữ đang đọc tài liệu (reading documents), không phải đang nói chuyện điện thoại."
-    },
-    {
-      id: 45,
-      part: 2,
-      partName: "Question-Response",
-      question: "When will the meeting start?",
-      yourAnswer: "A",
-      correctAnswer: "B",
-      explanation: "Câu hỏi về thời gian 'When' nên đáp án phải chứa thông tin về thời gian. Đáp án B 'At 2 o'clock' là phù hợp."
-    },
-    {
-      id: 78,
-      part: 3,
-      partName: "Conversations",
-      question: "What does the man suggest?",
-      yourAnswer: "C",
-      correctAnswer: "D",
-      explanation: "Người đàn ông nói 'Why don't we postpone the meeting?' - gợi ý hoãn cuộc họp, tương ứng đáp án D."
-    },
-    {
-      id: 95,
-      part: 4,
-      partName: "Talks",
-      question: "What is the purpose of the announcement?",
-      yourAnswer: "A",
-      correctAnswer: "C",
-      explanation: "Thông báo bắt đầu với 'Attention shoppers, we're having a sale...' - mục đích là thông báo khuyến mãi."
-    },
-    {
-      id: 112,
-      part: 5,
-      partName: "Incomplete Sentences",
-      question: "The report must be submitted _____ Friday.",
-      yourAnswer: "until",
-      correctAnswer: "by",
-      explanation: "'By + thời gian' nghĩa là 'trước thời điểm đó'. 'Until' dùng cho hành động kéo dài đến thời điểm nào đó."
-    },
-    {
-      id: 138,
-      part: 6,
-      partName: "Text Completion",
-      question: "_____ the conference was successful, we decided to hold it annually.",
-      yourAnswer: "Despite",
-      correctAnswer: "Because",
-      explanation: "Vế sau 'we decided to hold it annually' là kết quả tích cực, nên cần từ nối chỉ nguyên nhân 'Because'."
-    },
-    {
-      id: 165,
-      part: 7,
-      partName: "Reading Comprehension",
-      question: "What is indicated about the company?",
-      yourAnswer: "B",
-      correctAnswer: "D",
-      explanation: "Đoạn văn đề cập 'established in 1985' và 'expanded to 20 countries' - cho thấy công ty đã hoạt động lâu năm và mở rộng quốc tế."
-    },
-    {
-      id: 189,
-      part: 7,
-      partName: "Reading Comprehension",
-      question: "According to the email, what should employees do?",
-      yourAnswer: "A",
-      correctAnswer: "C",
-      explanation: "Email yêu cầu 'Please submit your reports by end of day' - nhân viên cần nộp báo cáo trước cuối ngày."
-    },
-  ],
-  // Feedback tổng quan
-  feedback: {
-    listening: {
-      strengths: [
-        "Nghe tốt các đoạn hội thoại ngắn (Part 1, 2)",
-        "Nhận diện tốt các từ khóa về thời gian, địa điểm"
-      ],
-      weaknesses: [
-        "Cần cải thiện việc nghe các bài nói dài (Part 4)",
-        "Hay nhầm lẫn giữa các đáp án có phát âm tương tự"
-      ],
-      tips: "Tập trung luyện nghe Part 3, 4 với các chủ đề: business meetings, announcements, advertisements. Chú ý paraphrasing - cách diễn đạt khác của cùng một ý."
-    },
-    reading: {
-      strengths: [
-        "Nắm vững ngữ pháp cơ bản (Part 5)",
-        "Đọc hiểu tốt các đoạn văn đơn (Single Passage)"
-      ],
-      weaknesses: [
-        "Cần tăng tốc độ đọc để hoàn thành Part 7",
-        "Hay sai các câu về từ vựng trong ngữ cảnh"
-      ],
-      tips: "Với Part 7, đọc câu hỏi trước để biết cần tìm thông tin gì. Luyện đọc các dạng bài: emails, advertisements, articles. Tăng vốn từ vựng business English."
-    }
-  }
-};
-
 // Score Circle Component
 const ScoreCircle = ({
   score,
@@ -497,40 +365,12 @@ export default function TestResultPage() {
     if (attemptDetail && historyData?.data) {
       return transformApiToResult(attemptDetail, historyData.data);
     }
-    // Fallback to mock data if no API data
-    return {
-      ...mockResult,
-      history: mockResult.history.map((h, idx) => ({
-        id: idx + 1,
-        exam_id: 1,
-        exam_title: mockResult.testTitle,
-        exam_type: "TOEIC",
-        level: "Intermediate",
-        total_score: h.score,
-        max_score: 990,
-        percentage: (h.score / 990) * 100,
-        correct_answers: Math.round((h.score / 990) * 200),
-        total_questions: 200,
-        start_time: h.date,
-        submit_time: h.date,
-        time_taken_minutes: 120,
-        status: "COMPLETED" as const,
-      })),
-    };
+    // Return null if no API data
+    return null;
   }, [attemptDetail, historyData]);
 
-  const scorePercentage = (result.totalScore / result.maxScore) * 100;
-
-  const listeningParts = result.parts.filter(p => p.category === "Listening");
-  const readingParts = result.parts.filter(p => p.category === "Reading");
-
-  const listeningCorrect = listeningParts.reduce((sum, p) => sum + p.correct, 0);
-  const listeningTotal = listeningParts.reduce((sum, p) => sum + p.total, 0);
-  const readingCorrect = readingParts.reduce((sum, p) => sum + p.correct, 0);
-  const readingTotal = readingParts.reduce((sum, p) => sum + p.total, 0);
-
   // ==================== LOADING STATE ====================
-  if (isLoadingDetail) {
+  if (isLoadingDetail || !result) {
     return (
       <Box
         sx={{
@@ -553,6 +393,16 @@ export default function TestResultPage() {
       </Box>
     );
   }
+
+  const scorePercentage = (result.totalScore / result.maxScore) * 100;
+
+  const listeningParts = result.parts.filter(p => p.category === "Listening");
+  const readingParts = result.parts.filter(p => p.category === "Reading");
+
+  const listeningCorrect = listeningParts.reduce((sum, p) => sum + p.correct, 0);
+  const listeningTotal = listeningParts.reduce((sum, p) => sum + p.total, 0);
+  const readingCorrect = readingParts.reduce((sum, p) => sum + p.correct, 0);
+  const readingTotal = readingParts.reduce((sum, p) => sum + p.total, 0);
 
   // ==================== ERROR STATE ====================
   if (detailError) {

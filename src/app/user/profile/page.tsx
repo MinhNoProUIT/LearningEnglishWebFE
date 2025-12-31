@@ -14,6 +14,8 @@ import {
   IconButton,
   Tab,
   Tabs,
+  Fade,
+  Grow,
 } from "@mui/material";
 import {
   Mail,
@@ -31,6 +33,7 @@ import {
   Star,
   Trophy,
   Flame,
+  User,
 } from "lucide-react";
 
 const theme = {
@@ -53,9 +56,67 @@ interface TabPanelProps {
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
-    <div hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
+    <Fade in={value === index} timeout={300}>
+      <div hidden={value !== index} {...other}>
+        {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+      </div>
+    </Fade>
+  );
+}
+
+// Stat Card Component
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  delay: number;
+}
+
+function StatCard({ label, value, icon, color, delay }: StatCardProps) {
+  return (
+    <Grow in timeout={500 + delay}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          border: "1px solid #e5e7eb",
+          textAlign: "center",
+          transition: "all 0.3s ease",
+          cursor: "default",
+          "&:hover": {
+            transform: "translateY(-4px)",
+            boxShadow: "0 12px 24px rgba(0,0,0,0.1)",
+            borderColor: color,
+          },
+        }}
+      >
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: "50%",
+            bgcolor: `${color}15`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mx: "auto",
+            mb: 1.5,
+            color: color,
+            transition: "all 0.3s ease",
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography variant="h5" fontWeight={800} color="grey.900">
+          {value}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" fontWeight={500}>
+          {label}
+        </Typography>
+      </Paper>
+    </Grow>
   );
 }
 
@@ -71,20 +132,16 @@ export default function ProfilePage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Kiểm tra loại file
       if (!file.type.startsWith("image/")) {
         alert("Vui lòng chọn file ảnh!");
         return;
       }
-      // Kiểm tra kích thước (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert("Kích thước ảnh tối đa là 5MB!");
         return;
       }
-      // Tạo URL preview
       const imageUrl = URL.createObjectURL(file);
       setUserData({ ...userData, avatar: imageUrl });
-      // TODO: Upload file lên server
     }
   };
 
@@ -141,457 +198,744 @@ export default function ProfilePage() {
           pt: 4,
           pb: 12,
           position: "relative",
-          borderRadius: "0 0 24px 24px",
+          overflow: "hidden",
         }}
       >
-        <Box sx={{ maxWidth: 1000, mx: "auto", px: { xs: 2, md: 4 } }}>
-          <Typography variant="h5" fontWeight={700} color="white" mb={1}>
-            Trang cá nhân
-          </Typography>
-          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-            Quản lý thông tin và theo dõi tiến trình học tập của bạn
-          </Typography>
+        {/* Decorative circles */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: -40,
+            right: -40,
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -20,
+            left: -20,
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,255,255,0.05)",
+          }}
+        />
+        <Box sx={{ maxWidth: 1000, mx: "auto", px: { xs: 2, md: 4 }, position: "relative", zIndex: 1 }}>
+          <Fade in timeout={500}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <User size={28} color="white" />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={700} color="white" mb={0.5}>
+                  Trang cá nhân
+                </Typography>
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)" }}>
+                  Quản lý thông tin và theo dõi tiến trình học tập của bạn
+                </Typography>
+              </Box>
+            </Box>
+          </Fade>
         </Box>
       </Box>
 
       {/* Main Content */}
-      <Box sx={{ maxWidth: 1000, mx: "auto", px: { xs: 2, md: 4 }, mt: -8 }}>
+      <Box sx={{ maxWidth: 1000, mx: "auto", px: { xs: 2, md: 4 }, mt: -2 }}>
         {/* Profile Card */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            border: "1px solid #e5e7eb",
-            mb: 3,
-          }}
-        >
-          {/* Header with name */}
-          <Typography variant="h5" fontWeight={800} color="grey.900" mb={3}>
-            {userData.fullName}
-          </Typography>
+        <Fade in timeout={600}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 0,
+              borderRadius: 4,
+              border: "1px solid #e5e7eb",
+              mb: 3,
+              overflow: "hidden",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
+            }}
+          >
+            {/* Profile Header with gradient */}
+            <Box
+              sx={{
+                background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+                p: 3,
+                pb: 4,
+              }}
+            >
+              <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="center">
+                {/* Avatar Section */}
+                <Box sx={{ position: "relative" }}>
+                  <Avatar
+                    src={userData.avatar}
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      border: "4px solid white",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                      bgcolor: "#e5e7eb",
+                    }}
+                  >
+                    <User size={48} color="#9ca3af" />
+                  </Avatar>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    style={{ display: "none" }}
+                  />
+                  <IconButton
+                    onClick={handleAvatarClick}
+                    sx={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      bgcolor: theme.colors.primary,
+                      color: "white",
+                      width: 36,
+                      height: 36,
+                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.4)",
+                      "&:hover": { bgcolor: theme.colors.primaryDark },
+                    }}
+                  >
+                    <Camera size={18} />
+                  </IconButton>
+                </Box>
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ md: "flex-start" }}>
-            {/* Avatar Section */}
-            <Box sx={{ position: "relative", alignSelf: { xs: "center", md: "flex-start" } }}>
-              <Avatar
-                src={userData.avatar}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  border: "4px solid white",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.1)",
-                }}
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                style={{ display: "none" }}
-              />
-              <IconButton
-                onClick={handleAvatarClick}
-                sx={{
-                  position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  bgcolor: theme.colors.primary,
-                  color: "white",
-                  width: 32,
-                  height: 32,
-                  "&:hover": { bgcolor: theme.colors.primaryDark },
-                }}
-              >
-                <Camera size={16} />
-              </IconButton>
+                {/* User Name & Bio */}
+                <Box sx={{ flex: 1, textAlign: { xs: "center", md: "left" } }}>
+                  <Typography variant="h4" fontWeight={800} color="grey.900" mb={0.5}>
+                    {userData.fullName}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" mb={2}>
+                    {userData.bio}
+                  </Typography>
+
+                  {/* Badges */}
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    useFlexGap
+                    justifyContent={{ xs: "center", md: "flex-start" }}
+                  >
+                    <Chip
+                      icon={<Flame size={14} />}
+                      label={`${stats.currentStreak} ngày streak`}
+                      size="small"
+                      sx={{
+                        bgcolor: "#fef3c7",
+                        color: "#d97706",
+                        fontWeight: 600,
+                        "& .MuiChip-icon": { color: "#d97706" },
+                        border: "1px solid #fcd34d",
+                      }}
+                    />
+                    <Chip
+                      icon={<Trophy size={14} />}
+                      label={`TOEIC ${stats.toeicBest}`}
+                      size="small"
+                      sx={{
+                        bgcolor: "#dbeafe",
+                        color: "#1d4ed8",
+                        fontWeight: 600,
+                        "& .MuiChip-icon": { color: "#1d4ed8" },
+                        border: "1px solid #93c5fd",
+                      }}
+                    />
+                    <Chip
+                      icon={<Star size={14} />}
+                      label={`IELTS ${stats.ieltsBest}`}
+                      size="small"
+                      sx={{
+                        bgcolor: "#f3e8ff",
+                        color: "#7c3aed",
+                        fontWeight: 600,
+                        "& .MuiChip-icon": { color: "#7c3aed" },
+                        border: "1px solid #c4b5fd",
+                      }}
+                    />
+                  </Stack>
+                </Box>
+              </Stack>
             </Box>
 
-            {/* User Info */}
-            <Box sx={{ flex: 1 }}>
-              {/* Bio */}
-              <Typography variant="body2" color="text.secondary" mb={2}>
-                {userData.bio}
-              </Typography>
-
-              {/* Badges */}
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap mb={2.5}>
-                <Chip
-                  icon={<Flame size={14} />}
-                  label={`${stats.currentStreak} ngày streak`}
-                  size="small"
-                  sx={{
-                    bgcolor: "#fef3c7",
-                    color: "#d97706",
-                    fontWeight: 600,
-                    "& .MuiChip-icon": { color: "#d97706" },
-                  }}
-                />
-                <Chip
-                  icon={<Trophy size={14} />}
-                  label={`TOEIC ${stats.toeicBest}`}
-                  size="small"
-                  sx={{
-                    bgcolor: "#dbeafe",
-                    color: "#1d4ed8",
-                    fontWeight: 600,
-                    "& .MuiChip-icon": { color: "#1d4ed8" },
-                  }}
-                />
-                <Chip
-                  icon={<Star size={14} />}
-                  label={`IELTS ${stats.ieltsBest}`}
-                  size="small"
-                  sx={{
-                    bgcolor: "#f3e8ff",
-                    color: "#7c3aed",
-                    fontWeight: 600,
-                    "& .MuiChip-icon": { color: "#7c3aed" },
-                  }}
-                />
-              </Stack>
-
-              {/* Contact Info */}
+            {/* Contact Info */}
+            <Box sx={{ p: 3, bgcolor: "white" }}>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Mail size={16} color="#6b7280" />
-                    <Typography variant="body2" color="text.secondary">
-                      {userData.email}
-                    </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        bgcolor: "#ecfdf5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Mail size={16} color="#10b981" />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Email
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600} color="grey.800">
+                        {userData.email}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Phone size={16} color="#6b7280" />
-                    <Typography variant="body2" color="text.secondary">
-                      {userData.phone}
-                    </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        bgcolor: "#fef3c7",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Phone size={16} color="#d97706" />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Điện thoại
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600} color="grey.800">
+                        {userData.phone}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <MapPin size={16} color="#6b7280" />
-                    <Typography variant="body2" color="text.secondary">
-                      {userData.address}
-                    </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        bgcolor: "#dbeafe",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MapPin size={16} color="#3b82f6" />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Địa chỉ
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600} color="grey.800">
+                        {userData.address}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Calendar size={16} color="#6b7280" />
-                    <Typography variant="body2" color="text.secondary">
-                      Tham gia từ {userData.joinDate}
-                    </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        bgcolor: "#f3e8ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Calendar size={16} color="#7c3aed" />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Ngày tham gia
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600} color="grey.800">
+                        {userData.joinDate}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </Grid>
               </Grid>
             </Box>
-          </Stack>
-        </Paper>
+          </Paper>
+        </Fade>
 
         {/* Stats Cards */}
         <Grid container spacing={2} mb={3}>
-          {[
-            { label: "Bài test", value: stats.totalTests, icon: <Target size={20} />, color: "#10b981" },
-            { label: "Từ vựng", value: stats.totalWords.toLocaleString(), icon: <BookOpen size={20} />, color: "#3b82f6" },
-            { label: "Giờ học", value: stats.totalHours, icon: <Clock size={20} />, color: "#f59e0b" },
-            { label: "Streak cao nhất", value: `${stats.longestStreak} ngày`, icon: <Zap size={20} />, color: "#ef4444" },
-          ].map((stat, idx) => (
-            <Grid size={{ xs: 6, md: 3 }} key={idx}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  borderRadius: 3,
-                  border: "1px solid #e5e7eb",
-                  textAlign: "center",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    bgcolor: `${stat.color}15`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    mx: "auto",
-                    mb: 1.5,
-                    color: stat.color,
-                  }}
-                >
-                  {stat.icon}
-                </Box>
-                <Typography variant="h5" fontWeight={800} color="grey.900">
-                  {stat.value}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {stat.label}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              label="Bài test"
+              value={stats.totalTests}
+              icon={<Target size={22} />}
+              color="#10b981"
+              delay={0}
+            />
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              label="Từ vựng"
+              value={stats.totalWords.toLocaleString()}
+              icon={<BookOpen size={22} />}
+              color="#3b82f6"
+              delay={100}
+            />
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              label="Giờ học"
+              value={stats.totalHours}
+              icon={<Clock size={22} />}
+              color="#f59e0b"
+              delay={200}
+            />
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <StatCard
+              label="Streak cao nhất"
+              value={`${stats.longestStreak} ngày`}
+              icon={<Zap size={22} />}
+              color="#ef4444"
+              delay={300}
+            />
+          </Grid>
         </Grid>
 
         {/* Tabs Section */}
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
-        >
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              sx={{
-                px: 2,
-                "& .MuiTab-root": {
-                  textTransform: "none",
-                  fontWeight: 600,
-                  minHeight: 56,
-                },
-                "& .Mui-selected": {
-                  color: `${theme.colors.primary} !important`,
-                },
-                "& .MuiTabs-indicator": {
-                  bgcolor: theme.colors.primary,
-                },
-              }}
-            >
-              <Tab label="Hoạt động gần đây" />
-              <Tab label="Thành tích" />
-              <Tab label="Thông tin cá nhân" />
-            </Tabs>
-          </Box>
+        <Fade in timeout={800}>
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 4,
+              border: "1px solid #e5e7eb",
+              overflow: "hidden",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+            }}
+          >
+            <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "#fafbfc" }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                sx={{
+                  px: 2,
+                  "& .MuiTab-root": {
+                    textTransform: "none",
+                    fontWeight: 600,
+                    minHeight: 56,
+                    fontSize: 15,
+                  },
+                  "& .Mui-selected": {
+                    color: `${theme.colors.primary} !important`,
+                  },
+                  "& .MuiTabs-indicator": {
+                    bgcolor: theme.colors.primary,
+                    height: 3,
+                    borderRadius: "3px 3px 0 0",
+                  },
+                }}
+              >
+                <Tab label="Hoạt động gần đây" />
+                <Tab label="Thành tích" />
+                <Tab label="Thông tin cá nhân" />
+              </Tabs>
+            </Box>
 
-          <Box sx={{ p: 3 }}>
-            {/* Recent Activities Tab */}
-            <TabPanel value={tabValue} index={0}>
-              <Stack spacing={2}>
-                {recentActivities.map((activity, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      bgcolor: "#f8fafc",
-                      border: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Box
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 2,
-                            bgcolor:
-                              activity.type === "test"
-                                ? "#ecfdf5"
-                                : activity.type === "vocab"
-                                ? "#f5f3ff"
-                                : activity.type === "grammar"
-                                ? "#fef3c7"
-                                : "#dbeafe",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {activity.type === "test" && <Target size={20} color="#10b981" />}
-                          {activity.type === "vocab" && <BookOpen size={20} color="#7c3aed" />}
-                          {activity.type === "grammar" && <CheckCircle size={20} color="#d97706" />}
-                          {activity.type === "listening" && <TrendingUp size={20} color="#3b82f6" />}
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" fontWeight={600} color="grey.900">
-                            {activity.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {activity.date}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <Chip
-                        label={activity.result}
-                        size="small"
+            <Box sx={{ p: 3 }}>
+              {/* Recent Activities Tab */}
+              <TabPanel value={tabValue} index={0}>
+                <Stack spacing={2}>
+                  {recentActivities.map((activity, idx) => (
+                    <Grow in key={idx} timeout={300 + idx * 100}>
+                      <Box
                         sx={{
-                          bgcolor:
-                            activity.type === "test"
-                              ? "#ecfdf5"
-                              : activity.type === "vocab"
-                              ? "#f5f3ff"
-                              : "#fef3c7",
-                          color:
-                            activity.type === "test"
-                              ? "#059669"
-                              : activity.type === "vocab"
-                              ? "#7c3aed"
-                              : "#d97706",
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </TabPanel>
-
-            {/* Achievements Tab */}
-            <TabPanel value={tabValue} index={1}>
-              <Grid container spacing={2}>
-                {achievements.map((achievement) => (
-                  <Grid size={{ xs: 6, sm: 4, md: 3 }} key={achievement.id}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: achievement.earned ? "#d1fae5" : "#e5e7eb",
-                        bgcolor: achievement.earned ? "#f0fdf4" : "#f8fafc",
-                        textAlign: "center",
-                        opacity: achievement.earned ? 1 : 0.7,
-                      }}
-                    >
-                      <Typography variant="h4" mb={1}>
-                        {achievement.icon}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600} color="grey.900" mb={0.5}>
-                        {achievement.title}
-                      </Typography>
-                      {achievement.earned ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {achievement.date}
-                        </Typography>
-                      ) : (
-                        <Box>
-                          <LinearProgress
-                            variant="determinate"
-                            value={achievement.progress}
-                            sx={{
-                              height: 4,
-                              borderRadius: 2,
-                              bgcolor: "#e5e7eb",
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor: theme.colors.primary,
-                              },
-                            }}
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {achievement.progress}%
-                          </Typography>
-                        </Box>
-                      )}
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </TabPanel>
-
-            {/* Personal Info Tab */}
-            <TabPanel value={tabValue} index={2}>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Họ và tên"
-                    value={userData.fullName}
-                    disabled={!isEditing}
-                    onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    value={userData.email}
-                    disabled={!isEditing}
-                    onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Số điện thoại"
-                    value={userData.phone}
-                    disabled={!isEditing}
-                    onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ"
-                    value={userData.address}
-                    disabled={!isEditing}
-                    onChange={(e) => setUserData({ ...userData, address: e.target.value })}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    label="Giới thiệu bản thân"
-                    value={userData.bio}
-                    multiline
-                    rows={3}
-                    disabled={!isEditing}
-                    onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    {isEditing ? (
-                      <>
-                        <Button
-                          variant="outlined"
-                          onClick={() => setIsEditing(false)}
-                          sx={{ textTransform: "none" }}
-                        >
-                          Hủy
-                        </Button>
-                        <Button
-                          variant="contained"
-                          onClick={() => setIsEditing(false)}
-                          sx={{
-                            textTransform: "none",
-                            background: theme.primary,
-                            "&:hover": { background: theme.primaryDark },
-                          }}
-                        >
-                          Lưu thay đổi
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="outlined"
-                        startIcon={<Edit3 size={16} />}
-                        onClick={() => setIsEditing(true)}
-                        sx={{
-                          borderColor: theme.colors.primary,
-                          color: theme.colors.primary,
-                          textTransform: "none",
-                          fontWeight: 600,
+                          p: 2.5,
+                          borderRadius: 3,
+                          bgcolor: "#f8fafc",
+                          border: "1px solid #e5e7eb",
+                          transition: "all 0.2s ease",
                           "&:hover": {
-                            borderColor: theme.colors.primaryDark,
-                            bgcolor: "#ecfdf5",
+                            bgcolor: "#f1f5f9",
+                            transform: "translateX(4px)",
                           },
                         }}
                       >
-                        Chỉnh sửa
-                      </Button>
-                    )}
-                  </Stack>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: "50%",
+                                bgcolor:
+                                  activity.type === "test"
+                                    ? "#ecfdf5"
+                                    : activity.type === "vocab"
+                                    ? "#f5f3ff"
+                                    : activity.type === "grammar"
+                                    ? "#fef3c7"
+                                    : "#dbeafe",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                              }}
+                            >
+                              {activity.type === "test" && <Target size={20} color="#10b981" />}
+                              {activity.type === "vocab" && <BookOpen size={20} color="#7c3aed" />}
+                              {activity.type === "grammar" && <CheckCircle size={20} color="#d97706" />}
+                              {activity.type === "listening" && <TrendingUp size={20} color="#3b82f6" />}
+                            </Box>
+                            <Box>
+                              <Typography variant="body1" fontWeight={600} color="grey.900">
+                                {activity.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {activity.date}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          <Chip
+                            label={activity.result}
+                            size="small"
+                            sx={{
+                              bgcolor:
+                                activity.type === "test"
+                                  ? "#ecfdf5"
+                                  : activity.type === "vocab"
+                                  ? "#f5f3ff"
+                                  : activity.type === "grammar"
+                                  ? "#fef3c7"
+                                  : "#dbeafe",
+                              color:
+                                activity.type === "test"
+                                  ? "#059669"
+                                  : activity.type === "vocab"
+                                  ? "#7c3aed"
+                                  : activity.type === "grammar"
+                                  ? "#d97706"
+                                  : "#3b82f6",
+                              fontWeight: 700,
+                              fontSize: 13,
+                              px: 1,
+                            }}
+                          />
+                        </Stack>
+                      </Box>
+                    </Grow>
+                  ))}
+                </Stack>
+              </TabPanel>
+
+              {/* Achievements Tab */}
+              <TabPanel value={tabValue} index={1}>
+                <Grid container spacing={2}>
+                  {achievements.map((achievement, idx) => (
+                    <Grid size={{ xs: 6, sm: 4, md: 3 }} key={achievement.id}>
+                      <Grow in timeout={300 + idx * 50}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2.5,
+                            borderRadius: 3,
+                            border: "2px solid",
+                            borderColor: achievement.earned ? "#a7f3d0" : "#e5e7eb",
+                            bgcolor: achievement.earned ? "#f0fdf4" : "#f8fafc",
+                            textAlign: "center",
+                            transition: "all 0.3s ease",
+                            cursor: "default",
+                            "&:hover": {
+                              transform: achievement.earned ? "scale(1.05)" : "none",
+                              boxShadow: achievement.earned ? "0 8px 24px rgba(16, 185, 129, 0.2)" : "none",
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: "50%",
+                              bgcolor: achievement.earned ? "#dcfce7" : "#f1f5f9",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              mx: "auto",
+                              mb: 1.5,
+                              fontSize: 28,
+                              filter: achievement.earned ? "none" : "grayscale(1)",
+                              opacity: achievement.earned ? 1 : 0.5,
+                            }}
+                          >
+                            {achievement.icon}
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            color={achievement.earned ? "grey.900" : "grey.500"}
+                            mb={0.5}
+                          >
+                            {achievement.title}
+                          </Typography>
+                          {achievement.earned ? (
+                            <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                              <CheckCircle size={12} color="#10b981" />
+                              <Typography variant="caption" color="#10b981" fontWeight={600}>
+                                {achievement.date}
+                              </Typography>
+                            </Stack>
+                          ) : (
+                            <Box>
+                              <Box sx={{ position: "relative", mb: 0.5 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={achievement.progress}
+                                  sx={{
+                                    height: 6,
+                                    borderRadius: 3,
+                                    bgcolor: "#e5e7eb",
+                                    "& .MuiLinearProgress-bar": {
+                                      bgcolor: theme.colors.primary,
+                                      borderRadius: 3,
+                                    },
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                {achievement.progress}%
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Grow>
+                    </Grid>
+                  ))}
                 </Grid>
-              </Grid>
-            </TabPanel>
-          </Box>
-        </Paper>
+              </TabPanel>
+
+              {/* Personal Info Tab */}
+              <TabPanel value={tabValue} index={2}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Họ và tên"
+                      value={userData.fullName}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.colors.primary,
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: theme.colors.primary,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      value={userData.email}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.colors.primary,
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: theme.colors.primary,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Số điện thoại"
+                      value={userData.phone}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.colors.primary,
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: theme.colors.primary,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Địa chỉ"
+                      value={userData.address}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, address: e.target.value })}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.colors.primary,
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: theme.colors.primary,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Giới thiệu bản thân"
+                      value={userData.bio}
+                      multiline
+                      rows={3}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.colors.primary,
+                          },
+                        },
+                        "& .MuiInputLabel-root.Mui-focused": {
+                          color: theme.colors.primary,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            variant="outlined"
+                            onClick={() => setIsEditing(false)}
+                            sx={{
+                              textTransform: "none",
+                              borderRadius: 2,
+                              px: 3,
+                            }}
+                          >
+                            Hủy
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={() => setIsEditing(false)}
+                            sx={{
+                              textTransform: "none",
+                              background: theme.primary,
+                              borderRadius: 2,
+                              px: 3,
+                              fontWeight: 600,
+                              boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+                              "&:hover": { background: theme.primaryDark },
+                            }}
+                          >
+                            Lưu thay đổi
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          startIcon={<Edit3 size={16} />}
+                          onClick={() => setIsEditing(true)}
+                          sx={{
+                            borderColor: theme.colors.primary,
+                            color: theme.colors.primary,
+                            textTransform: "none",
+                            fontWeight: 600,
+                            borderRadius: 2,
+                            px: 3,
+                            "&:hover": {
+                              borderColor: theme.colors.primaryDark,
+                              bgcolor: "#ecfdf5",
+                            },
+                          }}
+                        >
+                          Chỉnh sửa thông tin
+                        </Button>
+                      )}
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </TabPanel>
+            </Box>
+          </Paper>
+        </Fade>
       </Box>
     </Box>
   );

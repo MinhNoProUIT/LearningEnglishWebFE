@@ -85,7 +85,7 @@ export const useRefreshUser = () => {
           id: result.id,
           username: result.username,
           email: result.email,
-          role: result.role,
+          isadmin: result.role,
         })
       );
 

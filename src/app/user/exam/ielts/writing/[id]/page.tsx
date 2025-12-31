@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from "@mui/material";
 import {
   Clock,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { examTheme } from "@/components/exam";
+import { useGetExamByIdQuery } from "@/services/ExamService";
 
 const theme = {
   primary: examTheme.gradients.primary,
@@ -40,54 +42,106 @@ const theme = {
   colors: examTheme.colors,
 };
 
-// Mock data for writing test details
-const getWritingTestData = (id: string) => ({
-  id: parseInt(id),
-  title: `Writing Test ${id}`,
-  subtitle: `Cambridge 18 - Test ${id}`,
-  duration: "60 phút",
-  totalTasks: 2,
-  task1: {
-    type: "Bar Chart",
-    description: "Biểu đồ cột so sánh lượng nước tiêu thụ ở các quốc gia khác nhau trong 3 năm (2010, 2015, 2020)",
-    timeRecommended: "20 phút",
-    minWords: 150,
-    tips: [
-      "Mô tả xu hướng chính và các so sánh nổi bật",
-      "Sử dụng từ vựng chỉ số liệu (increase, decrease, remain stable)",
-      "Bao gồm các con số cụ thể để hỗ trợ mô tả",
-      "Không đưa ra ý kiến cá nhân",
-    ],
-  },
-  task2: {
-    topic: "Education & Technology",
-    question:
-      "Some people believe that technology has made education more accessible, while others argue that it has created new challenges. Discuss both views and give your opinion.",
-    timeRecommended: "40 phút",
-    minWords: 250,
-    tips: [
-      "Lập dàn ý rõ ràng: Mở bài, Thân bài (2-3 đoạn), Kết luận",
-      "Đưa ra cả hai quan điểm trước khi nêu ý kiến cá nhân",
-      "Sử dụng các ví dụ cụ thể để hỗ trợ luận điểm",
-      "Kết luận cần tóm tắt và khẳng định lại quan điểm",
-    ],
-  },
-  bandDescriptors: {
-    taskAchievement: "Hoàn thành nhiệm vụ / Trả lời câu hỏi",
-    coherenceCohesion: "Mạch lạc và liên kết",
-    lexicalResource: "Vốn từ vựng",
-    grammaticalRange: "Độ đa dạng ngữ pháp và độ chính xác",
-  },
-  attempts: 2,
-  bestScore: 7.0,
-  lastAttempt: "18/12/2024",
-});
-
 export default function WritingTestDetailPage() {
   const router = useRouter();
   const params = useParams();
   const testId = params.id as string;
-  const testData = getWritingTestData(testId);
+
+  const { data: examData, isLoading, error } = useGetExamByIdQuery(testId);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          bgcolor: theme.colors.bgLight,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+          <Typography variant="h6" fontWeight={600}>
+            Đang tải thông tin bài test...
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error || !examData) {
+    return (
+      <Box
+        sx={{
+          bgcolor: theme.colors.bgLight,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+          <AlertCircle size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Không thể tải thông tin bài test
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => router.push("/user/exam/ielts/writing")}
+            sx={{ background: theme.primary }}
+          >
+            Quay lại danh sách
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Build test data from API
+  const testData = {
+    id: examData.id,
+    title: examData.title,
+    subtitle: examData.description || "",
+    duration: `${examData.duration_minutes || 60} phút`,
+    totalTasks: examData.sections?.length || 2,
+    task1: {
+      type: examData.sections?.[0]?.title || "Task 1",
+      description: examData.sections?.[0]?.instructions || "",
+      timeRecommended: `${examData.sections?.[0]?.time_limit_minutes || 20} phút`,
+      minWords: 150,
+      tips: [
+        "Mô tả xu hướng chính và các so sánh nổi bật",
+        "Sử dụng từ vựng chỉ số liệu (increase, decrease, remain stable)",
+        "Bao gồm các con số cụ thể để hỗ trợ mô tả",
+        "Không đưa ra ý kiến cá nhân",
+      ],
+    },
+    task2: {
+      topic: examData.sections?.[1]?.title || "Task 2",
+      question: examData.sections?.[1]?.instructions || "",
+      timeRecommended: `${examData.sections?.[1]?.time_limit_minutes || 40} phút`,
+      minWords: 250,
+      tips: [
+        "Lập dàn ý rõ ràng: Mở bài, Thân bài (2-3 đoạn), Kết luận",
+        "Đưa ra cả hai quan điểm trước khi nêu ý kiến cá nhân",
+        "Sử dụng các ví dụ cụ thể để hỗ trợ luận điểm",
+        "Kết luận cần tóm tắt và khẳng định lại quan điểm",
+      ],
+    },
+    bandDescriptors: {
+      taskAchievement: "Hoàn thành nhiệm vụ / Trả lời câu hỏi",
+      coherenceCohesion: "Mạch lạc và liên kết",
+      lexicalResource: "Vốn từ vựng",
+      grammaticalRange: "Độ đa dạng ngữ pháp và độ chính xác",
+    },
+    // History data - will be populated from practice history API later
+    attempts: 0,
+    bestScore: "N/A",
+    lastAttempt: "N/A",
+  };
 
   const handleStartTest = () => {
     router.push(`/user/exam/ielts/writing/${testId}/test`);

@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Zap,
   Globe,
-  MessageCircle,
   Headphones,
   CheckCircle,
   X,
@@ -538,7 +537,7 @@ export default function EvolingoWelcome() {
                         </div>
                       </div>
                       <p className="text-lg text-gray-700 leading-relaxed italic">
-                        "{testimonial.content}"
+                        &quot;{testimonial.content}&quot;
                       </p>
                       <div className="flex gap-1 mt-6">
                         {[...Array(5)].map((_, i) => (

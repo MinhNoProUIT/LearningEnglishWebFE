@@ -30,8 +30,6 @@ const MOCK_QUESTIONS: ITreasureHuntQuestion[] = [
       { id: "d", label: "D", text: "going" },
     ],
     timeLimit: 30,
-    difficulty: "EASY",
-    category: "Grammar",
   },
   {
     id: "q2",
@@ -43,8 +41,6 @@ const MOCK_QUESTIONS: ITreasureHuntQuestion[] = [
       { id: "d", label: "D", text: "Tired" },
     ],
     timeLimit: 30,
-    difficulty: "EASY",
-    category: "Vocabulary",
   },
   {
     id: "q3",
@@ -56,8 +52,6 @@ const MOCK_QUESTIONS: ITreasureHuntQuestion[] = [
       { id: "d", label: "D", text: "gone" },
     ],
     timeLimit: 30,
-    difficulty: "EASY",
-    category: "Grammar",
   },
   {
     id: "q4",
@@ -69,8 +63,6 @@ const MOCK_QUESTIONS: ITreasureHuntQuestion[] = [
       { id: "d", label: "D", text: "Mild" },
     ],
     timeLimit: 30,
-    difficulty: "EASY",
-    category: "Vocabulary",
   },
   {
     id: "q5",
@@ -82,8 +74,6 @@ const MOCK_QUESTIONS: ITreasureHuntQuestion[] = [
       { id: "d", label: "D", text: "He not like coffee." },
     ],
     timeLimit: 30,
-    difficulty: "MEDIUM",
-    category: "Grammar",
   },
 ];
 
@@ -124,7 +114,7 @@ const generateMockMap = (size: number): CellType[] => {
   // Place questions (30% of cells)
   const questionCount = Math.floor(size * size * 0.3);
   for (let i = 0; i < questionCount; i++) {
-    let pos;
+    let pos: number;
     do {
       pos = Math.floor(Math.random() * size * size);
     } while (cells[pos] !== CellType.EMPTY || pos === 0);
@@ -134,7 +124,7 @@ const generateMockMap = (size: number): CellType[] => {
   // Place gems (15% of cells)
   const gemCount = Math.floor(size * size * 0.15);
   for (let i = 0; i < gemCount; i++) {
-    let pos;
+    let pos: number;
     do {
       pos = Math.floor(Math.random() * size * size);
     } while (cells[pos] !== CellType.EMPTY || pos === 0);
@@ -144,7 +134,7 @@ const generateMockMap = (size: number): CellType[] => {
   // Place traps (10% of cells)
   const trapCount = Math.floor(size * size * 0.1);
   for (let i = 0; i < trapCount; i++) {
-    let pos;
+    let pos: number;
     do {
       pos = Math.floor(Math.random() * size * size);
     } while (cells[pos] !== CellType.EMPTY || pos === 0);
@@ -235,7 +225,7 @@ export const mockStartGame = (difficulty: TreasureHuntDifficulty): IStartGameRes
     mapSize,
     timeLimit: difficulty === TreasureHuntDifficulty.EASY ? 600 :
                difficulty === TreasureHuntDifficulty.MEDIUM ? 720 : 900,
-    startPosition: 0,
+    playerPosition: 0,
     visibleCells: getVisibleCells(mockGameState),
     activeItems: [
       { itemType: TreasureHuntItemType.TORCH, remainingUses: 2 },
@@ -243,8 +233,8 @@ export const mockStartGame = (difficulty: TreasureHuntDifficulty): IStartGameRes
     ],
     config: {
       difficulty,
-      mapSize,
-      questionTimeLimit: 30,
+      isDailyChallenge: false,
+      scoreMultiplier: 1,
     },
   };
 };
@@ -266,12 +256,15 @@ export const mockResumeGame = (): IResumeGameResponse | null => {
     currentScore: mockGameState.score,
     config: {
       difficulty: TreasureHuntDifficulty.MEDIUM,
-      mapSize: mockGameState.mapSize,
-      questionTimeLimit: 30,
+      isDailyChallenge: false,
+      scoreMultiplier: 1.5,
     },
     gameStats: {
       questionsAnswered: mockGameState.questionsAnswered,
       questionsCorrect: mockGameState.questionsCorrect,
+      accuracy: mockGameState.questionsAnswered > 0
+        ? Math.round((mockGameState.questionsCorrect / mockGameState.questionsAnswered) * 100)
+        : 0,
     },
   };
 };
@@ -312,11 +305,14 @@ export const mockMove = (targetPosition: number): IMoveResponse => {
   }
 
   return {
-    success: true,
     newPosition: targetPosition,
     cellType,
     visibleCells: getVisibleCells(mockGameState),
-    activeEffects: trapEffect ? [{ type: trapEffect.type, remainingSeconds: trapEffect.duration || 0 }] : [],
+    activeEffects: trapEffect ? [{
+      type: trapEffect.type,
+      remainingSeconds: trapEffect.duration || 0,
+      expiresAt: new Date(Date.now() + (trapEffect.duration || 0) * 1000).toISOString(),
+    }] : [],
     newScore,
     question,
     trapEffect,
@@ -347,11 +343,16 @@ export const mockAnswer = (questionId: string, selectedOptionId: string): IAnswe
     newScore: Math.round(mockGameState.score),
     currentStreak: mockGameState.streak,
     pointsEarned: isCorrect ? 10 : 0,
-    bonusPoints: 0,
+    timeBonus: 0,
+    streakBonus: 0,
+    streakMultiplier: mockGameState.streak >= 3 ? 1.5 : 1,
     visibleCells: getVisibleCells(mockGameState),
     stats: {
       questionsAnswered: mockGameState.questionsAnswered,
       questionsCorrect: mockGameState.questionsCorrect,
+      accuracy: mockGameState.questionsAnswered > 0
+        ? Math.round((mockGameState.questionsCorrect / mockGameState.questionsAnswered) * 100)
+        : 0,
     },
     pushedBack: !isCorrect,
     newPosition: isCorrect ? undefined : Math.max(0, mockGameState.playerPosition - 1),
@@ -361,45 +362,45 @@ export const mockAnswer = (questionId: string, selectedOptionId: string): IAnswe
 export const mockGetStats = (): IStatsResponse => ({
   overall: {
     totalGames: 5,
-    gamesCompleted: 3,
-    gamesAbandoned: 1,
-    totalPlayTime: 3600,
+    totalScore: 750,
     bestScore: 250,
     averageScore: 150,
-    totalQuestionsAnswered: 45,
-    totalQuestionsCorrect: 38,
+    totalCorrect: 38,
+    totalQuestions: 45,
     overallAccuracy: 84,
-    bestStreak: 7,
     treasuresFound: 3,
-    gemsCollected: 25,
+    bestStreak: 7,
   },
-  byDifficulty: {
-    EASY: { gamesPlayed: 2, bestScore: 200, averageAccuracy: 90 },
-    MEDIUM: { gamesPlayed: 2, bestScore: 250, averageAccuracy: 85 },
-    HARD: { gamesPlayed: 1, bestScore: 180, averageAccuracy: 75 },
+  thisWeek: {
+    gamesPlayed: 2,
+    averageScore: 200,
+    improvement: 10,
   },
-  recentGames: [],
+  dailyChallengeStreak: 3,
 });
 
 export const mockGetInventory = (): IInventoryResponse => ({
-  gems: 150,
+  totalGems: 150,
   items: [
-    { itemType: TreasureHuntItemType.TORCH, quantity: 5, description: "Reveal a hidden cell" },
-    { itemType: TreasureHuntItemType.SHIELD, quantity: 3, description: "Block one trap" },
-    { itemType: TreasureHuntItemType.DICTIONARY, quantity: 2, description: "50/50 - Remove 2 wrong answers" },
-    { itemType: TreasureHuntItemType.COMPASS, quantity: 1, description: "Show treasure direction" },
-    { itemType: TreasureHuntItemType.TIME_BOOST, quantity: 2, description: "Add 60 seconds" },
+    { itemType: TreasureHuntItemType.TORCH, name: "Torch", quantity: 5, description: "Reveal a hidden cell", price: 30, icon: "torch" },
+    { itemType: TreasureHuntItemType.SHIELD, name: "Shield", quantity: 3, description: "Block one trap", price: 40, icon: "shield" },
+    { itemType: TreasureHuntItemType.DICTIONARY, name: "Dictionary", quantity: 2, description: "50/50 - Remove 2 wrong answers", price: 25, icon: "dictionary" },
+    { itemType: TreasureHuntItemType.COMPASS, name: "Compass", quantity: 1, description: "Show treasure direction", price: 50, icon: "compass" },
+    { itemType: TreasureHuntItemType.TIME_BOOST, name: "Time Boost", quantity: 2, description: "Add 60 seconds", price: 35, icon: "time_boost" },
   ],
 });
 
 export const mockGetDailyChallenge = (): IDailyChallengeResponse => ({
-  challengeId: "daily-1",
-  date: new Date().toISOString().split("T")[0],
+  challengeDate: new Date().toISOString().split("T")[0],
   difficulty: TreasureHuntDifficulty.MEDIUM,
   hasPlayed: false,
+  topPlayers: [
+    { rank: 1, userName: "Player1", score: 300 },
+    { rank: 2, userName: "Player2", score: 280 },
+    { rank: 3, userName: "Player3", score: 250 },
+  ],
   rewards: {
     completionBonus: 50,
-    perfectBonus: 100,
   },
 });
 
