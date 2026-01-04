@@ -35,6 +35,8 @@ import {
   Flame,
   User,
 } from "lucide-react";
+import { useGetCurrentUserQuery } from "@/services/UserService";
+import { formatDate } from "@/utils/formatDate";
 
 const theme = {
   primary: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
@@ -145,6 +147,8 @@ export default function ProfilePage() {
     }
   };
 
+  const { data: currentUser, isLoading, error } = useGetCurrentUserQuery();
+
   const [userData, setUserData] = useState({
     fullName: "Trần Văn Minh",
     email: "minhtran@gmail.com",
@@ -167,22 +171,77 @@ export default function ProfilePage() {
   };
 
   const achievements = [
-    { id: 1, title: "Người mới bắt đầu", icon: "🎯", earned: true, date: "01/01/2024" },
-    { id: 2, title: "7 ngày liên tiếp", icon: "🔥", earned: true, date: "08/01/2024" },
-    { id: 3, title: "30 ngày liên tiếp", icon: "💪", earned: true, date: "01/02/2024" },
-    { id: 4, title: "1000 từ vựng", icon: "📚", earned: true, date: "15/02/2024" },
-    { id: 5, title: "TOEIC 800+", icon: "🏆", earned: true, date: "01/03/2024" },
+    {
+      id: 1,
+      title: "Người mới bắt đầu",
+      icon: "🎯",
+      earned: true,
+      date: "01/01/2024",
+    },
+    {
+      id: 2,
+      title: "7 ngày liên tiếp",
+      icon: "🔥",
+      earned: true,
+      date: "08/01/2024",
+    },
+    {
+      id: 3,
+      title: "30 ngày liên tiếp",
+      icon: "💪",
+      earned: true,
+      date: "01/02/2024",
+    },
+    {
+      id: 4,
+      title: "1000 từ vựng",
+      icon: "📚",
+      earned: true,
+      date: "15/02/2024",
+    },
+    {
+      id: 5,
+      title: "TOEIC 800+",
+      icon: "🏆",
+      earned: true,
+      date: "01/03/2024",
+    },
     { id: 6, title: "IELTS 7.0", icon: "⭐", earned: true, date: "15/03/2024" },
     { id: 7, title: "100 bài test", icon: "🎓", earned: false, progress: 48 },
     { id: 8, title: "5000 từ vựng", icon: "🌟", earned: false, progress: 47 },
   ];
 
   const recentActivities = [
-    { type: "test", title: "TOEIC Full Test 5", result: "875/990", date: "Hôm nay, 14:30" },
-    { type: "vocab", title: "Business Vocabulary", result: "+50 từ", date: "Hôm nay, 10:00" },
-    { type: "test", title: "IELTS Writing Test 2", result: "Band 7.0", date: "Hôm qua, 16:00" },
-    { type: "grammar", title: "Conditional Sentences", result: "90%", date: "2 ngày trước" },
-    { type: "listening", title: "TOEIC Listening Part 3", result: "85%", date: "3 ngày trước" },
+    {
+      type: "test",
+      title: "TOEIC Full Test 5",
+      result: "875/990",
+      date: "Hôm nay, 14:30",
+    },
+    {
+      type: "vocab",
+      title: "Business Vocabulary",
+      result: "+50 từ",
+      date: "Hôm nay, 10:00",
+    },
+    {
+      type: "test",
+      title: "IELTS Writing Test 2",
+      result: "Band 7.0",
+      date: "Hôm qua, 16:00",
+    },
+    {
+      type: "grammar",
+      title: "Conditional Sentences",
+      result: "90%",
+      date: "2 ngày trước",
+    },
+    {
+      type: "listening",
+      title: "TOEIC Listening Part 3",
+      result: "85%",
+      date: "3 ngày trước",
+    },
   ];
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -224,7 +283,15 @@ export default function ProfilePage() {
             bgcolor: "rgba(255,255,255,0.05)",
           }}
         />
-        <Box sx={{ maxWidth: 1000, mx: "auto", px: { xs: 2, md: 4 }, position: "relative", zIndex: 1 }}>
+        <Box
+          sx={{
+            maxWidth: 1000,
+            mx: "auto",
+            px: { xs: 2, md: 4 },
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <Fade in timeout={500}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Box
@@ -241,10 +308,18 @@ export default function ProfilePage() {
                 <User size={28} color="white" />
               </Box>
               <Box>
-                <Typography variant="h5" fontWeight={700} color="white" mb={0.5}>
+                <Typography
+                  variant="h5"
+                  fontWeight={700}
+                  color="white"
+                  mb={0.5}
+                >
                   Trang cá nhân
                 </Typography>
-                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(255,255,255,0.8)" }}
+                >
                   Quản lý thông tin và theo dõi tiến trình học tập của bạn
                 </Typography>
               </Box>
@@ -276,11 +351,15 @@ export default function ProfilePage() {
                 pb: 4,
               }}
             >
-              <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="center">
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={3}
+                alignItems="center"
+              >
                 {/* Avatar Section */}
                 <Box sx={{ position: "relative" }}>
                   <Avatar
-                    src={userData.avatar}
+                    src={currentUser.image_url || userData.avatar}
                     sx={{
                       width: 120,
                       height: 120,
@@ -288,9 +367,7 @@ export default function ProfilePage() {
                       boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                       bgcolor: "#e5e7eb",
                     }}
-                  >
-                    <User size={48} color="#9ca3af" />
-                  </Avatar>
+                  ></Avatar>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -318,8 +395,13 @@ export default function ProfilePage() {
 
                 {/* User Name & Bio */}
                 <Box sx={{ flex: 1, textAlign: { xs: "center", md: "left" } }}>
-                  <Typography variant="h4" fontWeight={800} color="grey.900" mb={0.5}>
-                    {userData.fullName}
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    color="grey.900"
+                    mb={0.5}
+                  >
+                    {currentUser.fullname}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" mb={2}>
                     {userData.bio}
@@ -406,8 +488,12 @@ export default function ProfilePage() {
                       <Typography variant="caption" color="text.secondary">
                         Email
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} color="grey.800">
-                        {userData.email}
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color="grey.800"
+                      >
+                        {currentUser.email}
                       </Typography>
                     </Box>
                   </Stack>
@@ -441,8 +527,12 @@ export default function ProfilePage() {
                       <Typography variant="caption" color="text.secondary">
                         Điện thoại
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} color="grey.800">
-                        {userData.phone}
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color="grey.800"
+                      >
+                        {currentUser.phonenumber || "Chưa cập nhật"}
                       </Typography>
                     </Box>
                   </Stack>
@@ -476,8 +566,12 @@ export default function ProfilePage() {
                       <Typography variant="caption" color="text.secondary">
                         Địa chỉ
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} color="grey.800">
-                        {userData.address}
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color="grey.800"
+                      >
+                        {currentUser.address || "Chưa cập nhật"}
                       </Typography>
                     </Box>
                   </Stack>
@@ -511,8 +605,12 @@ export default function ProfilePage() {
                       <Typography variant="caption" color="text.secondary">
                         Ngày tham gia
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} color="grey.800">
-                        {userData.joinDate}
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color="grey.800"
+                      >
+                        {formatDate(currentUser?.created_date)}
                       </Typography>
                     </Box>
                   </Stack>
@@ -573,7 +671,13 @@ export default function ProfilePage() {
               boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
             }}
           >
-            <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "#fafbfc" }}>
+            <Box
+              sx={{
+                borderBottom: 1,
+                borderColor: "divider",
+                bgcolor: "#fafbfc",
+              }}
+            >
               <Tabs
                 value={tabValue}
                 onChange={handleTabChange}
@@ -620,8 +724,16 @@ export default function ProfilePage() {
                           },
                         }}
                       >
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Stack direction="row" spacing={2} alignItems="center">
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="center"
+                          >
                             <Box
                               sx={{
                                 width: 44,
@@ -641,16 +753,31 @@ export default function ProfilePage() {
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                               }}
                             >
-                              {activity.type === "test" && <Target size={20} color="#10b981" />}
-                              {activity.type === "vocab" && <BookOpen size={20} color="#7c3aed" />}
-                              {activity.type === "grammar" && <CheckCircle size={20} color="#d97706" />}
-                              {activity.type === "listening" && <TrendingUp size={20} color="#3b82f6" />}
+                              {activity.type === "test" && (
+                                <Target size={20} color="#10b981" />
+                              )}
+                              {activity.type === "vocab" && (
+                                <BookOpen size={20} color="#7c3aed" />
+                              )}
+                              {activity.type === "grammar" && (
+                                <CheckCircle size={20} color="#d97706" />
+                              )}
+                              {activity.type === "listening" && (
+                                <TrendingUp size={20} color="#3b82f6" />
+                              )}
                             </Box>
                             <Box>
-                              <Typography variant="body1" fontWeight={600} color="grey.900">
+                              <Typography
+                                variant="body1"
+                                fontWeight={600}
+                                color="grey.900"
+                              >
                                 {activity.title}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {activity.date}
                               </Typography>
                             </Box>
@@ -699,14 +826,20 @@ export default function ProfilePage() {
                             p: 2.5,
                             borderRadius: 3,
                             border: "2px solid",
-                            borderColor: achievement.earned ? "#a7f3d0" : "#e5e7eb",
+                            borderColor: achievement.earned
+                              ? "#a7f3d0"
+                              : "#e5e7eb",
                             bgcolor: achievement.earned ? "#f0fdf4" : "#f8fafc",
                             textAlign: "center",
                             transition: "all 0.3s ease",
                             cursor: "default",
                             "&:hover": {
-                              transform: achievement.earned ? "scale(1.05)" : "none",
-                              boxShadow: achievement.earned ? "0 8px 24px rgba(16, 185, 129, 0.2)" : "none",
+                              transform: achievement.earned
+                                ? "scale(1.05)"
+                                : "none",
+                              boxShadow: achievement.earned
+                                ? "0 8px 24px rgba(16, 185, 129, 0.2)"
+                                : "none",
                             },
                           }}
                         >
@@ -715,14 +848,18 @@ export default function ProfilePage() {
                               width: 56,
                               height: 56,
                               borderRadius: "50%",
-                              bgcolor: achievement.earned ? "#dcfce7" : "#f1f5f9",
+                              bgcolor: achievement.earned
+                                ? "#dcfce7"
+                                : "#f1f5f9",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               mx: "auto",
                               mb: 1.5,
                               fontSize: 28,
-                              filter: achievement.earned ? "none" : "grayscale(1)",
+                              filter: achievement.earned
+                                ? "none"
+                                : "grayscale(1)",
                               opacity: achievement.earned ? 1 : 0.5,
                             }}
                           >
@@ -737,9 +874,18 @@ export default function ProfilePage() {
                             {achievement.title}
                           </Typography>
                           {achievement.earned ? (
-                            <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                              justifyContent="center"
+                            >
                               <CheckCircle size={12} color="#10b981" />
-                              <Typography variant="caption" color="#10b981" fontWeight={600}>
+                              <Typography
+                                variant="caption"
+                                color="#10b981"
+                                fontWeight={600}
+                              >
                                 {achievement.date}
                               </Typography>
                             </Stack>
@@ -760,7 +906,11 @@ export default function ProfilePage() {
                                   }}
                                 />
                               </Box>
-                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                fontWeight={600}
+                              >
                                 {achievement.progress}%
                               </Typography>
                             </Box>
@@ -779,9 +929,11 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Họ và tên"
-                      value={userData.fullName}
+                      value={currentUser.fullname}
                       disabled={!isEditing}
-                      onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
+                      onChange={(e) =>
+                        setUserData({ ...userData, fullName: e.target.value })
+                      }
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -799,9 +951,11 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Email"
-                      value={userData.email}
+                      value={currentUser.email}
                       disabled={!isEditing}
-                      onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                      onChange={(e) =>
+                        setUserData({ ...userData, email: e.target.value })
+                      }
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -819,9 +973,11 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Số điện thoại"
-                      value={userData.phone}
+                      value={currentUser.phonenumber || "Chưa cập nhật"}
                       disabled={!isEditing}
-                      onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setUserData({ ...userData, phone: e.target.value })
+                      }
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -839,9 +995,11 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Địa chỉ"
-                      value={userData.address}
+                      value={currentUser.address || "Chưa cập nhật"}
                       disabled={!isEditing}
-                      onChange={(e) => setUserData({ ...userData, address: e.target.value })}
+                      onChange={(e) =>
+                        setUserData({ ...userData, address: e.target.value })
+                      }
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -863,7 +1021,9 @@ export default function ProfilePage() {
                       multiline
                       rows={3}
                       disabled={!isEditing}
-                      onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
+                      onChange={(e) =>
+                        setUserData({ ...userData, bio: e.target.value })
+                      }
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -878,7 +1038,11 @@ export default function ProfilePage() {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      justifyContent="flex-end"
+                    >
                       {isEditing ? (
                         <>
                           <Button

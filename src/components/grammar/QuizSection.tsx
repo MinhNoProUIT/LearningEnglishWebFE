@@ -200,10 +200,16 @@ const QuizSection: React.FC<QuizSectionProps> = ({
   const getOptionsArray = (options: any): string[] => {
     if (!options) return [];
     if (Array.isArray(options)) {
-      return options.map(opt => {
+      return options.map((opt) => {
         if (typeof opt === "string") return opt;
         if (typeof opt === "object" && opt !== null) {
-          return opt.text || opt.value || opt.label || opt.content || JSON.stringify(opt);
+          return (
+            opt.text ||
+            opt.value ||
+            opt.label ||
+            opt.content ||
+            JSON.stringify(opt)
+          );
         }
         return String(opt);
       });
@@ -218,18 +224,23 @@ const QuizSection: React.FC<QuizSectionProps> = ({
     }
     if (typeof options === "object" && options !== null) {
       const keys = Object.keys(options);
-      const isNumericKeys = keys.every(k => !isNaN(Number(k)));
+      const isNumericKeys = keys.every((k) => !isNaN(Number(k)));
       if (isNumericKeys && keys.length > 0) {
-        return keys.sort((a, b) => Number(a) - Number(b)).map(k => String(options[k]));
+        return keys
+          .sort((a, b) => Number(a) - Number(b))
+          .map((k) => String(options[k]));
       }
-      return Object.values(options).map(v => String(v));
+      return Object.values(options).map((v) => String(v));
     }
     return [];
   };
 
   // Helper function to get option text from letter (A, B, C, D) or return original if not a letter
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getOptionTextFromAnswer = (answer: string, quizOptions: any): string => {
+  const getOptionTextFromAnswer = (
+    answer: string,
+    quizOptions: any
+  ): string => {
     if (!answer) return "";
 
     // Check if answer is a single letter A-Z
@@ -303,7 +314,11 @@ const QuizSection: React.FC<QuizSectionProps> = ({
               const isCorrect = result?.isCorrect;
 
               // Map letter answers (A, B, C, D) to actual option text
-              const userAnswerText = result?.user_answer || "";
+              const userAnswerText = getOptionTextFromAnswer(
+                result?.user_answer || "",
+                quiz.options
+              );
+
               const correctAnswerText = getOptionTextFromAnswer(
                 result?.correct_answer || "",
                 quiz.options
@@ -358,7 +373,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({
                         )}
                         {result?.explanation && (
                           <p className="text-gray-600 mt-2 italic">
-                            {result.explanation}
+                            Giải thích: {result.explanation}
                           </p>
                         )}
                       </div>
@@ -481,15 +496,17 @@ const QuizSection: React.FC<QuizSectionProps> = ({
           {currentOptions.map((option, index) => {
             // Lấy text từ object option (nếu option là object)
             const optionText =
-              typeof option === "object" ? (option as { text: string }).text : option;
+              typeof option === "object"
+                ? (option as { text: string }).text
+                : option;
 
-            const isSelected = selectedAnswer === optionText;
             const optionLetter = String.fromCharCode(65 + index);
+            const isSelected = selectedAnswer === optionLetter;
 
             return (
               <button
                 key={index}
-                onClick={() => handleSelectAnswer(currentQuiz.id, optionText)}
+                onClick={() => handleSelectAnswer(currentQuiz.id, optionLetter)}
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left cursor-pointer ${
                   isSelected
                     ? "bg-green-50 border-green-400 shadow-sm"

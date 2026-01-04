@@ -7,6 +7,7 @@ import {
   IExamGetAllParams,
   IApiResponse,
   IPagination,
+  IExamStart,
 } from "@/models/Exam";
 
 const apiPath =
@@ -141,6 +142,11 @@ export const examApi = createApi({
       transformResponse: (response: IApiResponse<IExam>) => response.data!,
       providesTags: (_result, _error, id) => [{ type: "Exam", id }],
     }),
+    startExam: builder.query<IExamStart, number | string>({
+      query: (id) => `Start/${id}`,
+      transformResponse: (response: IApiResponse<IExamStart>) => response.data!,
+      providesTags: (_result, _error, id) => [{ type: "Exam", id }],
+    }),
   }),
 });
 
@@ -154,4 +160,5 @@ export const {
   // User hooks
   useGetAllExamsQuery,
   useGetExamByIdQuery,
+  useStartExamQuery,
 } = examApi;

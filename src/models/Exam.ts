@@ -536,3 +536,38 @@ export interface IGroupReorderPayload {
 export interface IQuestionReorderPayload {
   question_orders: IReorderItem[];
 }
+
+export interface IExamStart {
+  id: number;
+  title: string;
+  duration_minutes?: number;
+  total_score?: number;
+  sections: {
+    id: number;
+    skill_type: SkillType;
+    title?: string;
+    instructions?: string;
+    time_limit_minutes?: number;
+    question_groups: {
+      id: number;
+      group_title?: string;
+      content_text?: string;
+      media_url?: string;
+      media_type: MediaType;
+      script_text?: string;
+      questions: {
+        id: number;
+        display_no: number;
+        question_text?: string;
+        question_type: QuestionType;
+        audio_url?: string;
+        points: number;
+        options: {
+          id: number;
+          option_text: string;
+          order_index: number;
+        }[];
+      }[];
+    }[];
+  }[];
+}
