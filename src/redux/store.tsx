@@ -17,6 +17,7 @@ import { grammarVideoApi } from "@/services/GrammarVideoService";
 import { chatApi } from "@/services/ChatService";
 import { authApi } from "@/services/AuthService";
 import { quizAttemptApi } from "@/services/QuizAttemptService";
+import { userApi } from "@/services/UserService";
 
 // Exam System APIs
 import { examTypeApi } from "@/services/ExamTypeService";
@@ -58,6 +59,7 @@ export const store = configureStore({
     [chatApi.reducerPath]: chatApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [quizAttemptApi.reducerPath]: quizAttemptApi.reducer,
+    [userApi.reducerPath]: userApi.reducer,
     // Exam System
     [examTypeApi.reducerPath]: examTypeApi.reducer,
     [levelApi.reducerPath]: levelApi.reducer,
@@ -89,6 +91,7 @@ export const store = configureStore({
       chatApi.middleware,
       authApi.middleware,
       quizAttemptApi.middleware,
+      userApi.middleware,
       // Exam System
       examTypeApi.middleware,
       levelApi.middleware,

@@ -41,17 +41,17 @@ const DRAWER_WIDTH = 280;
 const menuSections = [
   {
     title: "Tổng quan",
-    items: [
-      { text: "Dashboard", icon: <DashboardIcon />, href: "/admin" },
-    ],
+    items: [{ text: "Dashboard", icon: <DashboardIcon />, href: "/admin" }],
   },
   {
     title: "Người dùng",
     items: [
-      { text: "Quản lý người dùng", icon: <PeopleIcon />, href: "/admin/users" },
+      { text: "Quản lý người dùng", icon: <PeopleIcon />, href: "/admin/user" },
+
       { text: "Tiến độ học tập", icon: <PeopleIcon />, href: "/admin/user-progress" },
 
       { text: "Gói Premium", icon: <CardGiftcardIcon />, href: "/admin/courses" },
+
       { text: "Giao dịch", icon: <PaymentIcon />, href: "/admin/transactions" },
     ],
   },
@@ -61,7 +61,11 @@ const menuSections = [
       { text: "Chủ đề", icon: <TopicIcon />, href: "/admin/topics" },
       { text: "Từ vựng", icon: <TranslateIcon />, href: "/admin/vocabularys" },
       { text: "Ngữ pháp", icon: <MenuBookIcon />, href: "/admin/grammar" },
-      { text: "Video & Podcast", icon: <VideoLibraryIcon />, href: "/admin/media" },
+      {
+        text: "Video & Podcast",
+        icon: <VideoLibraryIcon />,
+        href: "/admin/media",
+      },
     ],
   },
   {
@@ -73,7 +77,11 @@ const menuSections = [
   {
     title: "Báo cáo",
     items: [
-      { text: "Báo cáo lỗi/vi phạm", icon: <ReportIcon />, href: "/admin/reports" },
+      {
+        text: "Báo cáo lỗi/vi phạm",
+        icon: <ReportIcon />,
+        href: "/admin/reports",
+      },
     ],
   },
 ];

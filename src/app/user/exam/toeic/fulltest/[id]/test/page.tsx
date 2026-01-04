@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Box,
@@ -42,20 +48,21 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
-import { useGetExamByIdQuery } from "@/services/ExamService";
+import { useStartExamQuery } from "@/services/ExamService";
 import {
   useStartExamMutation,
   useSaveProgressMutation,
   useSubmitExamMutation,
   useGetInProgressAttemptQuery,
 } from "@/services/ExamAttemptService";
-import { IExam } from "@/models/Exam";
+import { IExamStart } from "@/models/Exam";
 
 const theme = examTheme;
 
 // ================== TYPES ==================
 type Question = {
   id: number;
+  displayNo: number;
   partId: number;
   type: string;
   imageUrl?: string;
@@ -67,6 +74,7 @@ type Question = {
   options?: { label: string; text: string }[];
   subQuestions?: {
     id: number;
+    displayNo: number;
     questionText: string;
     options: { label: string; text: string }[];
   }[];
@@ -83,11 +91,10 @@ type Part = {
   instructions: string;
 };
 
-
 // ================== API DATA TRANSFORMERS ==================
 
 // Transform API exam data to local Question format
-const transformApiToQuestions = (exam: IExam): Question[] => {
+const transformApiToQuestions = (exam: IExamStart): Question[] => {
   const questions: Question[] = [];
 
   if (!exam.sections) return questions;
@@ -96,19 +103,29 @@ const transformApiToQuestions = (exam: IExam): Question[] => {
     section.question_groups?.forEach((group) => {
       if (group.questions && group.questions.length > 0) {
         // Check if this is a grouped question (multiple questions per passage/audio)
-        if (group.questions.length > 1 && (group.content_text || group.media_url)) {
+        if (
+          group.questions.length > 1 &&
+          (group.content_text || group.media_url)
+        ) {
           // Create a grouped question
           const firstQ = group.questions[0];
           questions.push({
-            id: firstQ.id,
+            id: Number(firstQ.id),
+            displayNo: firstQ.display_no,
             partId: section.id,
             type: getQuestionType(section.skill_type, group.media_type),
-            imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
-            audioUrl: group.media_type === "AUDIO" ? group.media_url : undefined,
+            imageUrl:
+              group.media_type === "IMAGE" ? group.media_url : undefined,
+            audioUrl:
+              group.media_type === "AUDIO" ? group.media_url : undefined,
             passage: group.content_text || undefined,
-            conversationText: section.skill_type === "LISTENING" && group.media_type === "AUDIO" ? group.script_text : undefined,
+            conversationText:
+              section.skill_type === "LISTENING" && group.media_type === "AUDIO"
+                ? group.script_text
+                : undefined,
             subQuestions: group.questions.map((q) => ({
               id: q.id,
+              displayNo: q.display_no,
               questionText: q.question_text || "",
               options: q.options.map((opt, idx) => ({
                 label: String.fromCharCode(65 + idx), // A, B, C, D
@@ -120,11 +137,16 @@ const transformApiToQuestions = (exam: IExam): Question[] => {
           // Single questions
           group.questions.forEach((q) => {
             questions.push({
-              id: q.id,
+              id: Number(q.id),
+              displayNo: q.display_no,
               partId: section.id,
               type: getQuestionType(section.skill_type, group.media_type),
-              imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
-              audioUrl: group.media_type === "AUDIO" ? group.media_url : (q.audio_url || undefined),
+              imageUrl:
+                group.media_type === "IMAGE" ? group.media_url : undefined,
+              audioUrl:
+                group.media_type === "AUDIO"
+                  ? group.media_url
+                  : q.audio_url || undefined,
               passage: group.content_text || undefined,
               questionText: q.question_text || "",
               options: q.options.map((opt, idx) => ({
@@ -142,26 +164,28 @@ const transformApiToQuestions = (exam: IExam): Question[] => {
 };
 
 // Transform API sections to local Part format
-const transformApiToParts = (exam: IExam): Part[] => {
+const transformApiToParts = (exam: IExamStart): Part[] => {
   if (!exam.sections) return [];
 
-  let questionNumber = 1;
-
   return exam.sections.map((section, idx) => {
-    const questionCount = section.question_groups?.reduce(
-      (acc, g) => acc + (g.questions?.length || 0),
-      0
-    ) || 0;
+    const displayNos: number[] = [];
 
-    const startQuestion = questionNumber;
-    const endQuestion = questionNumber + questionCount - 1;
-    questionNumber = endQuestion + 1;
+    section.question_groups?.forEach((group) => {
+      group.questions?.forEach((q) => {
+        if (q.display_no != null) {
+          displayNos.push(q.display_no);
+        }
+      });
+    });
+
+    const startQuestion = Math.min(...displayNos);
+    const endQuestion = Math.max(...displayNos);
 
     return {
       id: section.id,
       name: section.title || `Part ${idx + 1}`,
-      category: section.skill_type === "LISTENING" ? "Listening" as const : "Reading" as const,
-      questionCount,
+      category: section.skill_type === "LISTENING" ? "Listening" : "Reading",
+      questionCount: displayNos.length,
       startQuestion,
       endQuestion,
       icon: getPartIcon(section.skill_type, idx),
@@ -202,7 +226,13 @@ const partIcons: Record<string, React.ReactNode> = {
 // ================== COMPONENTS ==================
 
 // Timer Component
-const Timer = ({ initialTime, onTimeUp }: { initialTime: number; onTimeUp: () => void }) => {
+const Timer = ({
+  initialTime,
+  onTimeUp,
+}: {
+  initialTime: number;
+  onTimeUp: () => void;
+}) => {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [isWarning, setIsWarning] = useState(false);
 
@@ -226,7 +256,8 @@ const Timer = ({ initialTime, onTimeUp }: { initialTime: number; onTimeUp: () =>
   }, [timeLeft, onTimeUp]);
 
   useEffect(() => {
-    if (timeLeft <= 300) { // 5 minutes warning
+    if (timeLeft <= 300) {
+      // 5 minutes warning
       setIsWarning(true);
     }
   }, [timeLeft]);
@@ -236,9 +267,13 @@ const Timer = ({ initialTime, onTimeUp }: { initialTime: number; onTimeUp: () =>
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      return `${hours}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
     }
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -271,6 +306,7 @@ const QuestionNavigator = ({
   parts,
   answers,
   flaggedQuestions,
+  currentDisplayNo,
   currentQuestion,
   onQuestionClick,
   isListeningSection,
@@ -279,13 +315,21 @@ const QuestionNavigator = ({
   parts: Part[];
   answers: Record<number, string>;
   flaggedQuestions: Set<number>;
+  currentDisplayNo: number;
   currentQuestion: number;
   onQuestionClick: (questionId: number) => void;
   isListeningSection: boolean;
   listeningProgress: number; // Câu listening cao nhất đã đến (không thể quay lại)
 }) => {
   return (
-    <Paper sx={{ p: 2, borderRadius: 2, maxHeight: "calc(100vh - 200px)", overflow: "auto" }}>
+    <Paper
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        maxHeight: "calc(100vh - 200px)",
+        overflow: "auto",
+      }}
+    >
       <Typography variant="subtitle2" fontWeight={700} mb={2}>
         Danh sách câu hỏi
       </Typography>
@@ -302,11 +346,11 @@ const QuestionNavigator = ({
         </Paper>
       )}
 
-      {parts.map((part) => {
+      {parts.map((part, index) => {
         const isListeningPart = part.category === "Listening";
 
         return (
-          <Box key={part.id} mb={2}>
+          <Box key={part.id || index} mb={2}>
             <Stack direction="row" spacing={1} alignItems="center" mb={1}>
               <Chip
                 label={part.category}
@@ -318,29 +362,35 @@ const QuestionNavigator = ({
                   color: isListeningPart ? "#1d4ed8" : "#92400e",
                 }}
               />
-              <Typography variant="caption" fontWeight={600} color="text.secondary">
+              <Typography
+                variant="caption"
+                fontWeight={600}
+                color="text.secondary"
+              >
                 {part.name.split(" - ")[0]}
               </Typography>
             </Stack>
 
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
               {Array.from(
-                { length: part.endQuestion - part.startQuestion + 1 },
+                { length: part.questionCount },
                 (_, i) => part.startQuestion + i
               ).map((qNum) => {
                 const isAnswered = answers[qNum] !== undefined;
                 const isFlagged = flaggedQuestions.has(qNum);
-                const isCurrent = currentQuestion === qNum;
+                const isCurrent = currentDisplayNo === qNum;
                 const isReadingPart = part.category === "Reading";
 
                 // Listening: chỉ cho click vào câu hiện tại
                 // Reading: tự do click, NHƯNG không cho click khi đang trong phần Listening
-                const isListeningLocked = isListeningPart && qNum > listeningProgress;
-                const isListeningPassed = isListeningPart && qNum < listeningProgress;
-                const isReadingLockedDuringListening = isReadingPart && isListeningSection;
-                const canClick = isListeningPart
-                  ? qNum === currentQuestion
-                  : !isReadingLockedDuringListening;
+                const isListeningLocked =
+                  isListeningPart && qNum > listeningProgress;
+                const isListeningPassed =
+                  isListeningPart && qNum < listeningProgress;
+                const isReadingLockedDuringListening =
+                  isReadingPart && isListeningSection;
+                const canClick =
+                  !isListeningPart && !isReadingLockedDuringListening;
 
                 return (
                   <Tooltip
@@ -352,11 +402,13 @@ const QuestionNavigator = ({
                         ? "Phần Listening: Chưa đến câu này"
                         : isListeningPassed
                         ? "Phần Listening: Không thể quay lại"
-                        : `Câu ${qNum}${isAnswered ? " - Đã trả lời" : ""}${isFlagged ? " - Đã đánh dấu" : ""}`
+                        : `Câu ${qNum}${isAnswered ? " - Đã trả lời" : ""}${
+                            isFlagged ? " - Đã đánh dấu" : ""
+                          }`
                     }
                   >
                     <Box
-                      onClick={() => canClick ? onQuestionClick(qNum) : null}
+                      onClick={() => (canClick ? onQuestionClick(qNum) : null)}
                       sx={{
                         width: 28,
                         height: 28,
@@ -367,13 +419,17 @@ const QuestionNavigator = ({
                         fontSize: "0.7rem",
                         fontWeight: 600,
                         cursor: canClick ? "pointer" : "not-allowed",
-                        border: isCurrent ? `2px solid ${theme.colors.primary}` : "1px solid #e5e7eb",
+                        border: isCurrent
+                          ? `2px solid ${theme.colors.primary}`
+                          : "1px solid #e5e7eb",
                         bgcolor: isReadingLockedDuringListening
                           ? "#f3f4f6"
                           : isListeningLocked
                           ? "#f3f4f6"
                           : isListeningPassed
-                          ? (isAnswered ? "#d1fae5" : "#fee2e2")
+                          ? isAnswered
+                            ? "#d1fae5"
+                            : "#fee2e2"
                           : isAnswered
                           ? "#d1fae5"
                           : isFlagged
@@ -384,17 +440,24 @@ const QuestionNavigator = ({
                           : isListeningLocked
                           ? "#9ca3af"
                           : isListeningPassed
-                          ? (isAnswered ? theme.colors.primaryDark : "#dc2626")
+                          ? isAnswered
+                            ? theme.colors.primaryDark
+                            : "#dc2626"
                           : isAnswered
                           ? theme.colors.primaryDark
                           : isFlagged
                           ? "#92400e"
                           : "grey.600",
-                        opacity: (isListeningLocked || isReadingLockedDuringListening) ? 0.5 : 1,
+                        opacity:
+                          isListeningLocked || isReadingLockedDuringListening
+                            ? 0.5
+                            : 1,
                         position: "relative",
-                        "&:hover": canClick ? {
-                          borderColor: theme.colors.primary,
-                        } : {},
+                        "&:hover": canClick
+                          ? {
+                              borderColor: theme.colors.primary,
+                            }
+                          : {},
                       }}
                     >
                       {qNum}
@@ -417,24 +480,58 @@ const QuestionNavigator = ({
 
       {/* Legend */}
       <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e5e7eb" }}>
-        <Typography variant="caption" color="text.secondary" mb={1} display="block">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          mb={1}
+          display="block"
+        >
           Chú thích:
         </Typography>
         <Stack spacing={0.5}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#d1fae5" }} />
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: 0.5,
+                bgcolor: "#d1fae5",
+              }}
+            />
             <Typography variant="caption">Đã trả lời</Typography>
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#fef3c7" }} />
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: 0.5,
+                bgcolor: "#fef3c7",
+              }}
+            />
             <Typography variant="caption">Đã đánh dấu (Reading)</Typography>
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "#fee2e2" }} />
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: 0.5,
+                bgcolor: "#fee2e2",
+              }}
+            />
             <Typography variant="caption">Bỏ qua (Listening)</Typography>
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 16, height: 16, borderRadius: 0.5, bgcolor: "white", border: "1px solid #e5e7eb" }} />
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: 0.5,
+                bgcolor: "white",
+                border: "1px solid #e5e7eb",
+              }}
+            />
             <Typography variant="caption">Chưa trả lời</Typography>
           </Stack>
         </Stack>
@@ -456,13 +553,11 @@ export default function ToeicTestPage() {
     isLoading: isLoadingExam,
     error: examError,
     refetch: refetchExam,
-  } = useGetExamByIdQuery(testId);
+  } = useStartExamQuery(testId);
 
   // Check for in-progress attempt
-  const {
-    data: inProgressAttempt,
-    isLoading: isLoadingAttempt,
-  } = useGetInProgressAttemptQuery(testId);
+  const { data: inProgressAttempt, isLoading: isLoadingAttempt } =
+    useGetInProgressAttemptQuery(testId);
 
   // Mutations
   const [startExam] = useStartExamMutation();
@@ -473,7 +568,9 @@ export default function ToeicTestPage() {
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
+    new Set()
+  );
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -486,7 +583,9 @@ export default function ToeicTestPage() {
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration] = useState(10);
   const [audioEnded, setAudioEnded] = useState(false);
-  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
+  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<
+    number | null
+  >(null);
   const countdownStartedRef = useRef(false);
 
   // Refs to avoid stale closures in useEffect
@@ -502,6 +601,18 @@ export default function ToeicTestPage() {
     return [];
   }, [examData]);
 
+  const questionIdToDisplayNo = useMemo(() => {
+    const map = new Map<number, number>();
+    examQuestions.forEach((q) => {
+      if (q.subQuestions) {
+        q.subQuestions.forEach((sq) => map.set(sq.id, sq.displayNo));
+      } else {
+        map.set(q.id, q.displayNo);
+      }
+    });
+    return map;
+  }, [examQuestions]);
+
   const examParts = useMemo(() => {
     if (examData && examData.sections && examData.sections.length > 0) {
       return transformApiToParts(examData);
@@ -511,9 +622,9 @@ export default function ToeicTestPage() {
 
   // Determine listening end based on actual data
   const LISTENING_END = useMemo(() => {
-    const listeningParts = examParts.filter(p => p.category === "Listening");
+    const listeningParts = examParts.filter((p) => p.category === "Listening");
     if (listeningParts.length > 0) {
-      return Math.max(...listeningParts.map(p => p.endQuestion));
+      return Math.max(...listeningParts.map((p) => p.endQuestion));
     }
     return 100; // Default TOEIC listening end
   }, [examParts]);
@@ -521,14 +632,20 @@ export default function ToeicTestPage() {
   const AUTO_ADVANCE_DELAY = 5;
 
   // Get all question IDs in order
-  const allQuestionIds = useMemo(() => examQuestions.flatMap((q) => {
-    if (q.subQuestions) {
-      return q.subQuestions.map((sq) => sq.id);
-    }
-    return [q.id];
-  }), [examQuestions]);
+  const allQuestionIds = useMemo(
+    () =>
+      examQuestions.flatMap((q) => {
+        if (q.subQuestions) {
+          return q.subQuestions.map((sq) => sq.id);
+        }
+        return [q.id];
+      }),
+    [examQuestions]
+  );
 
   const currentQuestionId = allQuestionIds[currentQuestionIndex] || 1;
+  const currentDisplayNo =
+    questionIdToDisplayNo.get(currentQuestionId) ?? currentQuestionIndex + 1;
 
   // ==================== EFFECTS ====================
 
@@ -568,7 +685,17 @@ export default function ToeicTestPage() {
     if (!isLoadingExam && !isLoadingAttempt) {
       initAttempt();
     }
-  }, [examData, inProgressAttempt, isLoadingExam, isLoadingAttempt, attemptId, isStarting, examStarted, testId, startExam]);
+  }, [
+    examData,
+    inProgressAttempt,
+    isLoadingExam,
+    isLoadingAttempt,
+    attemptId,
+    isStarting,
+    examStarted,
+    testId,
+    startExam,
+  ]);
 
   // Auto-save progress every 30 seconds
   useEffect(() => {
@@ -576,11 +703,13 @@ export default function ToeicTestPage() {
 
     const saveInterval = setInterval(async () => {
       try {
-        const answersArray = Object.entries(answers).map(([questionId, answer]) => ({
-          questionId: Number(questionId),
-          selectedOptionId: undefined, // Would need to map answer label to option ID
-          textAnswer: answer,
-        }));
+        const answersArray = Object.entries(answers).map(
+          ([questionId, answer]) => ({
+            questionId: Number(questionId),
+            selectedOptionId: undefined, // Would need to map answer label to option ID
+            textAnswer: answer,
+          })
+        );
         await saveProgress({ id: attemptId, data: { answers: answersArray } });
       } catch (error) {
         console.error("Failed to auto-save progress:", error);
@@ -600,8 +729,8 @@ export default function ToeicTestPage() {
   }, [listeningProgress]);
 
   // Check if currently in Listening section
-  const isListeningSection = currentQuestionId <= LISTENING_END;
-  const isReadingSection = currentQuestionId > LISTENING_END;
+  const isListeningSection = currentDisplayNo <= LISTENING_END;
+  const isReadingSection = currentDisplayNo > LISTENING_END;
 
   // Find the question or subquestion
   const findQuestionData = (questionId: number) => {
@@ -619,42 +748,56 @@ export default function ToeicTestPage() {
     return { question: null, subQuestion: null, parentQuestion: null };
   };
 
-  const { question: currentQuestion, subQuestion, parentQuestion } = findQuestionData(currentQuestionId);
+  const {
+    question: currentQuestion,
+    subQuestion,
+    parentQuestion,
+  } = findQuestionData(currentQuestionId);
 
   const currentPart = examParts.find(
-    (p) => currentQuestionId >= p.startQuestion && currentQuestionId <= p.endQuestion
+    (p) =>
+      currentDisplayNo >= p.startQuestion && currentDisplayNo <= p.endQuestion
   );
 
   const handleAnswer = (questionId: number, answer: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+    const displayNo = questionIdToDisplayNo.get(questionId);
+    if (!displayNo) return;
+
+    setAnswers((prev) => ({ ...prev, [displayNo]: answer }));
   };
 
   const handleFlag = (questionId: number) => {
-    // Chỉ cho phép đánh dấu trong phần Reading
-    if (questionId <= LISTENING_END) return;
+    const displayNo = questionIdToDisplayNo.get(questionId);
+    if (!displayNo) return;
+
+    if (displayNo <= LISTENING_END) return;
 
     setFlaggedQuestions((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(questionId)) {
-        newSet.delete(questionId);
-      } else {
-        newSet.add(questionId);
-      }
+      newSet.has(displayNo) ? newSet.delete(displayNo) : newSet.add(displayNo);
       return newSet;
     });
   };
 
   const handleNavigate = (direction: "prev" | "next") => {
-    if (direction === "next" && currentQuestionIndex < allQuestionIds.length - 1) {
+    if (
+      direction === "next" &&
+      currentQuestionIndex < allQuestionIds.length - 1
+    ) {
       // Nếu đang trong Listening và audio chưa kết thúc, không cho chuyển
       if (isListeningSection && isAudioPlaying) return;
 
       const nextIndex = currentQuestionIndex + 1;
       const nextQuestionId = allQuestionIds[nextIndex];
+      const nextDisplayNo = questionIdToDisplayNo.get(nextQuestionId);
 
       // Update listening progress khi đi tiếp
-      if (nextQuestionId <= LISTENING_END && nextQuestionId > listeningProgress) {
-        setListeningProgress(nextQuestionId);
+      if (
+        nextDisplayNo &&
+        nextDisplayNo <= LISTENING_END &&
+        nextDisplayNo > listeningProgress
+      ) {
+        setListeningProgress(nextDisplayNo);
       }
 
       // Cancel auto-advance countdown nếu người dùng tự chuyển
@@ -678,11 +821,14 @@ export default function ToeicTestPage() {
     }
   };
 
-  const handleQuestionClick = (questionId: number) => {
-    // Listening: không cho click nhảy câu
-    if (questionId <= LISTENING_END) return;
+  const handleQuestionClick = (displayNo: number) => {
+    const entry = [...questionIdToDisplayNo.entries()].find(
+      ([_, dNo]) => dNo === displayNo
+    );
 
-    // Reading: cho phép click nhảy câu tự do
+    if (!entry) return;
+
+    const questionId = entry[0];
     const index = allQuestionIds.indexOf(questionId);
     if (index !== -1) {
       setCurrentQuestionIndex(index);
@@ -698,18 +844,22 @@ export default function ToeicTestPage() {
     setIsSubmitting(true);
     try {
       // First save current progress
-      const answersArray = Object.entries(answers).map(([questionId, answer]) => ({
-        questionId: Number(questionId),
-        selectedOptionId: undefined,
-        textAnswer: answer,
-      }));
+      const answersArray = Object.entries(answers).map(
+        ([questionId, answer]) => ({
+          questionId: Number(questionId),
+          selectedOptionId: undefined,
+          textAnswer: answer,
+        })
+      );
       await saveProgress({ id: attemptId, data: { answers: answersArray } });
 
       // Then submit the exam
       await submitExam(attemptId).unwrap();
 
       // Navigate to result page
-      router.push(`/user/exam/toeic/fulltest/${testId}/result?attemptId=${attemptId}`);
+      router.push(
+        `/user/exam/toeic/fulltest/${testId}/result?attemptId=${attemptId}`
+      );
     } catch (error) {
       console.error("Failed to submit exam:", error);
       setIsSubmitting(false);
@@ -779,8 +929,14 @@ export default function ToeicTestPage() {
         if (currentIdx < allQuestionIds.length - 1) {
           const nextIndex = currentIdx + 1;
           const nextQuestionId = allQuestionIds[nextIndex];
-          if (nextQuestionId <= LISTENING_END && nextQuestionId > listeningProgressRef.current) {
-            setListeningProgress(nextQuestionId);
+          const nextDisplayNo = questionIdToDisplayNo.get(nextQuestionId);
+
+          if (
+            nextDisplayNo &&
+            nextDisplayNo <= LISTENING_END &&
+            nextDisplayNo > listeningProgressRef.current
+          ) {
+            setListeningProgress(nextDisplayNo);
           }
           setCurrentQuestionIndex(nextIndex);
         }
@@ -833,8 +989,14 @@ export default function ToeicTestPage() {
           justifyContent: "center",
         }}
       >
-        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}>
-          <AlertTriangle size={48} color="#dc2626" style={{ marginBottom: 16 }} />
+        <Paper
+          sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}
+        >
+          <AlertTriangle
+            size={48}
+            color="#dc2626"
+            style={{ marginBottom: 16 }}
+          />
           <Typography variant="h6" fontWeight={600} mb={1}>
             Không thể tải bài thi
           </Typography>
@@ -879,7 +1041,11 @@ export default function ToeicTestPage() {
         }}
       >
         <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 4 }, py: 1.5 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Stack direction="row" spacing={2} alignItems="center">
               <IconButton onClick={() => setShowExitDialog(true)} size="small">
                 <ArrowLeft size={20} />
@@ -895,7 +1061,10 @@ export default function ToeicTestPage() {
             </Stack>
 
             <Stack direction="row" spacing={2} alignItems="center">
-              <Timer initialTime={(examData?.duration_minutes || 120) * 60} onTimeUp={handleTimeUp} />
+              <Timer
+                initialTime={(examData?.duration_minutes || 120) * 60}
+                onTimeUp={handleTimeUp}
+              />
 
               <Box sx={{ display: { xs: "none", md: "block" } }}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -907,8 +1076,14 @@ export default function ToeicTestPage() {
                     size="small"
                     sx={{
                       fontWeight: 700,
-                      bgcolor: answeredCount === totalQuestions ? "#d1fae5" : "#f3f4f6",
-                      color: answeredCount === totalQuestions ? theme.colors.primaryDark : "grey.700",
+                      bgcolor:
+                        answeredCount === totalQuestions
+                          ? "#d1fae5"
+                          : "#f3f4f6",
+                      color:
+                        answeredCount === totalQuestions
+                          ? theme.colors.primaryDark
+                          : "grey.700",
                     }}
                   />
                 </Stack>
@@ -957,7 +1132,10 @@ export default function ToeicTestPage() {
               <Box
                 sx={{
                   p: 2,
-                  background: currentPart?.category === "Listening" ? "#dbeafe" : "#fef3c7",
+                  background:
+                    currentPart?.category === "Listening"
+                      ? "#dbeafe"
+                      : "#fef3c7",
                   borderBottom: "1px solid #e5e7eb",
                 }}
               >
@@ -967,7 +1145,10 @@ export default function ToeicTestPage() {
                       width: 40,
                       height: 40,
                       borderRadius: 2,
-                      bgcolor: currentPart?.category === "Listening" ? "#1d4ed8" : "#d97706",
+                      bgcolor:
+                        currentPart?.category === "Listening"
+                          ? "#1d4ed8"
+                          : "#d97706",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -990,7 +1171,12 @@ export default function ToeicTestPage() {
               {/* Question Content */}
               <Box sx={{ p: 3 }}>
                 {/* Question Number & Flag */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={3}
+                >
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Box
                       sx={{
@@ -1003,27 +1189,43 @@ export default function ToeicTestPage() {
                         justifyContent: "center",
                       }}
                     >
-                      <Typography variant="subtitle1" fontWeight={700} color="white">
-                        {currentQuestionId}
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={700}
+                        color="white"
+                      >
+                        {currentDisplayNo}
                       </Typography>
                     </Box>
                     <Typography variant="h6" fontWeight={700}>
-                      Câu {currentQuestionId}
+                      Câu {currentDisplayNo}
                     </Typography>
                   </Stack>
 
                   {/* Chỉ hiện nút flag cho Reading */}
                   {isReadingSection && (
-                    <Tooltip title={flaggedQuestions.has(currentQuestionId) ? "Bỏ đánh dấu" : "Đánh dấu để xem lại"}>
+                    <Tooltip
+                      title={
+                        flaggedQuestions.has(currentQuestionId)
+                          ? "Bỏ đánh dấu"
+                          : "Đánh dấu để xem lại"
+                      }
+                    >
                       <IconButton
                         onClick={() => handleFlag(currentQuestionId)}
                         sx={{
-                          color: flaggedQuestions.has(currentQuestionId) ? "#d97706" : "grey.400",
+                          color: flaggedQuestions.has(currentQuestionId)
+                            ? "#d97706"
+                            : "grey.400",
                         }}
                       >
                         <Flag
                           size={20}
-                          fill={flaggedQuestions.has(currentQuestionId) ? "#d97706" : "transparent"}
+                          fill={
+                            flaggedQuestions.has(currentQuestionId)
+                              ? "#d97706"
+                              : "transparent"
+                          }
                         />
                       </IconButton>
                     </Tooltip>
@@ -1032,15 +1234,23 @@ export default function ToeicTestPage() {
 
                 {/* Listening Section Notice */}
                 {isListeningSection && (
-                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#fef3c7", borderRadius: 2 }}>
+                  <Paper
+                    sx={{ p: 2, mb: 3, bgcolor: "#fef3c7", borderRadius: 2 }}
+                  >
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Headphones size={20} color="#d97706" />
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={600} color="#92400e">
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          color="#92400e"
+                        >
                           Phần Listening
                         </Typography>
                         <Typography variant="caption" color="#92400e">
-                          Audio sẽ tự động phát và chuyển câu sau {AUTO_ADVANCE_DELAY} giây. Bạn không thể quay lại câu trước.
+                          Audio sẽ tự động phát và chuyển câu sau{" "}
+                          {AUTO_ADVANCE_DELAY} giây. Bạn không thể quay lại câu
+                          trước.
                         </Typography>
                       </Box>
                     </Stack>
@@ -1088,20 +1298,36 @@ export default function ToeicTestPage() {
                             width: 40,
                             height: 40,
                             borderRadius: "50%",
-                            bgcolor: isAudioPlaying ? "#0ea5e9" : audioEnded ? "#d97706" : "#94a3b8",
+                            bgcolor: isAudioPlaying
+                              ? "#0ea5e9"
+                              : audioEnded
+                              ? "#d97706"
+                              : "#94a3b8",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             color: "white",
-                            animation: isAudioPlaying ? "pulse 1.5s infinite" : "none",
+                            animation: isAudioPlaying
+                              ? "pulse 1.5s infinite"
+                              : "none",
                             "@keyframes pulse": {
-                              "0%": { boxShadow: "0 0 0 0 rgba(14, 165, 233, 0.4)" },
-                              "70%": { boxShadow: "0 0 0 10px rgba(14, 165, 233, 0)" },
-                              "100%": { boxShadow: "0 0 0 0 rgba(14, 165, 233, 0)" },
+                              "0%": {
+                                boxShadow: "0 0 0 0 rgba(14, 165, 233, 0.4)",
+                              },
+                              "70%": {
+                                boxShadow: "0 0 0 10px rgba(14, 165, 233, 0)",
+                              },
+                              "100%": {
+                                boxShadow: "0 0 0 0 rgba(14, 165, 233, 0)",
+                              },
                             },
                           }}
                         >
-                          {isAudioPlaying ? <Volume2 size={20} /> : <Play size={20} />}
+                          {isAudioPlaying ? (
+                            <Volume2 size={20} />
+                          ) : (
+                            <Play size={20} />
+                          )}
                         </Box>
                         <Box sx={{ flex: 1 }}>
                           <LinearProgress
@@ -1114,13 +1340,23 @@ export default function ToeicTestPage() {
                               "& .MuiLinearProgress-bar": {
                                 bgcolor: audioEnded ? "#d97706" : "#0ea5e9",
                                 // Tắt transition khi reset về 0 để không bị animation tụt ngược
-                                transition: audioProgress === 0 ? "none" : "transform 0.5s linear",
+                                transition:
+                                  audioProgress === 0
+                                    ? "none"
+                                    : "transform 0.5s linear",
                               },
                             }}
                           />
                         </Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>
-                          {Math.floor(audioProgress / 60)}:{(audioProgress % 60).toString().padStart(2, "0")} / {Math.floor(audioDuration / 60)}:{(audioDuration % 60).toString().padStart(2, "0")}
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ minWidth: 70 }}
+                        >
+                          {Math.floor(audioProgress / 60)}:
+                          {(audioProgress % 60).toString().padStart(2, "0")} /{" "}
+                          {Math.floor(audioDuration / 60)}:
+                          {(audioDuration % 60).toString().padStart(2, "0")}
                         </Typography>
                       </Stack>
 
@@ -1128,7 +1364,11 @@ export default function ToeicTestPage() {
                       {isAudioPlaying && (
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Headphones size={16} color="#0ea5e9" />
-                          <Typography variant="caption" color="#0284c7" fontWeight={600}>
+                          <Typography
+                            variant="caption"
+                            color="#0284c7"
+                            fontWeight={600}
+                          >
                             Đang phát audio... Hãy lắng nghe cẩn thận
                           </Typography>
                         </Stack>
@@ -1145,10 +1385,19 @@ export default function ToeicTestPage() {
                           }}
                         >
                           <Stack spacing={0.5} alignItems="center">
-                            <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
+                            >
                               <Clock size={18} color="#d97706" />
-                              <Typography variant="body2" fontWeight={700} color="#92400e">
-                                Tự động chuyển câu sau {autoAdvanceCountdown} giây
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                color="#92400e"
+                              >
+                                Tự động chuyển câu sau {autoAdvanceCountdown}{" "}
+                                giây
                               </Typography>
                               <Box
                                 sx={{
@@ -1161,7 +1410,11 @@ export default function ToeicTestPage() {
                                   justifyContent: "center",
                                 }}
                               >
-                                <Typography variant="body2" fontWeight={700} color="white">
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={700}
+                                  color="white"
+                                >
                                   {autoAdvanceCountdown}
                                 </Typography>
                               </Box>
@@ -1176,7 +1429,11 @@ export default function ToeicTestPage() {
                       {audioEnded && autoAdvanceCountdown === null && (
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Volume2 size={16} color="#d97706" />
-                          <Typography variant="caption" color="#92400e" fontWeight={600}>
+                          <Typography
+                            variant="caption"
+                            color="#92400e"
+                            fontWeight={600}
+                          >
                             Audio đã kết thúc
                           </Typography>
                         </Stack>
@@ -1186,25 +1443,45 @@ export default function ToeicTestPage() {
                 )}
 
                 {/* Conversation/Talk Text */}
-                {(parentQuestion?.conversationText || parentQuestion?.talkText) && (
-                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2 }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
-                      {parentQuestion.conversationText || parentQuestion.talkText}
+                {(parentQuestion?.conversationText ||
+                  parentQuestion?.talkText) && (
+                  <Paper
+                    sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2 }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}
+                    >
+                      {parentQuestion.conversationText ||
+                        parentQuestion.talkText}
                     </Typography>
                   </Paper>
                 )}
 
                 {/* Passage for Part 6, 7 */}
                 {(currentQuestion?.passage || parentQuestion?.passage) && (
-                  <Paper sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2, maxHeight: 300, overflow: "auto" }}>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      mb: 3,
+                      bgcolor: "#f8fafc",
+                      borderRadius: 2,
+                      maxHeight: 300,
+                      overflow: "auto",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}
+                    >
                       {currentQuestion?.passage || parentQuestion?.passage}
                     </Typography>
                   </Paper>
                 )}
 
                 {/* Question Text */}
-                {(currentQuestion?.questionText || subQuestion?.questionText) && (
+                {(currentQuestion?.questionText ||
+                  subQuestion?.questionText) && (
                   <Typography variant="body1" fontWeight={600} mb={3}>
                     {currentQuestion?.questionText || subQuestion?.questionText}
                   </Typography>
@@ -1212,66 +1489,95 @@ export default function ToeicTestPage() {
 
                 {/* Options */}
                 <RadioGroup
-                  value={answers[currentQuestionId] || ""}
-                  onChange={(e) => handleAnswer(currentQuestionId, e.target.value)}
+                  value={answers[currentDisplayNo] || ""}
+                  onChange={(e) =>
+                    handleAnswer(currentQuestionId, e.target.value)
+                  }
                 >
                   <Stack spacing={1.5}>
-                    {(currentQuestion?.options || subQuestion?.options)?.map((option) => (
-                      <Paper
-                        key={option.label}
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          border: "2px solid",
-                          borderColor: answers[currentQuestionId] === option.label ? theme.colors.primary : "#e5e7eb",
-                          bgcolor: answers[currentQuestionId] === option.label ? "#f0fdf4" : "white",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            borderColor: theme.colors.primaryLight,
-                          },
-                        }}
-                        onClick={() => handleAnswer(currentQuestionId, option.label)}
-                      >
-                        <FormControlLabel
-                          value={option.label}
-                          control={
-                            <Radio
-                              sx={{
-                                color: "#d1d5db",
-                                "&.Mui-checked": { color: theme.colors.primary },
-                              }}
-                            />
+                    {(currentQuestion?.options || subQuestion?.options)?.map(
+                      (option) => (
+                        <Paper
+                          key={option.label}
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: "2px solid",
+                            borderColor:
+                              answers[currentDisplayNo] === option.label
+                                ? theme.colors.primary
+                                : "#e5e7eb",
+                            bgcolor:
+                              answers[currentDisplayNo] === option.label
+                                ? "#f0fdf4"
+                                : "white",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              borderColor: theme.colors.primaryLight,
+                            },
+                          }}
+                          onClick={() =>
+                            handleAnswer(currentQuestionId, option.label)
                           }
-                          label={
-                            <Stack direction="row" spacing={2} alignItems="center">
-                              <Box
+                        >
+                          <FormControlLabel
+                            value={option.label}
+                            control={
+                              <Radio
                                 sx={{
-                                  width: 28,
-                                  height: 28,
-                                  borderRadius: "50%",
-                                  bgcolor: answers[currentQuestionId] === option.label ? theme.colors.primary : "#e5e7eb",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
+                                  color: "#d1d5db",
+                                  "&.Mui-checked": {
+                                    color: theme.colors.primary,
+                                  },
                                 }}
+                              />
+                            }
+                            label={
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
                               >
-                                <Typography
-                                  variant="body2"
-                                  fontWeight={700}
-                                  color={answers[currentQuestionId] === option.label ? "white" : "grey.600"}
+                                <Box
+                                  sx={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: "50%",
+                                    bgcolor:
+                                      answers[currentQuestionId] ===
+                                      option.label
+                                        ? theme.colors.primary
+                                        : "#e5e7eb",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
                                 >
-                                  {option.label}
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    color={
+                                      answers[currentQuestionId] ===
+                                      option.label
+                                        ? "white"
+                                        : "grey.600"
+                                    }
+                                  >
+                                    {option.label}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="body2">
+                                  {option.text}
                                 </Typography>
-                              </Box>
-                              <Typography variant="body2">{option.text}</Typography>
-                            </Stack>
-                          }
-                          sx={{ m: 0, width: "100%" }}
-                        />
-                      </Paper>
-                    ))}
+                              </Stack>
+                            }
+                            sx={{ m: 0, width: "100%" }}
+                          />
+                        </Paper>
+                      )
+                    )}
                   </Stack>
                 </RadioGroup>
 
@@ -1289,7 +1595,10 @@ export default function ToeicTestPage() {
                       sx={{
                         borderColor: "#e5e7eb",
                         color: "grey.700",
-                        "&:hover": { borderColor: theme.colors.primary, color: theme.colors.primary },
+                        "&:hover": {
+                          borderColor: theme.colors.primary,
+                          color: theme.colors.primary,
+                        },
                       }}
                     >
                       Câu trước
@@ -1319,13 +1628,17 @@ export default function ToeicTestPage() {
           </Grid>
 
           {/* Question Navigator Sidebar */}
-          <Grid size={{ xs: 12, md: 3 }} sx={{ display: { xs: "none", md: "block" } }}>
+          <Grid
+            size={{ xs: 12, md: 3 }}
+            sx={{ display: { xs: "none", md: "block" } }}
+          >
             <Box sx={{ position: "sticky", top: 120 }}>
               <QuestionNavigator
                 parts={examParts}
                 answers={answers}
                 flaggedQuestions={flaggedQuestions}
-                currentQuestion={currentQuestionId}
+                currentDisplayNo={currentDisplayNo}
+                currentQuestion={currentDisplayNo}
                 onQuestionClick={handleQuestionClick}
                 isListeningSection={isListeningSection}
                 listeningProgress={listeningProgress}
@@ -1336,14 +1649,27 @@ export default function ToeicTestPage() {
       </Box>
 
       {/* Submit Dialog */}
-      <Dialog open={showSubmitDialog} onClose={() => setShowSubmitDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={showSubmitDialog}
+        onClose={() => setShowSubmitDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận nộp bài</DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
             <Paper sx={{ p: 2, bgcolor: "#f8fafc", borderRadius: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Typography variant="body2">Số câu đã trả lời:</Typography>
-                <Typography variant="subtitle1" fontWeight={700} color={theme.colors.primary}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  color={theme.colors.primary}
+                >
                   {answeredCount}/{totalQuestions}
                 </Typography>
               </Stack>
@@ -1354,11 +1680,16 @@ export default function ToeicTestPage() {
                 <Stack direction="row" spacing={1} alignItems="flex-start">
                   <AlertTriangle size={20} color="#d97706" />
                   <Box>
-                    <Typography variant="body2" fontWeight={600} color="#92400e">
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      color="#92400e"
+                    >
                       Cảnh báo
                     </Typography>
                     <Typography variant="caption" color="#92400e">
-                      Bạn còn {totalQuestions - answeredCount} câu chưa trả lời. Các câu chưa trả lời sẽ được tính là sai.
+                      Bạn còn {totalQuestions - answeredCount} câu chưa trả lời.
+                      Các câu chưa trả lời sẽ được tính là sai.
                     </Typography>
                   </Box>
                 </Stack>
@@ -1366,12 +1697,16 @@ export default function ToeicTestPage() {
             )}
 
             <Typography variant="body2" color="text.secondary">
-              Sau khi nộp bài, bạn không thể thay đổi câu trả lời. Bạn có chắc chắn muốn nộp bài?
+              Sau khi nộp bài, bạn không thể thay đổi câu trả lời. Bạn có chắc
+              chắn muốn nộp bài?
             </Typography>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setShowSubmitDialog(false)} sx={{ color: "grey.600" }}>
+          <Button
+            onClick={() => setShowSubmitDialog(false)}
+            sx={{ color: "grey.600" }}
+          >
             Quay lại làm bài
           </Button>
           <Button
@@ -1389,7 +1724,12 @@ export default function ToeicTestPage() {
       </Dialog>
 
       {/* Exit Dialog */}
-      <Dialog open={showExitDialog} onClose={() => setShowExitDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={showExitDialog}
+        onClose={() => setShowExitDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700 }}>Thoát bài thi?</DialogTitle>
         <DialogContent>
           <Paper sx={{ p: 2, bgcolor: "#fef2f2", borderRadius: 2, mb: 2 }}>
@@ -1400,7 +1740,8 @@ export default function ToeicTestPage() {
                   Cảnh báo
                 </Typography>
                 <Typography variant="caption" color="#991b1b">
-                  Nếu thoát, tiến trình làm bài của bạn sẽ bị mất và bài thi sẽ không được chấm điểm.
+                  Nếu thoát, tiến trình làm bài của bạn sẽ bị mất và bài thi sẽ
+                  không được chấm điểm.
                 </Typography>
               </Box>
             </Stack>
@@ -1410,7 +1751,10 @@ export default function ToeicTestPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setShowExitDialog(false)} sx={{ color: "grey.600" }}>
+          <Button
+            onClick={() => setShowExitDialog(false)}
+            sx={{ color: "grey.600" }}
+          >
             Tiếp tục làm bài
           </Button>
           <Button
