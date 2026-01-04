@@ -38,6 +38,9 @@ import { authorApi } from "@/services/AuthorService";
 import { collectionApi } from "@/services/CollectionService";
 import { tagApi } from "@/services/TagService";
 
+// User Progress API
+import { userProgressApi } from "@/services/UserProgressService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -72,6 +75,8 @@ export const store = configureStore({
     [authorApi.reducerPath]: authorApi.reducer,
     [collectionApi.reducerPath]: collectionApi.reducer,
     [tagApi.reducerPath]: tagApi.reducer,
+    // User Progress
+    [userProgressApi.reducerPath]: userProgressApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -100,7 +105,9 @@ export const store = configureStore({
       mediaApi.middleware,
       authorApi.middleware,
       collectionApi.middleware,
-      tagApi.middleware
+      tagApi.middleware,
+      // User Progress
+      userProgressApi.middleware
     ),
 });
 

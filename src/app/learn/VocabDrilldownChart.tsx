@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
+import { useGetLevelStatisticsQuery, useGetWordsByLevelQuery } from "@/services/UserProgressService";
+import WordListModal from "@/components/WordListModal";
 
 interface DataItem {
   value: number;
@@ -10,22 +12,28 @@ interface DataItem {
 
 const VocabDrilldownChart: React.FC = () => {
   const chartRef = useRef<HTMLDivElement | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [selectedLevelName, setSelectedLevelName] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Lấy data từ API
+  const { data: levelStats, isLoading, error } = useGetLevelStatisticsQuery();
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || isLoading || !levelStats) return;
 
     const myChart = echarts.init(chartRef.current);
 
-    // Tổng số từ vựng cho từng mức 1-5
-    const mainData: { label: string; value: number; groupId: string }[] = [
-      { label: "1", value: 100, groupId: "level1" },
-      { label: "2", value: 200, groupId: "level2" },
-      { label: "3", value: 300, groupId: "level3" },
-      { label: "4", value: 30, groupId: "level4" },
-      { label: "5", value: 452, groupId: "level5" },
-    ];
+    // Chuyển đổi data từ API sang format cho chart
+    const mainData: { label: string; value: number; groupId: string; levelName: string; level: number }[] = levelStats.map(stat => ({
+      label: `Level ${stat.level}`,  // Hiển thị "Level 1", "Level 2", ...
+      value: stat.count,
+      groupId: `level${stat.level}`,
+      levelName: stat.levelName,  // Lưu tên đầy đủ cho tooltip
+      level: stat.level,
+    }));
 
-    // Bảng màu gradient cho từng level 1–5
+    // Bảng màu gradient cho từng level
     const levelColors = [
       { start: "#ef4444", end: "#dc2626" }, // red gradient
       { start: "#f59e0b", end: "#d97706" }, // orange gradient
@@ -33,48 +41,6 @@ const VocabDrilldownChart: React.FC = () => {
       { start: "#8b5cf6", end: "#7c3aed" }, // purple gradient
       { start: "#10b981", end: "#059669" }, // green gradient
     ];
-
-    // Dữ liệu drilldown demo, bạn sửa lại theo logic của bạn
-    const drilldownData: {
-      dataGroupId: string;
-      data: [string, number][];
-    }[] = [
-        {
-          dataGroupId: "level1",
-          data: [
-            ["Từ 1", 0],
-            ["Từ 2", 0],
-          ],
-        },
-        {
-          dataGroupId: "level2",
-          data: [
-            ["Từ 1", 0],
-            ["Từ 2", 0],
-          ],
-        },
-        {
-          dataGroupId: "level3",
-          data: [
-            ["Từ dễ", 1],
-            ["Từ khó", 0],
-          ],
-        },
-        {
-          dataGroupId: "level4",
-          data: [
-            ["Nhóm 1", 10],
-            ["Nhóm 2", 20],
-          ],
-        },
-        {
-          dataGroupId: "level5",
-          data: [
-            ["Nhóm 1", 200],
-            ["Nhóm 2", 252],
-          ],
-        },
-      ];
 
     const baseOption: echarts.EChartsOption = {
       grid: {
@@ -85,16 +51,33 @@ const VocabDrilldownChart: React.FC = () => {
       },
       tooltip: {
         trigger: "axis",
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        borderColor: "#e5e7eb",
+        backgroundColor: "rgba(255, 255, 255, 0.98)",
+        borderColor: "#3b82f6",
         borderWidth: 2,
         textStyle: {
           color: "#1f2937",
-          fontSize: 13,
+          fontSize: 15,
+          fontWeight: 500,
         },
-        padding: 12,
-        shadowBlur: 10,
-        shadowColor: "rgba(0, 0, 0, 0.1)",
+        padding: 16,
+        shadowBlur: 12,
+        shadowColor: "rgba(0, 0, 0, 0.15)",
+        formatter: (params: any) => {
+          const dataIndex = params[0].dataIndex;
+          const item = mainData[dataIndex];
+          return `
+            <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px; color: #1f2937;">
+              ${item.levelName}
+            </div>
+            <div style="font-size: 15px; color: #4b5563;">
+              <span style="display: inline-block; width: 12px; height: 12px; background: ${params[0].color}; border-radius: 50%; margin-right: 8px;"></span>
+              <strong>${item.value}</strong> từ vựng
+            </div>
+            <div style="font-size: 13px; color: #9ca3af; margin-top: 4px;">
+              Click để xem chi tiết
+            </div>
+          `;
+        },
       },
       xAxis: {
         type: "category",
@@ -106,18 +89,18 @@ const VocabDrilldownChart: React.FC = () => {
           }
         },
         axisLabel: {
-          color: "#374151",
-          fontSize: 14,
-          fontWeight: 600,
+          color: "#1f2937",
+          fontSize: 16,
+          fontWeight: 700,
         },
       },
       yAxis: {
         type: "value",
         name: "Số từ",
         nameTextStyle: {
-          color: "#6b7280",
-          fontSize: 13,
-          fontWeight: 600,
+          color: "#374151",
+          fontSize: 15,
+          fontWeight: 700,
           padding: [0, 0, 0, 10],
         },
         axisLine: {
@@ -127,8 +110,9 @@ const VocabDrilldownChart: React.FC = () => {
           }
         },
         axisLabel: {
-          color: "#374151",
-          fontSize: 12,
+          color: "#1f2937",
+          fontSize: 14,
+          fontWeight: 600,
         },
         splitLine: {
           lineStyle: {
@@ -155,8 +139,8 @@ const VocabDrilldownChart: React.FC = () => {
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: levelColors[index].start },
-                { offset: 1, color: levelColors[index].end },
+                { offset: 0, color: levelColors[index % levelColors.length].start },
+                { offset: 1, color: levelColors[index % levelColors.length].end },
               ],
             } as any,
             borderRadius: [8, 8, 0, 0],
@@ -174,7 +158,7 @@ const VocabDrilldownChart: React.FC = () => {
           position: "top",
           formatter: "{c} từ",
           color: "#1f2937",
-          fontSize: 13,
+          fontSize: 15,
           fontWeight: 700,
         },
       },
@@ -182,110 +166,13 @@ const VocabDrilldownChart: React.FC = () => {
 
     myChart.setOption(baseOption);
 
-    // Handle click để drilldown
+    // Handle click để mở modal hiển thị danh sách từ
     myChart.on("click", function (event: any) {
-      if (event.data) {
-        const subData = drilldownData.find((d) => {
-          return d.dataGroupId === (event.data as DataItem).groupId;
-        });
-        if (!subData) return;
-
-        myChart.setOption<echarts.EChartsOption>({
-          xAxis: {
-            type: "category",
-            data: subData.data.map((item) => item[0]),
-          },
-          yAxis: {
-            type: "value",
-            name: "Số từ",
-          },
-          series: {
-            type: "bar",
-            id: "vocabLevels",
-            dataGroupId: subData.dataGroupId,
-            barWidth: "50%",
-            data: subData.data.map((item, index) => ({
-              value: item[1],
-              itemStyle: {
-                color: {
-                  type: "linear",
-                  x: 0,
-                  y: 0,
-                  x2: 0,
-                  y2: 1,
-                  colorStops: [
-                    {
-                      offset: 0,
-                      color: levelColors[index % levelColors.length].start
-                    },
-                    {
-                      offset: 1,
-                      color: levelColors[index % levelColors.length].end
-                    },
-                  ],
-                } as any,
-                borderRadius: [8, 8, 0, 0],
-                shadowBlur: 10,
-                shadowColor: "rgba(0, 0, 0, 0.1)",
-                shadowOffsetY: 4,
-              },
-            })),
-            universalTransition: {
-              enabled: true,
-              divideShape: "clone",
-            },
-            label: {
-              show: true,
-              position: "top",
-              formatter: "{c} từ",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#1f2937",
-            },
-          },
-          graphic: [
-            {
-              type: "group",
-              left: 20,
-              top: 10,
-              children: [
-                {
-                  type: "rect",
-                  shape: {
-                    width: 80,
-                    height: 32,
-                    r: 16,
-                  },
-                  style: {
-                    fill: "#3b82f6",
-                    shadowBlur: 8,
-                    shadowColor: "rgba(59, 130, 246, 0.3)",
-                    shadowOffsetY: 2,
-                  },
-                  cursor: "pointer",
-                  onclick: function () {
-                    myChart.setOption(baseOption);
-                  },
-                },
-                {
-                  type: "text",
-                  left: 10,
-                  top: 8,
-                  style: {
-                    text: "◀ Back",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fill: "#ffffff",
-                  },
-                  cursor: "pointer",
-                  onclick: function () {
-                    myChart.setOption(baseOption);
-                  },
-                },
-              ],
-            },
-          ],
-        });
+      if (event.dataIndex !== undefined) {
+        const clickedLevel = mainData[event.dataIndex];
+        setSelectedLevel(clickedLevel.level);
+        setSelectedLevelName(clickedLevel.levelName);
+        setIsModalOpen(true);
       }
     });
 
@@ -298,10 +185,42 @@ const VocabDrilldownChart: React.FC = () => {
       window.removeEventListener("resize", onResize);
       myChart.dispose();
     };
-  }, []);
+  }, [levelStats, isLoading]);
 
-  // rất quan trọng: cho phép chart fill 100% container bên ngoài
-  return <div ref={chartRef} className="w-full h-full" />;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-gray-500">Đang tải dữ liệu...</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-red-500">Lỗi khi tải dữ liệu thống kê</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div ref={chartRef} className="w-full h-full" />
+
+      {/* Modal hiển thị danh sách từ vựng */}
+      <WordListModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedLevel(null);
+        }}
+        level={selectedLevel}
+        levelName={selectedLevelName}
+      />
+    </>
+  );
 };
 
 export default VocabDrilldownChart;
