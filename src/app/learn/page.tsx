@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import OnTapPage from "./OnTapPage";
 import HocTuMoiPage from "./HocTuMoiPage";
 import SoTayPage from "./SoTayPage";
-import MochiHubPage from "./MochiHubPage";
+import GamePage from "./GamePage";
 
 export default function VocabularyApp() {
   const [activePage, setActivePage] = useState("on-tap");
@@ -14,7 +14,7 @@ export default function VocabularyApp() {
     { id: "on-tap", label: "Ôn tập", icon: "📊" },
     { id: "hoc-tu-moi", label: "Học từ mới", icon: "🎓" },
     { id: "so-tay", label: "Sổ tay", icon: "📚" },
-    { id: "mochi-hub", label: "MochiHub", icon: "🏠" },
+    { id: "game", label: "Game", icon: "🎮" },
   ];
 
   // Render different pages based on active page
@@ -26,8 +26,8 @@ export default function VocabularyApp() {
         return <HocTuMoiPage />;
       case "so-tay":
         return <SoTayPage />;
-      case "mochi-hub":
-        return <MochiHubPage />;
+      case "game":
+        return <GamePage />;
       default:
         return <OnTapPage />;
     }
@@ -36,49 +36,85 @@ export default function VocabularyApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       {/* Header - Fixed at top */}
-      <header className="bg-white shadow-lg fixed top-0 left-0 right-0 z-[9999] border-b-2 border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-gradient-to-r from-white via-blue-50 to-purple-50 shadow-xl fixed top-0 left-0 right-0 z-[9999] border-b-2 border-gradient backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center">
             {/* Logo */}
-            <div className="w-64 flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg transform transition-transform duration-300 hover:scale-110">
-                <span className="text-2xl">🐝</span>
+            <div className="w-64 flex items-center space-x-3 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                <div className="relative w-12 h-12 bg-gradient-to-br from-yellow-400 via-orange-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 hover:scale-110 hover:rotate-12 cursor-pointer">
+                  <span className="text-2xl">🐝</span>
+                </div>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                LEARN ENGLISH
-              </span>
+              <div className="flex flex-col">
+                <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent tracking-tight">
+                  Evolingo
+                </span>
+                <span className="text-[10px] font-semibold text-gray-500 -mt-1">Learn & Grow</span>
+              </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 hidden md:flex items-center justify-center space-x-14">
+            <nav className="flex-1 hidden md:flex items-center justify-center space-x-8">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActivePage(item.id)}
-                  className={`flex flex-col items-center transition-all duration-300 relative ${activePage === item.id
-                      ? "text-blue-600 scale-110"
-                      : "text-gray-600 hover:text-blue-600 hover:scale-105"
+                  className={`group flex flex-col items-center transition-all duration-300 relative px-4 py-2 rounded-xl ${activePage === item.id
+                    ? "text-blue-600 scale-105"
+                    : "text-gray-600 hover:text-blue-600 hover:scale-105"
                     }`}
                 >
-                  <span className="text-2xl mb-1 transform transition-transform duration-300 hover:scale-110">
+                  {/* Background glow for active item */}
+                  {activePage === item.id && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-xl opacity-50"></div>
+                  )}
+
+                  <span className={`relative text-3xl mb-1 transform transition-all duration-300 ${activePage === item.id ? "scale-110" : "group-hover:scale-110 group-hover:-translate-y-1"
+                    }`}>
                     {item.icon}
                   </span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                  {/* Active indicator */}
+                  <span className={`relative text-sm font-semibold transition-all duration-300 ${activePage === item.id ? "text-blue-700" : "text-gray-700 group-hover:text-blue-600"
+                    }`}>
+                    {item.label}
+                  </span>
+
+                  {/* Active indicator - Enhanced */}
                   {activePage === item.id && (
-                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                    <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-16 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-lg animate-pulse"></div>
+                  )}
+
+                  {/* Hover indicator */}
+                  {activePage !== item.id && (
+                    <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-0 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-300 group-hover:w-12"></div>
                   )}
                 </button>
               ))}
             </nav>
 
             {/* User Info */}
-            <div className="w-80 flex items-center justify-end space-x-4">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 font-bold">
+            <div className="w-80 flex items-center justify-end space-x-4 group">
+              {/* User stats badge */}
+              <div className="hidden lg:flex items-center space-x-2 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm">
+                <span className="text-xs font-bold text-orange-600">🔥 125</span>
+                <div className="w-1 h-1 bg-orange-400 rounded-full"></div>
+                <span className="text-xs font-bold text-blue-600">⭐ 8750</span>
+              </div>
+
+              {/* Username */}
+              <span className="text-sm font-bold bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 bg-clip-text text-transparent">
                 Trần Văn Minh
               </span>
-              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg transform transition-transform duration-300 hover:scale-110 cursor-pointer">
-                <span className="text-xl">🐕</span>
+
+              {/* Avatar with status indicator */}
+              <div className="relative cursor-pointer">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-md opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+                <div className="relative w-11 h-11 bg-gradient-to-br from-green-400 via-emerald-400 to-emerald-500 rounded-full flex items-center justify-center border-3 border-white shadow-lg transform transition-all duration-300 hover:scale-110 hover:rotate-12">
+                  <span className="text-xl">🐕</span>
+                </div>
+                {/* Online status indicator */}
+                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-md"></div>
               </div>
             </div>
           </div>

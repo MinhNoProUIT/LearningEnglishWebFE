@@ -47,11 +47,11 @@ const menuSections = [
     title: "Người dùng",
     items: [
       { text: "Quản lý người dùng", icon: <PeopleIcon />, href: "/admin/user" },
-      {
-        text: "Gói Premium",
-        icon: <CardGiftcardIcon />,
-        href: "/admin/packages",
-      },
+
+      { text: "Tiến độ học tập", icon: <PeopleIcon />, href: "/admin/user-progress" },
+
+      { text: "Gói Premium", icon: <CardGiftcardIcon />, href: "/admin/courses" },
+
       { text: "Giao dịch", icon: <PaymentIcon />, href: "/admin/transactions" },
     ],
   },
@@ -59,7 +59,7 @@ const menuSections = [
     title: "Nội dung học tập",
     items: [
       { text: "Chủ đề", icon: <TopicIcon />, href: "/admin/topics" },
-      { text: "Từ vựng", icon: <TranslateIcon />, href: "/admin/vocabulary" },
+      { text: "Từ vựng", icon: <TranslateIcon />, href: "/admin/vocabularys" },
       { text: "Ngữ pháp", icon: <MenuBookIcon />, href: "/admin/grammar" },
       {
         text: "Video & Podcast",

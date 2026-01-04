@@ -232,6 +232,30 @@ export default function VocabularyLearning() {
               Học lại
             </button>
             <button
+              onClick={() => window.location.href = "/vocabulary/game"}
+              className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              Game bắn bóng
+            </button>
+            <button
+              onClick={() => window.location.href = "/vocabulary/return-to-earth"}
+              className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              🚀 Trở về Trái Đất
+            </button>
+            <button
+              onClick={() => window.location.href = "/vocabulary/smart-monkey"}
+              className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              🐵 Khỉ con thông thái
+            </button>
+            <button
+              onClick={() => window.location.href = "/vocabulary/picture-guess"}
+              className="flex-1 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              🖼️ Đuổi hình bắt chữ
+            </button>
+            <button
               onClick={() => window.location.href = "/"}
               className="flex-1 py-4 border-2 border-gray-300 text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-50 transition-all duration-300"
             >
@@ -457,8 +481,8 @@ export default function VocabularyLearning() {
                 onClick={checkAnswer}
                 disabled={!userInput.trim()}
                 className={`w-full max-w-xl mx-auto block font-bold py-4 px-8 rounded-2xl transition-all text-lg ${userInput.trim()
-                    ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Kiểm tra
@@ -517,8 +541,8 @@ export default function VocabularyLearning() {
                 onClick={checkAnswer}
                 disabled={!userInput.trim()}
                 className={`w-full max-w-xl mx-auto block font-bold py-4 px-8 rounded-2xl transition-all text-lg ${userInput.trim()
-                    ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
               >
                 Kiểm tra
@@ -533,8 +557,8 @@ export default function VocabularyLearning() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
           <div
             className={`w-full max-w-2xl rounded-3xl shadow-2xl p-8 transform transition-all duration-300 ${isCorrect
-                ? "bg-gradient-to-br from-green-400 to-green-500"
-                : "bg-gradient-to-br from-red-400 to-red-500"
+              ? "bg-gradient-to-br from-green-400 to-green-500"
+              : "bg-gradient-to-br from-red-400 to-red-500"
               }`}
             style={{
               animation: "slideUp 0.3s ease-out",

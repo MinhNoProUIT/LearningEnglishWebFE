@@ -74,7 +74,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       >
         <Box
           sx={{
-            padding: "24px 17px",
+            padding: hideHeader && hideTopNav ? "0" : "24px 17px",
             minHeight: "100%",
           }}
         >
