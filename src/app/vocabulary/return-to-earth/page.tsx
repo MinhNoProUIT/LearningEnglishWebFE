@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock, Trophy, Star, Home, Rocket } from "lucide-react";
+import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
 
 // Vocabulary data structure
 interface Vocabulary {
@@ -13,132 +14,14 @@ interface Vocabulary {
   image: string;
 }
 
-// Sample vocabulary data (15 words)
-const VOCABULARY_DATA: Vocabulary[] = [
-  {
-    id: 1,
-    word: "student",
-    phonetic: "/ˈstuːdnt/",
-    meaning: "Học sinh, sinh viên",
-    example: "His younger sister is a student at that university.",
-    exampleTranslation: "Em gái anh ấy là sinh viên tại trường đại học đó.",
-    image:
-      "https://images.unsplash.com/photo-1524069290683-0457abfe42c3?w=400&h=500&fit=crop",
-  },
-  {
-    id: 2,
-    word: "teacher",
-    phonetic: "/ˈtiːtʃər/",
-    meaning: "Giáo viên",
-    example: "My mother is a teacher at the local school.",
-    exampleTranslation: "Mẹ tôi là giáo viên tại trường địa phương.",
-    image:
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop",
-  },
-  {
-    id: 3,
-    word: "book",
-    phonetic: "/bʊk/",
-    meaning: "Sách",
-    example: "I love reading books in my free time.",
-    exampleTranslation: "Tôi thích đọc sách vào thời gian rảnh.",
-    image:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=crop",
-  },
-  {
-    id: 4,
-    word: "computer",
-    phonetic: "/kəmˈpjuːtər/",
-    meaning: "Máy tính",
-    example: "She uses her computer for work every day.",
-    exampleTranslation: "Cô ấy sử dụng máy tính để làm việc mỗi ngày.",
-    image:
-      "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=400&h=500&fit=crop",
-  },
-  {
-    id: 5,
-    word: "friend",
-    phonetic: "/frend/",
-    meaning: "Bạn bè",
-    example: "He is my best friend from childhood.",
-    exampleTranslation: "Anh ấy là bạn thân nhất của tôi từ thời thơ ấu.",
-    image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=500&fit=crop",
-  },
-  {
-    id: 6,
-    word: "family",
-    phonetic: "/ˈfæməli/",
-    meaning: "Gia đình",
-    example: "I spend weekends with my family.",
-    exampleTranslation: "Tôi dành cuối tuần với gia đình.",
-    image:
-      "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&h=500&fit=crop",
-  },
-  {
-    id: 7,
-    word: "house",
-    phonetic: "/haʊs/",
-    meaning: "Ngôi nhà",
-    example: "They live in a beautiful house near the beach.",
-    exampleTranslation: "Họ sống trong một ngôi nhà đẹp gần bãi biển.",
-    image:
-      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=500&fit=crop",
-  },
-  {
-    id: 8,
-    word: "happy",
-    phonetic: "/ˈhæpi/",
-    meaning: "Hạnh phúc, vui vẻ",
-    example: "She feels happy when she helps others.",
-    exampleTranslation: "Cô ấy cảm thấy hạnh phúc khi giúp đỡ người khác.",
-    image:
-      "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=400&h=500&fit=crop",
-  },
-  {
-    id: 9,
-    word: "beautiful",
-    phonetic: "/ˈbjuːtɪfl/",
-    meaning: "Đẹp",
-    example: "The sunset is beautiful tonight.",
-    exampleTranslation: "Hoàng hôn đêm nay thật đẹp.",
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=500&fit=crop",
-  },
-  {
-    id: 10,
-    word: "love",
-    phonetic: "/lʌv/",
-    meaning: "Yêu, tình yêu",
-    example: "I love spending time with my pets.",
-    exampleTranslation: "Tôi thích dành thời gian với thú cưng của mình.",
-    image:
-      "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&h=500&fit=crop",
-  },
-  {
-    id: 11,
-    word: "school",
-    phonetic: "/skuːl/",
-    meaning: "Trường học",
-    example: "Children go to school every day.",
-    exampleTranslation: "Trẻ em đi học mỗi ngày.",
-    image:
-      "https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=500&fit=crop",
-  },
-  {
-    id: 12,
-    word: "water",
-    phonetic: "/ˈwɔːtər/",
-    meaning: "Nước",
-    example: "Drink water to stay healthy.",
-    exampleTranslation: "Uống nước để giữ sức khỏe.",
-    image:
-      "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&h=500&fit=crop",
-  },
-];
+// Helper function to shuffle array and pick N items
+function shuffleAndPick<T>(array: T[], count: number): T[] {
+  const shuffled = [...array].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
 type CellType = "empty" | "coin" | "planet" | "earth" | "start";
-type GameStatus = "playing" | "question" | "victory" | "gameover";
+type GameStatus = "intro" | "playing" | "question" | "victory" | "gameover" | "nowords";
 
 interface Cell {
   type: CellType;
@@ -159,7 +42,7 @@ export default function ReturnToEarthGame() {
   const GRID_SIZE = 8;
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [playerPos, setPlayerPos] = useState({ row: 0, col: 0 });
-  const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
+  const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
   const [score, setScore] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -167,8 +50,41 @@ export default function ReturnToEarthGame() {
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [questionsCorrect, setQuestionsCorrect] = useState(0);
 
+  // Fetch Level 4 words from API
+  const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(4);
+
+  // Transform API words and pick max 10 random words
+  const VOCABULARY_DATA: Vocabulary[] = useMemo(() => {
+    if (apiWords.length === 0) return [];
+
+    const transformed = apiWords.map((word, index) => ({
+      id: index + 1,
+      word: word.englishname,
+      phonetic: word.transcription || "/.../",
+      meaning: word.vietnamesename,
+      example: word.example_sentence || "No example provided.",
+      exampleTranslation: "",
+      image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=500&fit=crop",
+    }));
+
+    return shuffleAndPick(transformed, Math.min(10, transformed.length));
+  }, [apiWords]);
+
+  // Start game
+  const startGame = () => {
+    setGameStatus("playing");
+    setScore(0);
+    setTimeElapsed(0);
+    setQuestionsAnswered(0);
+    setQuestionsCorrect(0);
+    setPlayerPos({ row: 0, col: 0 });
+    initializeGrid();
+  };
+
   // Initialize grid
   const initializeGrid = useCallback(() => {
+    if (VOCABULARY_DATA.length === 0) return;
+
     const newGrid: Cell[][] = [];
 
     // Create empty grid
@@ -230,11 +146,13 @@ export default function ReturnToEarthGame() {
     });
 
     setGrid(newGrid);
-  }, []);
+  }, [VOCABULARY_DATA]);
 
   useEffect(() => {
-    initializeGrid();
-  }, [initializeGrid]);
+    if (gameStatus === "playing") {
+      initializeGrid();
+    }
+  }, [gameStatus, initializeGrid]);
 
   // Timer
   useEffect(() => {
@@ -468,6 +386,61 @@ export default function ReturnToEarthGame() {
     return "bg-indigo-950/60 border-indigo-800/30";
   };
 
+  // Intro screen
+  if (gameStatus === "intro") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-indigo-900/40 backdrop-blur-xl border border-indigo-500/30 rounded-3xl p-12 max-w-2xl text-center shadow-2xl">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            TRỞ VỀ TRÁI ĐẤT 🌍
+          </h1>
+
+          <div className="text-8xl mb-8 animate-pulse">🚀</div>
+
+          {isLoading ? (
+            <div className="bg-white/5 rounded-2xl p-6 mb-8">
+              <h3 className="text-xl font-bold text-cyan-300 animate-pulse">⏳ Đang tải từ vựng Level 4...</h3>
+            </div>
+          ) : VOCABULARY_DATA.length === 0 ? (
+            <div className="bg-white/5 rounded-2xl p-6 mb-8">
+              <h3 className="text-xl font-bold text-orange-400 mb-4">😢 Bạn chưa có từ vựng Level 4 để ôn tập!</h3>
+              <button
+                onClick={() => window.location.href = "/learn"}
+                className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:scale-105 transition-all shadow-lg shadow-cyan-500/20"
+              >
+                ĐI HỌC NGAY
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white/5 rounded-2xl p-6 mb-8 text-left">
+                <p className="text-lg text-cyan-200 font-bold mb-4 text-center">
+                  📚 Sẵn sàng: {VOCABULARY_DATA.length} từ vựng Level 4
+                </p>
+                <p className="text-lg text-indigo-100 leading-relaxed mb-4">
+                  Giúp phi hành gia tìm đường về Trái Đất bằng cách trả lời đúng các câu hỏi từ vựng!
+                </p>
+                <ul className="space-y-2 text-indigo-200">
+                  <li>✅ Vượt qua các ô cửa để thu thập năng lượng</li>
+                  <li>🚫 Sai: Ô cửa sẽ bị đóng lại vĩnh viễn</li>
+                  <li>⚠️ Cẩn thận: Đừng để mình bị kẹt không còn đường đi!</li>
+                  <li>🌍 Chạm vào Trái Đất để chiến thắng</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={startGame}
+                className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-3xl font-bold rounded-2xl hover:scale-105 transition-transform shadow-xl shadow-cyan-500/20"
+              >
+                BẮT ĐẦU 🚀
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 p-4">
       {/* Fixed Header */}
@@ -516,16 +489,15 @@ export default function ReturnToEarthGame() {
                   className={`
                                         relative aspect-square rounded-lg border-2 transition-all duration-200
                                         ${getCellBackground(cell)}
-                                        ${
-                                          isValidMove(
-                                            playerPos.row,
-                                            playerPos.col,
-                                            rowIndex,
-                                            colIndex
-                                          ) && gameStatus === "playing"
-                                            ? "cursor-pointer hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/50"
-                                            : "cursor-not-allowed"
-                                        }
+                                        ${isValidMove(
+                    playerPos.row,
+                    playerPos.col,
+                    rowIndex,
+                    colIndex
+                  ) && gameStatus === "playing"
+                      ? "cursor-pointer hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/50"
+                      : "cursor-not-allowed"
+                    }
                                     `}
                 >
                   {renderCellContent(cell)}
@@ -579,11 +551,10 @@ export default function ReturnToEarthGame() {
                   onClick={() => setSelectedAnswer(option)}
                   className={`
                                         w-full p-4 rounded-xl text-left transition-all duration-200
-                                        ${
-                                          selectedAnswer === option
-                                            ? "bg-cyan-500 text-white border-2 border-cyan-300 shadow-lg"
-                                            : "bg-white/10 text-white border-2 border-transparent hover:bg-white/20 hover:border-cyan-400"
-                                        }
+                                        ${selectedAnswer === option
+                      ? "bg-cyan-500 text-white border-2 border-cyan-300 shadow-lg"
+                      : "bg-white/10 text-white border-2 border-transparent hover:bg-white/20 hover:border-cyan-400"
+                    }
                                     `}
                 >
                   <span className="font-semibold mr-3">
@@ -599,11 +570,10 @@ export default function ReturnToEarthGame() {
               disabled={!selectedAnswer}
               className={`
                                 w-full py-4 rounded-xl font-bold text-lg transition-all duration-200
-                                ${
-                                  selectedAnswer
-                                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-xl hover:scale-105"
-                                    : "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                }
+                                ${selectedAnswer
+                  ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-xl hover:scale-105"
+                  : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                }
                             `}
             >
               Trả lời

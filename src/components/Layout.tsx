@@ -11,6 +11,8 @@ import TopNavBar from "@/components/TopNavBar";
 import { uiSelector } from "@/redux/slices/uiSlide";
 import { NAV_H, HEADER_H } from "@/constants/layout";
 import Chat from "./chatbot";
+import CourseChat from "./CourseChat";
+
 const HIDE_CHROME_PREFIXES = [
   "/login",
   "/register",
@@ -23,6 +25,7 @@ const HIDE_CHROME_PREFIXES = [
   "/learn",
   "/vocabulary",
   "/admin",
+
 ];
 
 const HIDE_TOPNAV_ONLY_PREFIXES = [
@@ -80,6 +83,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         >
           {children}
         </Box>
+        {/* Floating icons - CourseChat above Chat */}
+        {!isAuthPage && <CourseChat />}
         {!isAuthPage && <Chat />}
       </Box>
     </div>

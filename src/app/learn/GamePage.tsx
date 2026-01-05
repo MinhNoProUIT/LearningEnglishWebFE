@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Trophy, Target, Zap, BookOpen, Star } from "lucide-react";
+import { useGetLevelStatisticsQuery } from "@/services/UserProgressService";
 
 interface GameInfo {
     id: string;
@@ -12,6 +13,7 @@ interface GameInfo {
     description: string;
     vocabCount: number;
     level: string;
+    levelNumber: number; // Level number for API mapping
     difficulty: "Dễ" | "Trung bình" | "Khó";
     estimatedTime: string;
     features: string[];
@@ -23,16 +25,17 @@ interface GameInfo {
     bestScore?: number;
 }
 
-const games: GameInfo[] = [
+// Base game data without vocabCount (will be filled from API)
+const baseGames = [
     {
         id: "smart-monkey",
         name: "Smart Monkey",
         nameVi: "Khỉ Con Thông Thái",
         icon: "🐵",
         description: "Học từ vựng từ Level 1 lên Level 2",
-        vocabCount: 150,
+        levelNumber: 1, // Level 1
         level: "Level 1 → 2",
-        difficulty: "Dễ",
+        difficulty: "Dễ" as const,
         estimatedTime: "10-15 phút",
         features: ["Kéo thả tương tác", "Học qua hình ảnh", "Phản hồi tức thì"],
         route: "/vocabulary/smart-monkey",
@@ -48,9 +51,9 @@ const games: GameInfo[] = [
         nameVi: "Nhanh tay nhanh mắt",
         icon: "🎯",
         description: "Bắn từ vựng chính xác để ghi điểm",
-        vocabCount: 200,
+        levelNumber: 2, // Level 2
         level: "Level 2 → 3",
-        difficulty: "Trung bình",
+        difficulty: "Trung bình" as const,
         estimatedTime: "15-20 phút",
         features: ["Tốc độ phản xạ", "Nhiều cấp độ", "Combo điểm"],
         route: "/vocabulary/shooting",
@@ -66,9 +69,9 @@ const games: GameInfo[] = [
         nameVi: "Đuổi Hình Bắt Chữ",
         icon: "🖼️",
         description: "Đoán từ qua hình ảnh và gợi ý",
-        vocabCount: 180,
+        levelNumber: 3, // Level 3
         level: "Level 3 → 4",
-        difficulty: "Trung bình",
+        difficulty: "Trung bình" as const,
         estimatedTime: "12-18 phút",
         features: ["Hệ thống gợi ý", "Hình ảnh sinh động", "Tính điểm thông minh"],
         route: "/vocabulary/picture-guess",
@@ -84,9 +87,9 @@ const games: GameInfo[] = [
         nameVi: "Trở Về Trái Đất",
         icon: "🌍",
         description: "Trở về Trái Đất với kiến thức từ vựng",
-        vocabCount: 220,
+        levelNumber: 4, // Level 4
         level: "Level 4 → 5",
-        difficulty: "Khó",
+        difficulty: "Khó" as const,
         estimatedTime: "20-25 phút",
         features: ["Thử thách cao cấp", "Nhiều vòng chơi", "Phần thưởng hấp dẫn"],
         route: "/vocabulary/return-to-earth",
@@ -101,6 +104,20 @@ const games: GameInfo[] = [
 export default function MochiHubPage() {
     const router = useRouter();
     const [hoveredGame, setHoveredGame] = useState<string | null>(null);
+
+    // Fetch level statistics from API
+    const { data: levelStats = [] } = useGetLevelStatisticsQuery();
+
+    // Merge vocabCount from API into games array
+    const games: GameInfo[] = useMemo(() => {
+        return baseGames.map((game) => {
+            const levelStat = levelStats.find((stat) => stat.level === game.levelNumber);
+            return {
+                ...game,
+                vocabCount: levelStat?.count || 0,
+            };
+        });
+    }, [levelStats]);
 
     const handleGameClick = (route: string) => {
         router.push(route);

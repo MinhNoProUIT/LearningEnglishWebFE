@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Volume2, Trophy, Star, Target } from "lucide-react";
 import VocabularyReviewModal from "./VocabularyReviewModal";
+import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
 
 // Vocabulary data structure
 interface Vocabulary {
@@ -14,145 +15,13 @@ interface Vocabulary {
     image: string;
 }
 
-// Sample vocabulary data (15 words)
-const VOCABULARY_DATA: Vocabulary[] = [
-    {
-        id: 1,
-        word: "student",
-        phonetic: "/ˈstuːdnt/",
-        meaning: "Học sinh, sinh viên",
-        example: "His younger sister is a student at that university.",
-        exampleTranslation: "Em gái anh ấy là sinh viên tại trường đại học đó.",
-        image: "https://images.unsplash.com/photo-1524069290683-0457abfe42c3?w=400&h=500&fit=crop",
-    },
-    {
-        id: 2,
-        word: "teacher",
-        phonetic: "/ˈtiːtʃər/",
-        meaning: "Giáo viên",
-        example: "My mother is a teacher at the local school.",
-        exampleTranslation: "Mẹ tôi là giáo viên tại trường địa phương.",
-        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop",
-    },
-    {
-        id: 3,
-        word: "book",
-        phonetic: "/bʊk/",
-        meaning: "Sách",
-        example: "I love reading books in my free time.",
-        exampleTranslation: "Tôi thích đọc sách vào thời gian rảnh.",
-        image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=crop",
-    },
-    {
-        id: 4,
-        word: "computer",
-        phonetic: "/kəmˈpjuːtər/",
-        meaning: "Máy tính",
-        example: "She uses her computer for work every day.",
-        exampleTranslation: "Cô ấy sử dụng máy tính để làm việc mỗi ngày.",
-        image: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=400&h=500&fit=crop",
-    },
-    {
-        id: 5,
-        word: "friend",
-        phonetic: "/frend/",
-        meaning: "Bạn bè",
-        example: "He is my best friend from childhood.",
-        exampleTranslation: "Anh ấy là bạn thân nhất của tôi từ thời thơ ấu.",
-        image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=500&fit=crop",
-    },
-    {
-        id: 6,
-        word: "family",
-        phonetic: "/ˈfæməli/",
-        meaning: "Gia đình",
-        example: "I spend weekends with my family.",
-        exampleTranslation: "Tôi dành cuối tuần với gia đình.",
-        image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&h=500&fit=crop",
-    },
-    {
-        id: 7,
-        word: "house",
-        phonetic: "/haʊs/",
-        meaning: "Ngôi nhà",
-        example: "They live in a beautiful house near the beach.",
-        exampleTranslation: "Họ sống trong một ngôi nhà đẹp gần bãi biển.",
-        image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=500&fit=crop",
-    },
-    {
-        id: 8,
-        word: "happy",
-        phonetic: "/ˈhæpi/",
-        meaning: "Hạnh phúc, vui vẻ",
-        example: "She feels happy when she helps others.",
-        exampleTranslation: "Cô ấy cảm thấy hạnh phúc khi giúp đỡ người khác.",
-        image: "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=400&h=500&fit=crop",
-    },
-    {
-        id: 9,
-        word: "beautiful",
-        phonetic: "/ˈbjuːtɪfl/",
-        meaning: "Đẹp",
-        example: "The sunset is beautiful tonight.",
-        exampleTranslation: "Hoàng hôn đêm nay thật đẹp.",
-        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=500&fit=crop",
-    },
-    {
-        id: 10,
-        word: "love",
-        phonetic: "/lʌv/",
-        meaning: "Yêu, tình yêu",
-        example: "I love spending time with my pets.",
-        exampleTranslation: "Tôi thích dành thời gian với thú cưng của mình.",
-        image: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&h=500&fit=crop",
-    },
-    {
-        id: 11,
-        word: "school",
-        phonetic: "/skuːl/",
-        meaning: "Trường học",
-        example: "Children go to school every day.",
-        exampleTranslation: "Trẻ em đi học mỗi ngày.",
-        image: "https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=500&fit=crop",
-    },
-    {
-        id: 12,
-        word: "water",
-        phonetic: "/ˈwɔːtər/",
-        meaning: "Nước",
-        example: "Drink water to stay healthy.",
-        exampleTranslation: "Uống nước để giữ sức khỏe.",
-        image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&h=500&fit=crop",
-    },
-    {
-        id: 13,
-        word: "food",
-        phonetic: "/fuːd/",
-        meaning: "Thức ăn",
-        example: "I love Vietnamese food.",
-        exampleTranslation: "Tôi thích đồ ăn Việt Nam.",
-        image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=500&fit=crop",
-    },
-    {
-        id: 14,
-        word: "music",
-        phonetic: "/ˈmjuːzɪk/",
-        meaning: "Âm nhạc",
-        example: "She listens to music every morning.",
-        exampleTranslation: "Cô ấy nghe nhạc mỗi sáng.",
-        image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=500&fit=crop",
-    },
-    {
-        id: 15,
-        word: "sport",
-        phonetic: "/spɔːrt/",
-        meaning: "Thể thao",
-        example: "Playing sport keeps you fit.",
-        exampleTranslation: "Chơi thể thao giúp bạn khỏe mạnh.",
-        image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=500&fit=crop",
-    },
-];
+// Helper function to shuffle array and pick N items
+function shuffleAndPick<T>(array: T[], count: number): T[] {
+    const shuffled = [...array].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
 
+// Help functionality for vocabulary data
 interface WordBubble {
     id: number;
     text: string;
@@ -182,15 +51,29 @@ interface Bullet {
     speed: number;
 }
 
-type GameState = "start" | "playing" | "levelup" | "victory";
+type GameState = "start" | "loading" | "playing" | "levelup" | "victory" | "nowords";
 
-interface VocabularyShootingGameProps {
-    vocabularyData?: Vocabulary[];
-}
+export default function VocabularyShootingGame() {
+    // Fetch Level 2 words from API
+    const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(2);
 
-export default function VocabularyShootingGame({
-    vocabularyData = VOCABULARY_DATA
-}: VocabularyShootingGameProps = {}) {
+    // Transform API words and pick max 10 random words
+    const vocabularyData: Vocabulary[] = useMemo(() => {
+        if (apiWords.length === 0) return [];
+
+        const transformed = apiWords.map((word, index) => ({
+            id: index + 1,
+            word: word.englishname,
+            phonetic: word.transcription || "/.../",
+            meaning: word.vietnamesename,
+            example: word.example_sentence || "No example provided.",
+            exampleTranslation: "",
+            image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=500&fit=crop",
+        }));
+
+        return shuffleAndPick(transformed, Math.min(10, transformed.length));
+    }, [apiWords]);
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [gameState, setGameState] = useState<GameState>("start");
     const [score, setScore] = useState(0);
@@ -818,53 +701,52 @@ export default function VocabularyShootingGame({
     if (gameState === "start") {
         return (
             <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
-                <div className="max-w-2xl w-full bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-12 text-center border border-white/20">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center animate-bounce">
-                        <Target className="w-12 h-12 text-white" />
-                    </div>
-
-                    <h1 className="text-5xl font-bold text-white mb-4">
-                        Game Bắn Từ Vựng 🎯
+                <div className="max-w-4xl w-full bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-12 text-center border border-white/20">
+                    <h1 className="text-6xl font-bold text-white mb-4 animate-pulse">
+                        SÁT THỦ TỪ VỰNG 🎯
                     </h1>
 
-                    <p className="text-xl text-white/80 mb-8">
-                        Bắn trúng nghĩa tiếng Việt tương ứng với từ tiếng Anh!
+                    <p className="text-2xl text-white/90 mb-8">
+                        Bắn hạ các từ vựng để trở thành cao thủ!
                     </p>
 
-                    <div className="bg-white/10 rounded-2xl p-6 mb-8 text-left">
-                        <h3 className="text-lg font-bold text-white mb-4">📖 Cách chơi:</h3>
-                        <ul className="text-white/90 space-y-2">
-                            <li>• Di chuyển chuột để xoay khẩu pháo</li>
-                            <li>• Click vào từ tiếng Việt đúng để ghi điểm</li>
-                            <li>• Đúng liên tiếp: 5 → 6 → 7... điểm</li>
-                            <li>• Sai: reset về 5 điểm</li>
-                        </ul>
-                    </div>
-
-                    <div className="bg-white/10 rounded-2xl p-6 mb-8">
-                        <h3 className="text-lg font-bold text-white mb-4">🎮 Cấp độ:</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="bg-green-500/20 rounded-xl p-4">
-                                <div className="text-2xl font-bold text-green-300">Cấp 1</div>
-                                <div className="text-sm text-white/80">10 điểm</div>
-                            </div>
-                            <div className="bg-blue-500/20 rounded-xl p-4">
-                                <div className="text-2xl font-bold text-blue-300">Cấp 2</div>
-                                <div className="text-sm text-white/80">20 điểm</div>
-                            </div>
-                            <div className="bg-purple-500/20 rounded-xl p-4">
-                                <div className="text-2xl font-bold text-purple-300">Cấp 3</div>
-                                <div className="text-sm text-white/80">50 điểm</div>
-                            </div>
+                    {isLoading ? (
+                        <div className="bg-white/10 rounded-2xl p-6 mb-8">
+                            <h3 className="text-xl font-bold text-white mb-4 animate-pulse">⏳ Đang tải từ vựng Level 2...</h3>
                         </div>
-                    </div>
+                    ) : vocabularyData.length === 0 ? (
+                        <div className="bg-white/10 rounded-2xl p-6 mb-8">
+                            <h3 className="text-xl font-bold text-red-300 mb-4">� Bạn chưa có từ vựng Level 2 để ôn tập!</h3>
+                            <button
+                                onClick={() => window.location.href = "/learn"}
+                                className="px-8 py-3 bg-white text-indigo-900 font-bold rounded-xl hover:scale-105 transition-all"
+                            >
+                                ĐI HỌC NGAY
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-white/10 rounded-2xl p-6 mb-8">
+                                <h3 className="text-xl font-bold text-green-300 mb-4">📚 Sẵn sàng: {vocabularyData.length} từ vựng Level 2</h3>
+                                <div className="text-left">
+                                    <h3 className="text-lg font-bold text-white mb-4">📝 Hướng dẫn:</h3>
+                                    <ul className="space-y-4 text-white/80">
+                                        <li>• Di chuyển chuột để xoay khẩu pháo</li>
+                                        <li>• Click vào từ tiếng Việt đúng để ghi điểm</li>
+                                        <li>• Đúng liên tiếp: 5 → 6 → 7... điểm</li>
+                                        <li>• Sai: reset về 5 điểm</li>
+                                    </ul>
+                                </div>
+                            </div>
 
-                    <button
-                        onClick={startGame}
-                        className="w-full py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold text-xl rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                    >
-                        Bắt đầu chơi! 🚀
-                    </button>
+                            <button
+                                onClick={startGame}
+                                className="w-full py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold text-xl rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                            >
+                                Bắt đầu chơi! 🚀
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         );

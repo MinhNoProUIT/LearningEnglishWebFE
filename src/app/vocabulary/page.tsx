@@ -1,115 +1,32 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Volume2, VolumeX, X, CheckCircle2, XCircle, Sparkles, Award, TrendingUp } from "lucide-react";
-
-// Vocabulary data structure
-interface Vocabulary {
-  id: number;
-  word: string;
-  phonetic: string;
-  meaning: string;
-  example: string;
-  exampleTranslation: string;
-  image: string;
-}
-
-// Sample vocabulary data (10 words)
-const VOCABULARY_DATA: Vocabulary[] = [
-  {
-    id: 1,
-    word: "student",
-    phonetic: "/ˈstuːdnt/",
-    meaning: "Học sinh, sinh viên",
-    example: "His younger sister is a student at that university.",
-    exampleTranslation: "Em gái anh ấy là sinh viên tại trường đại học đó.",
-    image: "https://images.unsplash.com/photo-1524069290683-0457abfe42c3?w=400&h=500&fit=crop",
-  },
-  {
-    id: 2,
-    word: "teacher",
-    phonetic: "/ˈtiːtʃər/",
-    meaning: "Giáo viên",
-    example: "My mother is a teacher at the local school.",
-    exampleTranslation: "Mẹ tôi là giáo viên tại trường địa phương.",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop",
-  },
-  {
-    id: 3,
-    word: "book",
-    phonetic: "/bʊk/",
-    meaning: "Sách",
-    example: "I love reading books in my free time.",
-    exampleTranslation: "Tôi thích đọc sách vào thời gian rảnh.",
-    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=500&fit=crop",
-  },
-  {
-    id: 4,
-    word: "computer",
-    phonetic: "/kəmˈpjuːtər/",
-    meaning: "Máy tính",
-    example: "She uses her computer for work every day.",
-    exampleTranslation: "Cô ấy sử dụng máy tính để làm việc mỗi ngày.",
-    image: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=400&h=500&fit=crop",
-  },
-  {
-    id: 5,
-    word: "friend",
-    phonetic: "/frend/",
-    meaning: "Bạn bè",
-    example: "He is my best friend from childhood.",
-    exampleTranslation: "Anh ấy là bạn thân nhất của tôi từ thời thơ ấu.",
-    image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=500&fit=crop",
-  },
-  {
-    id: 6,
-    word: "family",
-    phonetic: "/ˈfæməli/",
-    meaning: "Gia đình",
-    example: "I spend weekends with my family.",
-    exampleTranslation: "Tôi dành cuối tuần với gia đình.",
-    image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&h=500&fit=crop",
-  },
-  {
-    id: 7,
-    word: "house",
-    phonetic: "/haʊs/",
-    meaning: "Ngôi nhà",
-    example: "They live in a beautiful house near the beach.",
-    exampleTranslation: "Họ sống trong một ngôi nhà đẹp gần bãi biển.",
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=500&fit=crop",
-  },
-  {
-    id: 8,
-    word: "happy",
-    phonetic: "/ˈhæpi/",
-    meaning: "Hạnh phúc, vui vẻ",
-    example: "She feels happy when she helps others.",
-    exampleTranslation: "Cô ấy cảm thấy hạnh phúc khi giúp đỡ người khác.",
-    image: "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=400&h=500&fit=crop",
-  },
-  {
-    id: 9,
-    word: "beautiful",
-    phonetic: "/ˈbjuːtɪfl/",
-    meaning: "Đẹp",
-    example: "The sunset is beautiful tonight.",
-    exampleTranslation: "Hoàng hôn đêm nay thật đẹp.",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=500&fit=crop",
-  },
-  {
-    id: 10,
-    word: "love",
-    phonetic: "/lʌv/",
-    meaning: "Yêu, tình yêu",
-    example: "I love spending time with my pets.",
-    exampleTranslation: "Tôi thích dành thời gian với thú cưng của mình.",
-    image: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&h=500&fit=crop",
-  },
-];
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { Volume2, X, CheckCircle2, XCircle, Sparkles, Award, TrendingUp } from "lucide-react";
+import { useGetWordsByMinorTopicQuery } from "@/services/WordService";
+import { transformWordToVocabulary, IVocabulary } from "@/models/Word";
+import { useBatchMarkWordsAsLearnedMutation, IWordResult } from "@/services/UserProgressService";
 
 type LearningMode = "flashcard" | "vietnamese-to-english" | "audio-to-english";
 
 export default function VocabularyLearning() {
+  const searchParams = useSearchParams();
+  const minorTopicId = searchParams.get("minorTopicId");
+  const topicName = searchParams.get("topicName") || "Học từ vựng";
+
+  // Fetch words from API
+  const { data: wordsData = [], isLoading, error } = useGetWordsByMinorTopicQuery(
+    minorTopicId || "",
+    { skip: !minorTopicId }
+  );
+
+  // Mutation to save progress
+  const [batchMarkLearned, { isLoading: isSaving }] = useBatchMarkWordsAsLearnedMutation();
+
+  // Transform API data to vocabulary format
+  const vocabularyData: IVocabulary[] = useMemo(() => {
+    return wordsData.map(transformWordToVocabulary);
+  }, [wordsData]);
+
   // State management
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentMode, setCurrentMode] = useState<LearningMode>("flashcard");
@@ -121,13 +38,30 @@ export default function VocabularyLearning() {
   const [showCompletion, setShowCompletion] = useState(false);
   const [score, setScore] = useState(0);
 
-  const currentWord = VOCABULARY_DATA[currentWordIndex];
-  const totalSteps = VOCABULARY_DATA.length * 3; // 10 words × 3 modes = 30 steps
-  const progress = (completedSteps / totalSteps) * 100;
+  // Track word results for saving progress
+  const wordResultsRef = useRef<Map<string, boolean>>(new Map());
 
-  // Play audio function (simulated)
+  const currentWord = vocabularyData[currentWordIndex];
+  const totalSteps = vocabularyData.length * 3;
+  const progress = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+
+  // Save progress when lesson completes
+  useEffect(() => {
+    if (showCompletion && minorTopicId && vocabularyData.length > 0) {
+      const wordResults: IWordResult[] = vocabularyData.map(word => ({
+        word_id: word.id,
+        is_correct: wordResultsRef.current.get(word.id) ?? true // Default to true if not tracked
+      }));
+
+      batchMarkLearned({ minorTopicId, wordResults })
+        .then(() => console.log("Progress saved successfully!"))
+        .catch((err) => console.error("Failed to save progress:", err));
+    }
+  }, [showCompletion, minorTopicId, vocabularyData, batchMarkLearned]);
+
+  // Play audio function
   const playAudio = (speed: "normal" | "slow" = "normal") => {
-    // In production, this would use Web Speech API or audio files
+    if (!currentWord) return;
     const utterance = new SpeechSynthesisUtterance(currentWord.word);
     utterance.rate = speed === "slow" ? 0.5 : 1;
     utterance.lang = "en-US";
@@ -136,12 +70,22 @@ export default function VocabularyLearning() {
 
   // Check answer
   const checkAnswer = () => {
+    if (!currentWord) return;
     const normalizedInput = userInput.trim().toLowerCase();
     const normalizedAnswer = currentWord.word.toLowerCase();
     const correct = normalizedInput === normalizedAnswer;
 
     setIsCorrect(correct);
     setShowModal(true);
+
+    // Track word result - only mark as correct if ALL answers for this word are correct
+    const currentResult = wordResultsRef.current.get(currentWord.id);
+    if (currentResult === undefined) {
+      wordResultsRef.current.set(currentWord.id, correct);
+    } else {
+      // If any answer is wrong, mark the word as incorrect
+      wordResultsRef.current.set(currentWord.id, currentResult && correct);
+    }
 
     if (correct) {
       setScore(score + 1);
@@ -155,18 +99,15 @@ export default function VocabularyLearning() {
     setIsFlipped(false);
     setCompletedSteps(completedSteps + 1);
 
-    // Determine next mode
     if (currentMode === "flashcard") {
       setCurrentMode("vietnamese-to-english");
     } else if (currentMode === "vietnamese-to-english") {
       setCurrentMode("audio-to-english");
     } else {
-      // Move to next word
-      if (currentWordIndex < VOCABULARY_DATA.length - 1) {
+      if (currentWordIndex < vocabularyData.length - 1) {
         setCurrentWordIndex(currentWordIndex + 1);
         setCurrentMode("flashcard");
       } else {
-        // Lesson completed
         setShowCompletion(true);
       }
     }
@@ -190,9 +131,59 @@ export default function VocabularyLearning() {
     setShowModal(false);
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Đang tải từ vựng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No minorTopicId provided
+  if (!minorTopicId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-3xl shadow-2xl p-12 max-w-md">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Chọn bài học</h2>
+          <p className="text-gray-600 mb-6">Vui lòng chọn một bài học từ trang học tập để bắt đầu.</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
+          >
+            ← Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No words available
+  if (vocabularyData.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-3xl shadow-2xl p-12 max-w-md">
+          <div className="text-6xl mb-4">📭</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Chưa có từ vựng</h2>
+          <p className="text-gray-600 mb-6">Bài học này chưa có từ vựng nào.</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
+          >
+            ← Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Completion Screen
   if (showCompletion) {
-    const percentage = Math.round((score / (VOCABULARY_DATA.length * 2)) * 100);
+    const percentage = Math.round((score / (vocabularyData.length * 2)) * 100);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
@@ -206,16 +197,16 @@ export default function VocabularyLearning() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-8">
-            Bạn đã hoàn thành bài học!
+            Bạn đã hoàn thành bài học <span className="font-bold text-purple-600">{topicName}</span>!
           </p>
 
           <div className="grid grid-cols-3 gap-6 mb-8">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-green-600">{VOCABULARY_DATA.length}</div>
+              <div className="text-3xl font-bold text-green-600">{vocabularyData.length}</div>
               <div className="text-sm text-gray-600 mt-2">Từ vựng</div>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-blue-600">{score}/{VOCABULARY_DATA.length * 2}</div>
+              <div className="text-3xl font-bold text-blue-600">{score}/{vocabularyData.length * 2}</div>
               <div className="text-sm text-gray-600 mt-2">Câu đúng</div>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6">
@@ -224,42 +215,18 @@ export default function VocabularyLearning() {
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={resetLesson}
-              className="flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              className="flex-1 min-w-[150px] py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
             >
               Học lại
             </button>
             <button
-              onClick={() => window.location.href = "/vocabulary/game"}
-              className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              onClick={() => window.history.back()}
+              className="flex-1 min-w-[150px] py-4 border-2 border-gray-300 text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-50 transition-all duration-300"
             >
-              Game bắn bóng
-            </button>
-            <button
-              onClick={() => window.location.href = "/vocabulary/return-to-earth"}
-              className="flex-1 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-            >
-              🚀 Trở về Trái Đất
-            </button>
-            <button
-              onClick={() => window.location.href = "/vocabulary/smart-monkey"}
-              className="flex-1 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-            >
-              🐵 Khỉ con thông thái
-            </button>
-            <button
-              onClick={() => window.location.href = "/vocabulary/picture-guess"}
-              className="flex-1 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-            >
-              🖼️ Đuổi hình bắt chữ
-            </button>
-            <button
-              onClick={() => window.location.href = "/"}
-              className="flex-1 py-4 border-2 border-gray-300 text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-50 transition-all duration-300"
-            >
-              Về trang chủ
+              ← Quay lại
             </button>
           </div>
         </div>
@@ -299,20 +266,23 @@ export default function VocabularyLearning() {
             </div>
           </div>
 
-          {/* Mode indicator */}
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Sparkles className="w-4 h-4 text-green-500" />
-            <span>
-              Từ {currentWordIndex + 1}/10 - {" "}
-              {currentMode === "flashcard" && "Flashcard"}
-              {currentMode === "vietnamese-to-english" && "Tiếng Việt → Tiếng Anh"}
-              {currentMode === "audio-to-english" && "Nghe → Viết"}
-            </span>
+          {/* Topic name and mode indicator */}
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-purple-600 mb-1">{topicName}</h2>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+              <Sparkles className="w-4 h-4 text-green-500" />
+              <span>
+                Từ {currentWordIndex + 1}/{vocabularyData.length} - {" "}
+                {currentMode === "flashcard" && "Flashcard"}
+                {currentMode === "vietnamese-to-english" && "Tiếng Việt → Tiếng Anh"}
+                {currentMode === "audio-to-english" && "Nghe → Viết"}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Learning Modes */}
-        {currentMode === "flashcard" && (
+        {currentMode === "flashcard" && currentWord && (
           <div className="animate-fadeIn">
             {/* Flashcard */}
             <div
@@ -353,18 +323,30 @@ export default function VocabularyLearning() {
                       />
                     </div>
 
+                    {/* Word Type Badge */}
+                    {currentWord.wordType && (
+                      <div className="mb-4 px-4 py-1 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
+                        {currentWord.wordType}
+                      </div>
+                    )}
+
                     {/* Example */}
                     <p className="text-gray-800 text-lg text-center max-w-md leading-relaxed">
-                      {currentWord.example.split(currentWord.word).map((part, idx, arr) => (
-                        <React.Fragment key={idx}>
-                          {part}
-                          {idx < arr.length - 1 && (
-                            <span className="font-bold text-green-600 text-xl">
-                              {currentWord.word}
-                            </span>
-                          )}
-                        </React.Fragment>
-                      ))}
+                      {currentWord.example ? (
+                        currentWord.example.split(new RegExp(`(${currentWord.word})`, 'i')).map((part, idx) => (
+                          <React.Fragment key={idx}>
+                            {part.toLowerCase() === currentWord.word.toLowerCase() ? (
+                              <span className="font-bold text-green-600 text-xl">
+                                {part}
+                              </span>
+                            ) : (
+                              part
+                            )}
+                          </React.Fragment>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 italic">Chưa có câu ví dụ</span>
+                      )}
                     </p>
 
                     {/* Hint */}
@@ -400,17 +382,38 @@ export default function VocabularyLearning() {
                       <h2 className="text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
                         {currentWord.word}
                       </h2>
-                      <p className="text-gray-500 text-xl mb-4">{currentWord.phonetic}</p>
+                      <p className="text-gray-500 text-xl mb-4">{currentWord.phonetic || ""}</p>
                       <p className="text-gray-700 text-2xl font-semibold">
                         {currentWord.meaning}
                       </p>
                     </div>
 
-                    {/* Example Translation */}
-                    <div className="mt-8 p-4 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl max-w-md">
-                      <p className="text-gray-600 text-sm italic">
-                        "{currentWord.exampleTranslation}"
-                      </p>
+                    {/* Synonyms/Antonyms */}
+                    <div className="mt-6 flex flex-wrap gap-4 justify-center">
+                      {currentWord.synonyms && currentWord.synonyms.length > 0 && (
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500 mb-1">Đồng nghĩa:</p>
+                          <div className="flex flex-wrap gap-1 justify-center">
+                            {currentWord.synonyms.slice(0, 3).map((syn, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-green-100 text-green-600 rounded-full text-xs">
+                                {syn}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {currentWord.antonyms && currentWord.antonyms.length > 0 && (
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500 mb-1">Trái nghĩa:</p>
+                          <div className="flex flex-wrap gap-1 justify-center">
+                            {currentWord.antonyms.slice(0, 3).map((ant, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">
+                                {ant}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -435,7 +438,7 @@ export default function VocabularyLearning() {
           </div>
         )}
 
-        {currentMode === "vietnamese-to-english" && (
+        {currentMode === "vietnamese-to-english" && currentWord && (
           <div className="animate-fadeIn">
             <div className="bg-white rounded-3xl shadow-2xl p-8">
               <h2 className="text-3xl font-bold text-center mb-4 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
@@ -453,9 +456,11 @@ export default function VocabularyLearning() {
                   <p className="text-3xl font-bold text-gray-900 mb-2">
                     {currentWord.meaning}
                   </p>
-                  <p className="text-gray-600 text-sm">
-                    {currentWord.phonetic}
-                  </p>
+                  {currentWord.phonetic && (
+                    <p className="text-gray-600 text-sm">
+                      {currentWord.phonetic}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -491,7 +496,7 @@ export default function VocabularyLearning() {
           </div>
         )}
 
-        {currentMode === "audio-to-english" && (
+        {currentMode === "audio-to-english" && currentWord && (
           <div className="animate-fadeIn">
             <div className="bg-white rounded-3xl shadow-2xl p-8">
               <h2 className="text-3xl font-bold text-center mb-4 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
@@ -553,7 +558,7 @@ export default function VocabularyLearning() {
       </div>
 
       {/* Feedback Modal */}
-      {showModal && (
+      {showModal && currentWord && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
           <div
             className={`w-full max-w-2xl rounded-3xl shadow-2xl p-8 transform transition-all duration-300 ${isCorrect
@@ -588,7 +593,9 @@ export default function VocabularyLearning() {
                 <h4 className="text-4xl font-bold text-white mb-2">
                   {currentWord.word}
                 </h4>
-                <p className="text-white/80 text-lg">{currentWord.phonetic}</p>
+                {currentWord.phonetic && (
+                  <p className="text-white/80 text-lg">{currentWord.phonetic}</p>
+                )}
               </div>
 
               <div className="bg-white/30 rounded-xl p-4 mb-4">
@@ -597,14 +604,13 @@ export default function VocabularyLearning() {
                 </p>
               </div>
 
-              <div className="bg-white/30 rounded-xl p-4">
-                <p className="text-white text-sm mb-2 italic">
-                  "{currentWord.example}"
-                </p>
-                <p className="text-white/90 text-sm">
-                  "{currentWord.exampleTranslation}"
-                </p>
-              </div>
+              {currentWord.example && (
+                <div className="bg-white/30 rounded-xl p-4">
+                  <p className="text-white text-sm italic">
+                    "{currentWord.example}"
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Continue Button */}

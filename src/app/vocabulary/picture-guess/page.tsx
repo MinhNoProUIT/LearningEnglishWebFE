@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, Trophy, Heart, Lightbulb, BookOpen } from "lucide-react";
+import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
 
 // Vocabulary data
 interface VocabularyWord {
@@ -10,72 +11,32 @@ interface VocabularyWord {
     image: string;
 }
 
-const VOCABULARY_DATA: VocabularyWord[] = [
-    {
-        id: 1,
-        english: "STUDENT",
-        vietnamese: "Học sinh, sinh viên",
-        image: "https://images.unsplash.com/photo-1524069290683-0457abfe42c3?w=600&h=400&fit=crop",
-    },
-    {
-        id: 2,
-        english: "TEACHER",
-        vietnamese: "Giáo viên",
-        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&h=400&fit=crop",
-    },
-    {
-        id: 3,
-        english: "BOOK",
-        vietnamese: "Sách",
-        image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=400&fit=crop",
-    },
-    {
-        id: 4,
-        english: "COMPUTER",
-        vietnamese: "Máy tính",
-        image: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=600&h=400&fit=crop",
-    },
-    {
-        id: 5,
-        english: "FRIEND",
-        vietnamese: "Bạn bè",
-        image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&h=400&fit=crop",
-    },
-    {
-        id: 6,
-        english: "FAMILY",
-        vietnamese: "Gia đình",
-        image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=600&h=400&fit=crop",
-    },
-    {
-        id: 7,
-        english: "HOUSE",
-        vietnamese: "Ngôi nhà",
-        image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop",
-    },
-    {
-        id: 8,
-        english: "HAPPY",
-        vietnamese: "Hạnh phúc, vui vẻ",
-        image: "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=600&h=400&fit=crop",
-    },
-    {
-        id: 9,
-        english: "BEAUTIFUL",
-        vietnamese: "Đẹp",
-        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop",
-    },
-    {
-        id: 10,
-        english: "LOVE",
-        vietnamese: "Yêu, tình yêu",
-        image: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=600&h=400&fit=crop",
-    },
-];
+// Helper function to shuffle array and pick N items
+function shuffleAndPick<T>(array: T[], count: number): T[] {
+    const shuffled = [...array].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
 
 type GameStatus = "intro" | "playing" | "victory" | "gameover";
 
 export default function PictureGuessGame() {
+    // Fetch Level 3 words from API
+    const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(3);
+
+    // Transform API words and pick max 10 random words
+    const VOCABULARY_DATA: VocabularyWord[] = useMemo(() => {
+        if (apiWords.length === 0) return [];
+
+        const transformed = apiWords.map((word, index) => ({
+            id: index + 1,
+            english: word.englishname.toUpperCase(),
+            vietnamese: word.vietnamesename,
+            image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&h=400&fit=crop",
+        }));
+
+        return shuffleAndPick(transformed, Math.min(10, transformed.length));
+    }, [apiWords]);
+
     const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
     const [currentWord, setCurrentWord] = useState<VocabularyWord | null>(null);
     const [revealedPositions, setRevealedPositions] = useState<Set<number>>(new Set());
@@ -293,25 +254,46 @@ export default function PictureGuessGame() {
 
                     <div className="text-6xl mb-6">🖼️📝</div>
 
-                    <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left">
-                        <p className="text-lg text-gray-800 leading-relaxed mb-4">
-                            Nhìn hình ảnh và đoán từ tiếng Anh!
-                        </p>
-                        <ul className="space-y-2 text-gray-700">
-                            <li>✅ Đúng: <span className="font-bold text-green-600">+10 điểm</span></li>
-                            <li>❌ Sai: <span className="font-bold text-red-600">-5 điểm, mất 1 mạng</span></li>
-                            <li>🎯 Đạt <span className="font-bold">100 điểm</span> để chiến thắng!</li>
-                            <li>💔 Sai 3 lần hoặc hết 5 phút sẽ thua</li>
-                            <li>💡 5 lần gợi ý chữ cái, 3 lần gợi ý nghĩa</li>
-                        </ul>
-                    </div>
+                    {isLoading ? (
+                        <div className="bg-gray-50 rounded-2xl p-6 mb-8 mt-4">
+                            <h3 className="text-xl font-bold text-gray-800 animate-pulse">⏳ Đang tải từ vựng Level 3...</h3>
+                        </div>
+                    ) : VOCABULARY_DATA.length === 0 ? (
+                        <div className="bg-gray-50 rounded-2xl p-6 mb-8 mt-4">
+                            <h3 className="text-xl font-bold text-red-600 mb-4">😢 Bạn chưa có từ vựng Level 3 để ôn tập!</h3>
+                            <button
+                                onClick={() => window.location.href = "/learn"}
+                                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-xl hover:scale-105 transition-all"
+                            >
+                                ĐI HỌC NGAY
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left">
+                                <p className="text-lg text-gray-800 font-bold mb-4">
+                                    📚 Sẵn sàng: {VOCABULARY_DATA.length} từ vựng Level 3
+                                </p>
+                                <p className="text-lg text-gray-800 leading-relaxed mb-4">
+                                    Nhìn hình ảnh và đoán từ tiếng Anh!
+                                </p>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>✅ Đúng: <span className="font-bold text-green-600">+10 điểm</span></li>
+                                    <li>❌ Sai: <span className="font-bold text-red-600">-5 điểm, mất 1 mạng</span></li>
+                                    <li>🎯 Đạt <span className="font-bold">100 điểm</span> để chiến thắng!</li>
+                                    <li>💔 Sai 3 lần hoặc hết 5 phút sẽ thua</li>
+                                    <li>💡 5 lần gợi ý chữ cái, 3 lần gợi ý nghĩa</li>
+                                </ul>
+                            </div>
 
-                    <button
-                        onClick={startGame}
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-3xl font-bold py-6 px-12 rounded-2xl hover:scale-110 transition-transform shadow-xl"
-                    >
-                        BẮT ĐẦU
-                    </button>
+                            <button
+                                onClick={startGame}
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-3xl font-bold py-6 px-12 rounded-2xl hover:scale-110 transition-transform shadow-xl"
+                            >
+                                BẮT ĐẦU
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -367,7 +349,7 @@ export default function PictureGuessGame() {
                                 return (
                                     <input
                                         key={index}
-                                        ref={el => inputRefs.current[index] = el}
+                                        ref={el => { inputRefs.current[index] = el; }}
                                         type="text"
                                         maxLength={1}
                                         value={displayLetter}
@@ -376,16 +358,16 @@ export default function PictureGuessGame() {
                                         onFocus={() => setFocusedIndex(index)}
                                         disabled={isRevealed || feedback !== null}
                                         className={`w-14 h-14 text-3xl font-bold text-center border-4 rounded-xl uppercase transition-all ${isHinted
-                                                ? 'bg-red-100 border-red-400 text-red-600 cursor-not-allowed'
-                                                : isRevealed
-                                                    ? 'bg-blue-100 border-blue-400 text-blue-600 cursor-not-allowed'
-                                                    : feedback === "correct"
-                                                        ? 'bg-green-100 border-green-500 text-green-600'
-                                                        : feedback === "wrong"
-                                                            ? 'bg-red-100 border-red-500 text-red-600 animate-shake'
-                                                            : focusedIndex === index
-                                                                ? 'border-purple-500 bg-purple-50'
-                                                                : 'border-gray-300 bg-white hover:border-purple-300'
+                                            ? 'bg-red-100 border-red-400 text-red-600 cursor-not-allowed'
+                                            : isRevealed
+                                                ? 'bg-blue-100 border-blue-400 text-blue-600 cursor-not-allowed'
+                                                : feedback === "correct"
+                                                    ? 'bg-green-100 border-green-500 text-green-600'
+                                                    : feedback === "wrong"
+                                                        ? 'bg-red-100 border-red-500 text-red-600 animate-shake'
+                                                        : focusedIndex === index
+                                                            ? 'border-purple-500 bg-purple-50'
+                                                            : 'border-gray-300 bg-white hover:border-purple-300'
                                             }`}
                                     />
                                 );

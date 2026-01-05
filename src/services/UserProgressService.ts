@@ -69,7 +69,7 @@ const apiPath = "http://localhost:5000/api/user-progress";
 export const userProgressApi = createApi({
     reducerPath: "userProgressApi",
     baseQuery: createBaseQuery(apiPath),
-    tagTypes: ["UserProgress", "LevelStatistics"],
+    tagTypes: ["UserProgress", "LevelStatistics", "MinorTopicProgress"],
     endpoints: (builder) => ({
         // ==================== GET LEVEL STATISTICS ====================
         // GET /getLevelStatistics
@@ -143,16 +143,84 @@ export const userProgressApi = createApi({
             transformResponse: (response: ApiResponse<Word[]>) => response.Data || [],
             providesTags: [{ type: "UserProgress", id: "completed" }],
         }),
+
+        // ==================== MINOR TOPIC PROGRESS ====================
+
+        // GET /minor-topic/:minorTopicId/progress
+        getMinorTopicProgress: builder.query<IMinorTopicProgress, string>({
+            query: (minorTopicId) => `minor-topic/${minorTopicId}/progress`,
+            transformResponse: (response: ApiResponse<IMinorTopicProgress>) => response.Data,
+            providesTags: (_result, _error, minorTopicId) => [
+                { type: "MinorTopicProgress" as const, id: minorTopicId },
+            ],
+        }),
+
+        // GET /major-topic/:majorTopicId/minor-topics-progress
+        getMinorTopicsProgressByMajor: builder.query<IMinorTopicProgress[], string>({
+            query: (majorTopicId) => `major-topic/${majorTopicId}/minor-topics-progress`,
+            transformResponse: (response: ApiResponse<IMinorTopicProgress[]>) => response.Data || [],
+            providesTags: (_result, _error, majorTopicId) => [
+                { type: "MinorTopicProgress" as const, id: `major_${majorTopicId}` },
+            ],
+        }),
+
+        // POST /minor-topic/:minorTopicId/batch-mark-learned
+        batchMarkWordsAsLearned: builder.mutation<IBatchMarkResult, { minorTopicId: string; wordResults: IWordResult[] }>({
+            query: ({ minorTopicId, wordResults }) => ({
+                url: `minor-topic/${minorTopicId}/batch-mark-learned`,
+                method: "POST",
+                body: { word_results: wordResults },
+            }),
+            transformResponse: (response: ApiResponse<IBatchMarkResult>) => response.Data,
+            invalidatesTags: (_result, _error, { minorTopicId }) => [
+                { type: "MinorTopicProgress" as const, id: minorTopicId },
+                "UserProgress",
+            ],
+        }),
+
+        // GET /getAllWordsByLevel/:level - Get all words by level (no pagination)
+        getAllWordsByLevel: builder.query<Word[], number>({
+            query: (level) => `getAllWordsByLevel/${level}`,
+            transformResponse: (response: ApiResponse<Word[]>) => response.Data,
+            providesTags: (_result, _error, level) => [
+                { type: "UserProgress" as const, id: `level-${level}` },
+            ],
+        }),
     }),
 });
+
+// ==================== INTERFACES FOR MINOR TOPIC PROGRESS ====================
+export interface IMinorTopicProgress {
+    minor_topic_id: string;
+    total_words: number;
+    learned_words: number;
+    completed_words: number;
+    progress_percent: number;
+    is_completed: boolean;
+}
+
+export interface IWordResult {
+    word_id: string;
+    is_correct: boolean;
+}
+
+export interface IBatchMarkResult {
+    words_updated: number;
+    topic_progress: IMinorTopicProgress;
+}
 
 // ==================== EXPORT HOOKS ====================
 export const {
     useGetLevelStatisticsQuery,
     useGetWordsByLevelQuery,
+    useGetAllWordsByLevelQuery,
     useUpdateProgressMutation,
     useBatchUpdateProgressMutation,
     useGetUnlearnedWordsQuery,
     useGetTodayRepeatWordsQuery,
     useGetCompletedWordsQuery,
+    // Minor topic progress hooks
+    useGetMinorTopicProgressQuery,
+    useGetMinorTopicsProgressByMajorQuery,
+    useBatchMarkWordsAsLearnedMutation,
 } = userProgressApi;

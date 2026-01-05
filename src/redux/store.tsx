@@ -42,6 +42,30 @@ import { tagApi } from "@/services/TagService";
 // User Progress API
 import { userProgressApi } from "@/services/UserProgressService";
 
+// Streak API
+import { streakApi } from "@/services/StreakService";
+
+// Cart
+import { cartSlice } from "./slices/cartSlice";
+
+// UserCourse API
+import { userCourseApi } from "@/services/UserCourseService";
+
+// MajorTopic API
+import { majorTopicApi } from "@/services/MajorTopicService";
+
+// MinorTopic API
+import { minorTopicApi } from "@/services/MinorTopicService";
+
+// Word API
+import { wordApi } from "@/services/WordService";
+
+// Leaderboard API
+import { leaderboardApi } from "@/services/LeaderboardService";
+
+// User Custom Topic API (SoTay)
+import { userCustomTopicApi } from "@/services/UserCustomTopicService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -79,6 +103,22 @@ export const store = configureStore({
     [tagApi.reducerPath]: tagApi.reducer,
     // User Progress
     [userProgressApi.reducerPath]: userProgressApi.reducer,
+    // Streak
+    [streakApi.reducerPath]: streakApi.reducer,
+    // Cart
+    [cartSlice.name]: cartSlice.reducer,
+    // UserCourse
+    [userCourseApi.reducerPath]: userCourseApi.reducer,
+    // MajorTopic
+    [majorTopicApi.reducerPath]: majorTopicApi.reducer,
+    // MinorTopic
+    [minorTopicApi.reducerPath]: minorTopicApi.reducer,
+    // Word
+    [wordApi.reducerPath]: wordApi.reducer,
+    // Leaderboard
+    [leaderboardApi.reducerPath]: leaderboardApi.reducer,
+    // User Custom Topic (SoTay)
+    [userCustomTopicApi.reducerPath]: userCustomTopicApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -110,7 +150,21 @@ export const store = configureStore({
       collectionApi.middleware,
       tagApi.middleware,
       // User Progress
-      userProgressApi.middleware
+      userProgressApi.middleware,
+      // Streak
+      streakApi.middleware,
+      // UserCourse
+      userCourseApi.middleware,
+      // MajorTopic
+      majorTopicApi.middleware,
+      // MinorTopic
+      minorTopicApi.middleware,
+      // Word
+      wordApi.middleware,
+      // Leaderboard
+      leaderboardApi.middleware,
+      // User Custom Topic (SoTay)
+      userCustomTopicApi.middleware
     ),
 });
 

@@ -1,98 +1,145 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SmartMonkeyGame from "@/components/games/SmartMonkeyGame";
 import PictureGuessGame from "@/components/games/PictureGuessGame";
 import ShootingGame from "@/components/games/ShootingGame";
 import ReturnToEarthGame from "@/components/games/ReturnToEarthGame";
+import {
+    useGetMyCustomTopicsQuery,
+    useGetCustomTopicByIdQuery,
+    useCreateCustomTopicMutation,
+    useUpdateCustomTopicMutation,
+    useDeleteCustomTopicMutation,
+    ICustomTopic,
+    ICustomWord,
+} from "@/services/UserCustomTopicService";
 
 interface VocabularyWord {
     english: string;
     vietnamese: string;
 }
 
-interface Topic {
+interface GameTopic {
     id: string;
     name: string;
     words: VocabularyWord[];
-    createdAt: Date;
 }
 
 export default function SoTayPage() {
-    const [topics, setTopics] = useState<Topic[]>([]);
+    // API hooks
+    const { data: topics = [], isLoading, refetch } = useGetMyCustomTopicsQuery();
+    const [createTopic] = useCreateCustomTopicMutation();
+    const [updateTopic] = useUpdateCustomTopicMutation();
+    const [deleteTopic] = useDeleteCustomTopicMutation();
+
+    // UI states
     const [showAddModal, setShowAddModal] = useState(false);
-    const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+    const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // New states for viewing and game selection
-    const [viewingTopic, setViewingTopic] = useState<Topic | null>(null);
+    // Viewing and game selection states
+    const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
     const [showGameSelection, setShowGameSelection] = useState(false);
-    const [selectedTopicForGame, setSelectedTopicForGame] = useState<Topic | null>(null);
+    const [selectedTopicForGame, setSelectedTopicForGame] = useState<GameTopic | null>(null);
     const [activeGame, setActiveGame] = useState<string | null>(null);
 
     // Form state
     const [topicName, setTopicName] = useState("");
     const [words, setWords] = useState<VocabularyWord[]>([{ english: "", vietnamese: "" }]);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Fetch topic detail for viewing
+    const { data: viewingTopicData } = useGetCustomTopicByIdQuery(viewingTopicId || "", {
+        skip: !viewingTopicId,
+    });
+
+    // Transform API topic to GameTopic for games
+    const transformToGameTopic = (topic: ICustomTopic): GameTopic => ({
+        id: topic.id,
+        name: topic.name,
+        words: topic.user_custom_words?.map((w) => ({
+            english: w.english,
+            vietnamese: w.vietnamese,
+        })) || [],
+    });
 
     // Filter topics by search query
-    const filteredTopics = topics.filter(topic =>
+    const filteredTopics = topics.filter((topic) =>
         topic.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Calculate stats
-    const totalWords = topics.reduce((sum, topic) => sum + topic.words.length, 0);
+    const totalWords = topics.reduce((sum, topic) => sum + (topic.wordCount || 0), 0);
 
     const handleAddTopic = () => {
-        setEditingTopic(null);
+        setEditingTopicId(null);
         setTopicName("");
         setWords([{ english: "", vietnamese: "" }]);
         setShowAddModal(true);
     };
 
-    const handleEditTopic = (topic: Topic) => {
-        setEditingTopic(topic);
+    const handleEditTopic = (topic: ICustomTopic) => {
+        setEditingTopicId(topic.id);
         setTopicName(topic.name);
-        setWords([...topic.words]);
+        // Need to fetch full topic with words
+        setWords(
+            topic.user_custom_words?.map((w) => ({
+                english: w.english,
+                vietnamese: w.vietnamese,
+            })) || [{ english: "", vietnamese: "" }]
+        );
         setShowAddModal(true);
     };
 
-    const handleSaveTopic = () => {
+    const handleSaveTopic = async () => {
         // Validation
         if (!topicName.trim()) {
             alert("Vui lòng nhập tên chủ đề!");
             return;
         }
 
-        const validWords = words.filter(w => w.english.trim() && w.vietnamese.trim());
+        const validWords = words.filter((w) => w.english.trim() && w.vietnamese.trim());
         if (validWords.length === 0) {
             alert("Vui lòng thêm ít nhất một từ vựng!");
             return;
         }
 
-        if (editingTopic) {
-            // Update existing topic
-            setTopics(topics.map(t =>
-                t.id === editingTopic.id
-                    ? { ...t, name: topicName, words: validWords }
-                    : t
-            ));
-        } else {
-            // Add new topic
-            const newTopic: Topic = {
-                id: Date.now().toString(),
-                name: topicName,
-                words: validWords,
-                createdAt: new Date()
-            };
-            setTopics([newTopic, ...topics]);
+        setIsSaving(true);
+        try {
+            if (editingTopicId) {
+                // Update existing topic
+                await updateTopic({
+                    id: editingTopicId,
+                    data: {
+                        name: topicName,
+                        words: validWords,
+                    },
+                }).unwrap();
+            } else {
+                // Create new topic
+                await createTopic({
+                    name: topicName,
+                    words: validWords,
+                }).unwrap();
+            }
+            setShowAddModal(false);
+        } catch (error) {
+            console.error("Error saving topic:", error);
+            alert("Có lỗi xảy ra khi lưu chủ đề!");
+        } finally {
+            setIsSaving(false);
         }
-
-        setShowAddModal(false);
     };
 
-    const handleDeleteTopic = (id: string) => {
+    const handleDeleteTopic = async (id: string) => {
         if (confirm("Bạn có chắc muốn xóa chủ đề này?")) {
-            setTopics(topics.filter(t => t.id !== id));
+            try {
+                await deleteTopic(id).unwrap();
+            } catch (error) {
+                console.error("Error deleting topic:", error);
+                alert("Có lỗi xảy ra khi xóa chủ đề!");
+            }
         }
     };
 
@@ -110,14 +157,16 @@ export default function SoTayPage() {
         setWords(newWords);
     };
 
-    const handleViewTopic = (topic: Topic) => {
-        setViewingTopic(topic);
+    const handleViewTopic = (topic: ICustomTopic) => {
+        setViewingTopicId(topic.id);
     };
 
-    const handleStartPractice = (topic: Topic) => {
-        setSelectedTopicForGame(topic);
-        setViewingTopic(null);
-        setShowGameSelection(true);
+    const handleStartPractice = () => {
+        if (viewingTopicData) {
+            setSelectedTopicForGame(transformToGameTopic(viewingTopicData));
+            setViewingTopicId(null);
+            setShowGameSelection(true);
+        }
     };
 
     const handleSelectGame = (gameType: string) => {
@@ -249,23 +298,8 @@ export default function SoTayPage() {
                                     {topic.name}
                                 </h3>
                                 <p className="text-gray-500 text-sm">
-                                    {topic.words.length} từ vựng
+                                    {topic.wordCount || 0} từ vựng
                                 </p>
-                            </div>
-
-                            {/* Preview words */}
-                            <div className="mb-4 space-y-2">
-                                {topic.words.slice(0, 3).map((word, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm bg-gray-100 rounded-lg px-3 py-2">
-                                        <span className="font-semibold text-blue-600">{word.english}</span>
-                                        <span className="text-gray-600">{word.vietnamese}</span>
-                                    </div>
-                                ))}
-                                {topic.words.length > 3 && (
-                                    <p className="text-xs text-gray-400 text-center">
-                                        +{topic.words.length - 3} từ khác...
-                                    </p>
-                                )}
                             </div>
 
                             {/* Action buttons */}
@@ -301,7 +335,7 @@ export default function SoTayPage() {
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6">
                             <h2 className="text-3xl font-bold text-white">
-                                {editingTopic ? "✏️ Chỉnh sửa chủ đề" : "➕ Thêm chủ đề mới"}
+                                {editingTopicId ? "✏️ Chỉnh sửa chủ đề" : "➕ Thêm chủ đề mới"}
                             </h2>
                         </div>
 
@@ -383,25 +417,25 @@ export default function SoTayPage() {
             )}
 
             {/* View Topic Modal */}
-            {viewingTopic && (
+            {viewingTopicId && viewingTopicData && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 p-6">
                             <h2 className="text-3xl font-bold text-white">
-                                📚 {viewingTopic.name}
+                                📚 {viewingTopicData.name}
                             </h2>
                             <p className="text-white/90 mt-2">
-                                {viewingTopic.words.length} từ vựng
+                                {viewingTopicData.user_custom_words?.length || 0} từ vựng
                             </p>
                         </div>
 
                         {/* Modal Body - Vocabulary List */}
                         <div className="p-6 overflow-y-auto max-h-[calc(90vh-250px)]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {viewingTopic.words.map((word, index) => (
+                                {viewingTopicData.user_custom_words?.map((word, index) => (
                                     <div
-                                        key={index}
+                                        key={word.id || index}
                                         className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 border-2 border-blue-200 hover:border-purple-300 transition-all duration-300 hover:scale-105"
                                     >
                                         <div className="flex items-center justify-between">
@@ -425,13 +459,13 @@ export default function SoTayPage() {
                         {/* Modal Footer */}
                         <div className="p-6 bg-gray-50 flex gap-4">
                             <button
-                                onClick={() => setViewingTopic(null)}
+                                onClick={() => setViewingTopicId(null)}
                                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105"
                             >
                                 Đóng
                             </button>
                             <button
-                                onClick={() => handleStartPractice(viewingTopic)}
+                                onClick={handleStartPractice}
                                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105"
                             >
                                 🎮 Ôn tập

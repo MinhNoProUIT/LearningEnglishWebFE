@@ -9,137 +9,47 @@ import {
   Container,
   Box,
   Button,
-  Menu,
-  MenuItem,
   IconButton,
   Divider,
+  Typography,
   alpha,
-  colors,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useSelector } from "react-redux";
-import { selectAuth } from "@/redux/slices/authSlice";
-import { HoverDropdown } from "./HoverDropdown";
-import { HEADER_H, NAV_H } from "@/constants/layout";
+import SchoolIcon from "@mui/icons-material/School";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import HeadphonesIcon from "@mui/icons-material/Headphones";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import ArticleIcon from "@mui/icons-material/Article";
+import StickyNote2Icon from '@mui/icons-material/StickyNote2'; import { HEADER_H, NAV_H } from "@/constants/layout";
 import useScrollDirection from "@/hooks/useScrollDirection";
-// ==== types ====
-type Child = { label: string; href: string; allow?: boolean };
-type Item = {
-  label: string;
-  href?: string;
-  allow?: boolean;
-  children?: Child[];
-};
+import AutoStoriesIcon from "@mui/icons-material/AutoStories";
+
+// ==== Menu Items ====
+const menuItems = [
+  { label: "Khóa học", href: "/courses", icon: SchoolIcon },
+  { label: "Ngữ pháp", href: "/user/grammar", icon: MenuBookIcon },
+  { label: "Luyện nghe", href: "/user/practice", icon: HeadphonesIcon },
+  { label: "Media", href: "/media", icon: PlayCircleOutlineIcon },
+  { label: "Bài đăng", href: "/post", icon: ArticleIcon },
+];
 
 export default function TopNavBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const auth = useSelector(selectAuth);
   const scrollUp = useScrollDirection(4);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [measuredH, setMeasuredH] = React.useState(64);
+  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+
   React.useLayoutEffect(() => {
     if (rootRef.current) {
       setMeasuredH(rootRef.current.offsetHeight);
     }
   }, []);
-  // ====== KHAI BÁO MENU (demo) ======
-  const items: Item[] = [
-    {
-      label: "Về chúng tôi",
-      allow: true,
-      children: [
-        { label: "Giới thiệu", href: "/about", allow: true },
-        { label: "Giá trị cốt lõi", href: "/about/values", allow: true },
-      ],
-    },
-    { label: "Lịch khai giảng", href: "/schedule", allow: true },
-    {
-      label: "Khóa học",
-      href: "/courses",
-      allow: true,
-    },
-    { label: "Media", href: "/media", allow: true },
-    {
-      label: "Tài liệu TOEIC",
-      allow: true,
-      children: [
-        { label: "Từ vựng", href: "/materials/vocab", allow: true },
-        { label: "Ngữ pháp", href: "/user/grammar", allow: true },
-      ],
-    },
-    {
-      label: "Study Zone",
-      allow: true,
-      children: [
-        { label: "Blog", href: "/blog", allow: true },
-        { label: "Tips", href: "/tips", allow: true },
-      ],
-    },
-  ].filter((i) => i.allow);
 
-  // ====== STATE MỚI - chỉ lưu index đang mở ======
-  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
-  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  const go = (href: string) => router.push(href);
 
-  const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  // Clear timer helper
-  const clearCloseTimer = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  };
-
-  // Mở menu
-  const handleOpen = (index: number, element: HTMLElement) => {
-    clearCloseTimer();
-    setOpenIndex(index);
-    setAnchorEl(element);
-  };
-
-  // Đóng menu với delay
-  const handleClose = (delay: number = 150) => {
-    clearCloseTimer();
-    closeTimerRef.current = setTimeout(() => {
-      setOpenIndex(null);
-      setAnchorEl(null);
-    }, delay);
-  };
-
-  // Hủy đóng (khi hover vào menu)
-  const handleCancelClose = () => {
-    clearCloseTimer();
-  };
-
-  const go = (href?: string) => href && router.push(href);
-
-  const isActive = (href?: string, children?: Child[]) => {
-    if (href) return pathname === href;
-    if (children?.length)
-      return children.some((c) => pathname.startsWith(c.href));
-    return false;
-  };
-
-  const commonBtnSx = (active: boolean) => ({
-    px: 1.5,
-    py: 1,
-    height: 40,
-    borderRadius: 1.5,
-    fontWeight: 600,
-    fontSize: "16px",
-    letterSpacing: 0.2,
-    textTransform: "uppercase" as const,
-    color: "#f5f5f5",
-    bgcolor: active ? alpha("#000", 0.08) : "transparent",
-    "&:hover": {
-      bgcolor: alpha("#000", 0.0),
-      color: "#FFF9C4",
-      fontSize: "17px",
-    },
-  });
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Box
@@ -151,7 +61,7 @@ export default function TopNavBar() {
         right: 0,
         zIndex: (t) => t.zIndex.appBar,
         transform: scrollUp ? "translateY(0)" : `translateY(-162%)`,
-        transition: "transform 2000ms cubic-bezier(.2,.8,.2,1)",
+        transition: "transform 400ms cubic-bezier(.2,.8,.2,1)",
         willChange: "transform",
         pointerEvents: scrollUp ? "auto" : "none",
       }}
@@ -160,25 +70,26 @@ export default function TopNavBar() {
         position="static"
         elevation={0}
         sx={{
-          background:
-            "linear-gradient(90deg, #00ff88 0%, #00cc44 50%, #00b32d 100%)",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           color: "#fff",
-          borderRadius: "0 0 12px 12px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+          borderRadius: "0 0 16px 16px",
+          boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
+          backdropFilter: "blur(10px)",
         }}
       >
         <Container maxWidth="lg" disableGutters>
           <Toolbar
             sx={{
               minHeight: NAV_H,
-              height: 80,
+              height: 72,
               gap: 2,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              px: 3,
             }}
           >
-            {/* Logo trái */}
+            {/* Logo */}
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Link
                 href="/home"
@@ -188,12 +99,69 @@ export default function TopNavBar() {
                   textDecoration: "none",
                 }}
               >
+                {/* Evolingo Logo */}
                 <Box
-                  component="img"
-                  src="/images/cup.svg"
-                  alt="Zenlish"
-                  sx={{ height: 50 }}
-                />
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    transition: "transform 0.3s ease",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "12px",
+                      background: "rgba(255,255,255,0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "22px",
+                      fontWeight: 800,
+                      color: "#fff",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    }}
+                  >
+                    <AutoStoriesIcon
+                      sx={{
+                        fontSize: 22,
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: "20px",
+                        color: "#fff",
+                        letterSpacing: "1px",
+                        lineHeight: 1,
+                        // background: "linear-gradient(135deg, #6de60aff 0%, #51ca32ff 100%)",
+                        // WebkitBackgroundClip: "text",
+                        // WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      EVOLINGO
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "9px",
+                        color: "rgba(255,255,255,0.8)",
+                        letterSpacing: "2px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Learn English
+                    </Typography>
+                  </Box>
+                </Box>
               </Link>
             </Box>
 
@@ -204,68 +172,159 @@ export default function TopNavBar() {
                 alignItems: "center",
                 gap: 0.5,
                 mx: "auto",
+                bgcolor: "rgba(255,255,255,0.1)",
+                borderRadius: "40px",
+                p: 0.75,
+                backdropFilter: "blur(10px)",
               }}
             >
-              {items.map((it, idx) => {
-                const active = isActive(it.href, it.children);
-                const hasChildren =
-                  it.children && it.children.some((c) => c.allow);
-                const btnSx = commonBtnSx(active);
-
-                if (!hasChildren) {
-                  return (
-                    <Button key={idx} onClick={() => go(it.href)} sx={btnSx}>
-                      {it.label}
-                    </Button>
-                  );
-                }
+              {menuItems.map((item, idx) => {
+                const active = isActive(item.href);
+                const isHovered = hoveredIndex === idx;
+                const Icon = item.icon;
 
                 return (
-                  <HoverDropdown
+                  <Button
                     key={idx}
-                    label={it.label}
-                    childrenItems={it.children!}
-                    active={active}
-                    onNavigate={(href) => go(href)}
-                    buttonSx={btnSx}
-                  />
+                    onClick={() => go(item.href)}
+                    onMouseEnter={() => setHoveredIndex(idx)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    startIcon={
+                      <Icon
+                        sx={{
+                          fontSize: 20,
+                          transition: "transform 0.3s ease",
+                          transform: isHovered ? "scale(1.2)" : "scale(1)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      px: 2.5,
+                      py: 1.2,
+                      borderRadius: "25px",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      letterSpacing: 0.3,
+                      textTransform: "none",
+                      color: active ? "#667eea" : "rgba(255,255,255,0.95)",
+                      bgcolor: active
+                        ? "rgba(255,255,255,0.95)"
+                        : isHovered
+                          ? "rgba(255,255,255,0.15)"
+                          : "transparent",
+                      boxShadow: active
+                        ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                        : "none",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: "-100%",
+                        width: "100%",
+                        height: "100%",
+                        background:
+                          "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+                        transition: "left 0.5s ease",
+                      },
+                      "&:hover::before": {
+                        left: "100%",
+                      },
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                      },
+                      "&:active": {
+                        transform: "translateY(0)",
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </Button>
                 );
               })}
             </Box>
 
+            {/* Right Side */}
             <Box
-              sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}
+              sx={{ display: "flex", alignItems: "center", gap: 1.5, ml: "auto" }}
             >
+              {/* Search */}
               <IconButton
                 aria-label="search"
                 sx={{
-                  border: "2px solid #ffd166",
-                  borderRadius: 1,
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   color: "#fff",
-                  "&:hover": { bgcolor: alpha("#000", 0.1) },
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderRadius: "12px",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.25)",
+                    transform: "rotate(15deg) scale(1.1)",
+                    borderColor: "rgba(255,255,255,0.5)",
+                  },
                 }}
                 onClick={() => router.push("/search")}
               >
                 <SearchIcon />
               </IconButton>
 
+              {/* Test Online Button */}
               <Button
                 onClick={() => router.push("/user/exam")}
+                startIcon={<StickyNote2Icon />}
                 sx={{
-                  height: 40,
-                  px: 2.5,
+                  height: 44,
+                  px: 3,
                   fontWeight: 700,
-                  letterSpacing: 0.2,
+                  fontSize: "14px",
+                  letterSpacing: 0.5,
                   textTransform: "none",
-                  color: "#0b2",
-                  bgcolor: "#92f667",
-                  borderRadius: 1.5,
-                  "&:hover": { bgcolor: "#7ee64f" },
+                  color: "#764ba2",
+                  bgcolor: "#fff",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  position: "relative",
+                  overflow: "hidden",
+                  transition: "all 0.3s ease",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background:
+                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    opacity: 0,
+                    transition: "opacity 0.3s ease",
+                  },
+                  "&:hover": {
+                    color: "#fff",
+                    transform: "translateY(-3px)",
+                    boxShadow: "0 8px 25px rgba(118, 75, 162, 0.4)",
+                    "&::before": {
+                      opacity: 1,
+                    },
+                    "& .MuiButton-startIcon, & span": {
+                      position: "relative",
+                      zIndex: 1,
+                    },
+                  },
+                  "& .MuiButton-startIcon": {
+                    transition: "transform 0.3s ease",
+                  },
+                  "&:hover .MuiButton-startIcon": {
+                    transform: "rotate(10deg) scale(1.1)",
+                  },
                 }}
               >
-                Test online
+                <span style={{ position: "relative", zIndex: 1 }}>
+                  TEST ONLINE
+                </span>
               </Button>
             </Box>
           </Toolbar>

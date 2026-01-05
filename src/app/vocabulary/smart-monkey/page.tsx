@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, Trophy, Heart } from "lucide-react";
+import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
 
 // Vocabulary data
 interface VocabularyPair {
@@ -9,24 +10,34 @@ interface VocabularyPair {
     vietnamese: string;
 }
 
-const VOCABULARY_DATA: VocabularyPair[] = [
-    { id: 1, english: "student", vietnamese: "Học sinh" },
-    { id: 2, english: "teacher", vietnamese: "Giáo viên" },
-    { id: 3, english: "book", vietnamese: "Sách" },
-    { id: 4, english: "computer", vietnamese: "Máy tính" },
-    { id: 5, english: "friend", vietnamese: "Bạn bè" },
-    { id: 6, english: "family", vietnamese: "Gia đình" },
-    { id: 7, english: "house", vietnamese: "Ngôi nhà" },
-    { id: 8, english: "happy", vietnamese: "Vui vẻ" },
-    { id: 9, english: "beautiful", vietnamese: "Đẹp" },
-    { id: 10, english: "love", vietnamese: "Yêu" },
+// Helper function to shuffle array and pick N items
+function shuffleAndPick<T>(array: T[], count: number): T[] {
+    const shuffled = [...array].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
 
-];
-
-type GameStatus = "intro" | "playing" | "victory" | "gameover";
+type GameStatus = "intro" | "loading" | "playing" | "victory" | "gameover" | "nowords";
 type MonkeyState = "idle" | "clapping" | "throwing";
 
 export default function SmartMonkeyGame() {
+    // Fetch Level 1 words from API
+    const { data: apiWords = [], isLoading, isError } = useGetAllWordsByLevelQuery(1);
+
+    // Transform API words to game format and pick max 10 random words
+    const VOCABULARY_DATA: VocabularyPair[] = useMemo(() => {
+        if (apiWords.length === 0) return [];
+
+        // Transform API format to game format
+        const transformed = apiWords.map((word, index) => ({
+            id: index + 1,
+            english: word.englishname,
+            vietnamese: word.vietnamesename,
+        }));
+
+        // Shuffle and pick max 10 words
+        return shuffleAndPick(transformed, Math.min(10, transformed.length));
+    }, [apiWords]);
+
     const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
     const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
@@ -307,24 +318,50 @@ export default function SmartMonkeyGame() {
 
                     <div className="text-5xl mb-6">🐵</div>
 
-                    <div className="bg-white/80 rounded-2xl p-6 mb-8 text-left">
-                        <p className="text-lg text-gray-800 leading-relaxed">
-                            Hãy giúp chú khỉ ghép đúng từ tiếng Việt với từ tiếng Anh tương ứng!
-                        </p>
-                        <ul className="mt-4 space-y-2 text-gray-700">
-                            <li>✅ Kéo bảng lên ghép với từ đúng: <span className="font-bold text-green-600">+10 điểm</span></li>
-                            <li>❌ Ghép sai: <span className="font-bold text-red-600">-5 điểm, mất 1 mạng</span></li>
-                            <li>🎯 Đạt <span className="font-bold">100 điểm</span> để chiến thắng!</li>
-                            <li>💔 Sai 3 lần sẽ thua cuộc</li>
-                        </ul>
-                    </div>
+                    {isLoading ? (
+                        <div className="bg-white/80 rounded-2xl p-6 mb-8">
+                            <div className="text-6xl mb-4 animate-bounce">⏳</div>
+                            <p className="text-xl text-gray-700">Đang tải từ vựng...</p>
+                        </div>
+                    ) : VOCABULARY_DATA.length === 0 ? (
+                        <div className="bg-white/80 rounded-2xl p-6 mb-8">
+                            <div className="text-6xl mb-4">😢</div>
+                            <p className="text-xl text-gray-700 mb-4">Bạn chưa có từ vựng Level 1 để ôn tập!</p>
+                            <p className="text-gray-600">Hãy học thêm từ mới để chơi game này.</p>
+                            <button
+                                onClick={() => window.location.href = "/learn"}
+                                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl transition-all"
+                            >
+                                Đi học từ mới
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-white/80 rounded-2xl p-6 mb-8 text-left">
+                                <p className="text-lg text-gray-800 leading-relaxed">
+                                    Hãy giúp chú khỉ ghép đúng từ tiếng Việt với từ tiếng Anh tương ứng!
+                                </p>
+                                <div className="mt-4 mb-4 p-3 bg-blue-100 rounded-xl text-center">
+                                    <span className="text-lg font-bold text-blue-700">
+                                        📚 {VOCABULARY_DATA.length} từ vựng Level 1
+                                    </span>
+                                </div>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>✅ Kéo bảng lên ghép với từ đúng: <span className="font-bold text-green-600">+10 điểm</span></li>
+                                    <li>❌ Ghép sai: <span className="font-bold text-red-600">-5 điểm, mất 1 mạng</span></li>
+                                    <li>🎯 Đạt <span className="font-bold">100 điểm</span> để chiến thắng!</li>
+                                    <li>💔 Sai 3 lần sẽ thua cuộc</li>
+                                </ul>
+                            </div>
 
-                    <button
-                        onClick={startGame}
-                        className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-3xl font-bold py-6 px-12 rounded-2xl hover:scale-110 transition-transform shadow-xl"
-                    >
-                        BẮT ĐẦU
-                    </button>
+                            <button
+                                onClick={startGame}
+                                className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-3xl font-bold py-6 px-12 rounded-2xl hover:scale-110 transition-transform shadow-xl"
+                            >
+                                BẮT ĐẦU
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         );

@@ -1,21 +1,24 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import Stack from "@mui/material/Stack";
 import ColorModeIconDropdown from "./ColorModeIconDropdown";
 import LanguageMenu from "./LanguageMenu";
 import NotificationMenu from "./NotificationMenu";
 import AvatarMenu from "./AvatarMenu";
-import { Box, Typography } from "@mui/material";
+import ShopMenu from "./ShopMenu";
+import { Box, Typography, Divider } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { usePathMaps } from "@/utils/usePathMaps";
 import { HEADER_H } from "@/constants/layout";
+import AutoStoriesIcon from "@mui/icons-material/AutoStories";
+
 export default function Header() {
   const pathname = usePathname();
   const { mapPathName, mapParentPathName } = usePathMaps();
 
   const path = mapPathName[pathname];
-
   const parentPath = mapParentPathName[pathname];
 
   return (
@@ -27,12 +30,12 @@ export default function Header() {
         left: 0,
         top: 0,
         alignItems: "center",
+        justifyContent: "center",
         height: HEADER_H,
         position: "fixed",
-        padding: "0 24px",
         zIndex: 1000,
-        backgroundColor: "var(--header-maim-color)", // Nền bán trong suốt
-        backdropFilter: "blur(10px)", // Làm mờ phần nền phía sau header
+        backgroundColor: "var(--header-maim-color)",
+        backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
       spacing={2}
@@ -42,34 +45,74 @@ export default function Header() {
         sx={{
           px: 3,
           width: "100%",
+          maxWidth: 1200, // Match TopNavBar Container (lg = 1200px)
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        {path && parentPath ? (
-          <Typography
+        {/* LEFT SIDE - Slogan */}
+        <Link href="/home" style={{ textDecoration: "none" }}>
+          <Box
             sx={{
-              userSelect: "none",
-              fontWeight: "bold",
-              fontSize: "18px",
               display: "flex",
               alignItems: "center",
+              gap: 1,
+              px: 2.5,
+              py: 1,
+              borderRadius: "30px",
+              background: "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)",
+              border: "1px solid rgba(102, 126, 234, 0.2)",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "scale(1.02)",
+                boxShadow: "0 4px 15px rgba(102, 126, 234, 0.2)",
+              },
             }}
           >
-            {/* {parentPath}
-                        <MoveRight style={{ margin: '0 8px' }} /> */}
-            {path}
-          </Typography>
-        ) : (
-          <Box> </Box>
-        )}
-        <Box sx={{ display: "flex" }}>
-          {/* <Search />
-                    <Divider
-                        orientation='vertical'
-                        flexItem
-                        sx={{ width: '1.5px', mr: 1, ml: 1, borderColor: 'var(--border-color)' }}
-                    /> */}
+            <AutoStoriesIcon
+              sx={{
+                fontSize: 22,
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            />
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: "15px",
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Evolingo
+            </Typography>
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                mx: 0.5,
+                borderColor: "rgba(102, 126, 234, 0.3)",
+              }}
+            />
+            <Typography
+              sx={{
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "text.secondary",
+                fontStyle: "italic",
+              }}
+            >
+              Học ngoại ngữ, mở tương lai
+            </Typography>
+          </Box>
+        </Link>
+
+        {/* RIGHT SIDE - Action Icons */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <ShopMenu />
           <LanguageMenu />
           <ColorModeIconDropdown />
           <NotificationMenu />
