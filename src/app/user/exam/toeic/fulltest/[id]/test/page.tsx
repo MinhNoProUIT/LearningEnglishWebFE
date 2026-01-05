@@ -60,6 +60,12 @@ import { IExamStart } from "@/models/Exam";
 const theme = examTheme;
 
 // ================== TYPES ==================
+type QuestionOption = {
+  id: number;
+  label: string;
+  text: string;
+};
+
 type Question = {
   id: number;
   displayNo: number;
@@ -71,12 +77,13 @@ type Question = {
   talkText?: string;
   passage?: string;
   questionText?: string;
-  options?: { label: string; text: string }[];
+  options?: QuestionOption[];
   subQuestions?: {
     id: number;
     displayNo: number;
     questionText: string;
-    options: { label: string; text: string }[];
+    imageUrl?: string;
+    options: QuestionOption[];
   }[];
 };
 
@@ -93,6 +100,14 @@ type Part = {
 
 // ================== API DATA TRANSFORMERS ==================
 
+// Helper: Check if URL is an image
+const isImageUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+  const lowerUrl = url.toLowerCase();
+  return imageExtensions.some(ext => lowerUrl.includes(ext));
+};
+
 // Transform API exam data to local Question format
 const transformApiToQuestions = (exam: IExamStart): Question[] => {
   const questions: Question[] = [];
@@ -102,6 +117,9 @@ const transformApiToQuestions = (exam: IExamStart): Question[] => {
   exam.sections.forEach((section) => {
     section.question_groups?.forEach((group) => {
       if (group.questions && group.questions.length > 0) {
+        // Get group-level image URL
+        const groupImageUrl = group.media_type === "IMAGE" ? group.media_url : undefined;
+
         // Check if this is a grouped question (multiple questions per passage/audio)
         if (
           group.questions.length > 1 &&
@@ -114,8 +132,7 @@ const transformApiToQuestions = (exam: IExamStart): Question[] => {
             displayNo: firstQ.display_no,
             partId: section.id,
             type: getQuestionType(section.skill_type, group.media_type),
-            imageUrl:
-              group.media_type === "IMAGE" ? group.media_url : undefined,
+            imageUrl: groupImageUrl || (isImageUrl(firstQ.audio_url) ? firstQ.audio_url : undefined),
             audioUrl:
               group.media_type === "AUDIO" ? group.media_url : undefined,
             passage: group.content_text || undefined,
@@ -127,7 +144,9 @@ const transformApiToQuestions = (exam: IExamStart): Question[] => {
               id: q.id,
               displayNo: q.display_no,
               questionText: q.question_text || "",
+              imageUrl: isImageUrl(q.audio_url) ? q.audio_url : undefined,
               options: q.options.map((opt, idx) => ({
+                id: opt.id, // Lưu option ID để submit
                 label: String.fromCharCode(65 + idx), // A, B, C, D
                 text: opt.option_text,
               })),
@@ -136,20 +155,24 @@ const transformApiToQuestions = (exam: IExamStart): Question[] => {
         } else {
           // Single questions
           group.questions.forEach((q) => {
+            // Check if audio_url is actually an image
+            const questionImageUrl = isImageUrl(q.audio_url) ? q.audio_url : undefined;
+            const questionAudioUrl = !isImageUrl(q.audio_url) ? q.audio_url : undefined;
+
             questions.push({
               id: Number(q.id),
               displayNo: q.display_no,
               partId: section.id,
               type: getQuestionType(section.skill_type, group.media_type),
-              imageUrl:
-                group.media_type === "IMAGE" ? group.media_url : undefined,
+              imageUrl: groupImageUrl || questionImageUrl,
               audioUrl:
                 group.media_type === "AUDIO"
                   ? group.media_url
-                  : q.audio_url || undefined,
+                  : questionAudioUrl || undefined,
               passage: group.content_text || undefined,
               questionText: q.question_text || "",
               options: q.options.map((opt, idx) => ({
+                id: opt.id, // Lưu option ID để submit
                 label: String.fromCharCode(65 + idx),
                 text: opt.option_text,
               })),
@@ -307,19 +330,19 @@ const QuestionNavigator = ({
   answers,
   flaggedQuestions,
   currentDisplayNo,
-  currentQuestion,
   onQuestionClick,
   isListeningSection,
   listeningProgress,
+  displayNoToQuestionId,
 }: {
   parts: Part[];
   answers: Record<number, string>;
   flaggedQuestions: Set<number>;
   currentDisplayNo: number;
-  currentQuestion: number;
   onQuestionClick: (questionId: number) => void;
   isListeningSection: boolean;
   listeningProgress: number; // Câu listening cao nhất đã đến (không thể quay lại)
+  displayNoToQuestionId: Map<number, number>;
 }) => {
   return (
     <Paper
@@ -376,7 +399,8 @@ const QuestionNavigator = ({
                 { length: part.questionCount },
                 (_, i) => part.startQuestion + i
               ).map((qNum) => {
-                const isAnswered = answers[qNum] !== undefined;
+                const questionId = displayNoToQuestionId.get(qNum);
+                const isAnswered = questionId !== undefined && answers[questionId] !== undefined;
                 const isFlagged = flaggedQuestions.has(qNum);
                 const isCurrent = currentDisplayNo === qNum;
                 const isReadingPart = part.category === "Reading";
@@ -578,15 +602,19 @@ export default function ToeicTestPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [examStarted, setExamStarted] = useState(false);
 
-  // Audio states for Listening section
+  // Audio/TTS states for Listening section
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
-  const [audioDuration] = useState(10);
+  const [audioDuration, setAudioDuration] = useState(10);
   const [audioEnded, setAudioEnded] = useState(false);
   const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<
     number | null
   >(null);
   const countdownStartedRef = useRef(false);
+
+  // Text-to-Speech refs
+  const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const ttsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs to avoid stale closures in useEffect
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
@@ -613,6 +641,38 @@ export default function ToeicTestPage() {
     return map;
   }, [examQuestions]);
 
+  // Reverse mapping: displayNo -> questionId
+  const displayNoToQuestionId = useMemo(() => {
+    const map = new Map<number, number>();
+    examQuestions.forEach((q) => {
+      if (q.subQuestions) {
+        q.subQuestions.forEach((sq) => map.set(sq.displayNo, sq.id));
+      } else {
+        map.set(q.displayNo, q.id);
+      }
+    });
+    return map;
+  }, [examQuestions]);
+
+  // Mapping: (questionId, label) -> optionId để submit đáp án đúng
+  const getOptionIdByLabel = useMemo(() => {
+    const map = new Map<string, number>(); // key: "questionId-label"
+    examQuestions.forEach((q) => {
+      if (q.subQuestions) {
+        q.subQuestions.forEach((sq) => {
+          sq.options.forEach((opt) => {
+            map.set(`${sq.id}-${opt.label}`, opt.id);
+          });
+        });
+      } else if (q.options) {
+        q.options.forEach((opt) => {
+          map.set(`${q.id}-${opt.label}`, opt.id);
+        });
+      }
+    });
+    return map;
+  }, [examQuestions]);
+
   const examParts = useMemo(() => {
     if (examData && examData.sections && examData.sections.length > 0) {
       return transformApiToParts(examData);
@@ -630,6 +690,401 @@ export default function ToeicTestPage() {
   }, [examParts]);
 
   const AUTO_ADVANCE_DELAY = 5;
+
+  // ==================== TEXT-TO-SPEECH FUNCTION ====================
+  // Build TTS text based on TOEIC part format
+  // isFirstInGroup: true if this is the first question in a group (Part 3/4)
+  const buildTTSText = useCallback((
+    partNumber: number,
+    question: Question | null,
+    subQuestion: { id: number; questionText: string; options: QuestionOption[] } | null,
+    parentQuestion: Question | null,
+    isFirstInGroup: boolean = true
+  ): string => {
+    console.log("buildTTSText called with:", {
+      partNumber,
+      isFirstInGroup,
+      hasQuestion: !!question,
+      questionOptions: question?.options?.length,
+      questionText: question?.questionText?.substring(0, 30),
+      hasSubQuestion: !!subQuestion,
+      subQuestionOptions: subQuestion?.options?.length,
+      hasParentQuestion: !!parentQuestion,
+      parentConversation: parentQuestion?.conversationText?.substring(0, 30),
+      parentSubQuestions: parentQuestion?.subQuestions?.length,
+    });
+
+    // Pause markers - TOEIC realistic pauses (shorter, more natural)
+    const SHORT_PAUSE = " , "; // Ngắt rất ngắn giữa label và text (~0.2s)
+    const LONG_PAUSE = " . "; // Ngắt ngắn giữa các đáp án (~0.5s)
+    const SECTION_PAUSE = " . . . "; // Ngắt giữa các phần (~1s)
+
+    // Part 1 (Photographs - câu 1-6): Đọc 4 đáp án A, B, C, D
+    if (partNumber === 1) {
+      // For Part 1, options might be in subQuestion, question, or parentQuestion.subQuestions
+      let options = subQuestion?.options || question?.options || [];
+
+      // If still empty, try to get from parentQuestion's subQuestions
+      if (options.length === 0 && parentQuestion?.subQuestions) {
+        const currentSubQ = parentQuestion.subQuestions.find(sq =>
+          sq.options && sq.options.length > 0
+        );
+        if (currentSubQ) {
+          options = currentSubQ.options;
+        }
+      }
+
+      console.log("Part 1 options:", options);
+      if (options.length > 0) {
+        // Đọc từng đáp án với ngắt dài giữa mỗi câu
+        return options.map(opt => `${opt.label}${SHORT_PAUSE}${opt.text}`).join(LONG_PAUSE);
+      }
+      return "";
+    }
+
+    // Part 2 (Question-Response - câu 7-31): Đọc câu hỏi + 3 đáp án
+    if (partNumber === 2) {
+      const qText = subQuestion?.questionText || question?.questionText || "";
+      const options = subQuestion?.options || question?.options || [];
+      const optionsText = options.map(opt => `${opt.label}${SHORT_PAUSE}${opt.text}`).join(LONG_PAUSE);
+      return qText ? `${qText}${SECTION_PAUSE}${optionsText}` : optionsText;
+    }
+
+    // Part 3 (Conversations - câu 32-70):
+    // - Câu đầu tiên: Đọc hội thoại + câu hỏi
+    // - Câu 2, 3: Chỉ đọc câu hỏi
+    if (partNumber === 3) {
+      const conversation = parentQuestion?.conversationText || question?.conversationText || "";
+      const qText = subQuestion?.questionText || question?.questionText || "";
+
+      if (isFirstInGroup && conversation) {
+        // Câu đầu tiên: đọc conversation trước, sau đó đọc câu hỏi
+        return conversation + (qText ? `${SECTION_PAUSE}${qText}` : "");
+      }
+      // Câu 2, 3 trong group: chỉ đọc câu hỏi
+      return qText;
+    }
+
+    // Part 4 (Talks - câu 71-100): Giống Part 3
+    if (partNumber === 4) {
+      const talk = parentQuestion?.talkText || parentQuestion?.conversationText ||
+                   question?.talkText || question?.conversationText || "";
+      const qText = subQuestion?.questionText || question?.questionText || "";
+
+      if (isFirstInGroup && talk) {
+        // Câu đầu tiên: đọc talk trước, sau đó đọc câu hỏi
+        return talk + (qText ? `${SECTION_PAUSE}${qText}` : "");
+      }
+      // Câu 2, 3 trong group: chỉ đọc câu hỏi
+      return qText;
+    }
+
+    // Default: return any available text
+    return parentQuestion?.conversationText || parentQuestion?.talkText ||
+           question?.conversationText || question?.talkText || "";
+  }, []);
+
+  // Parse conversation into speaker turns for multi-voice reading
+  const parseConversation = useCallback((text: string): { speaker: string; text: string }[] => {
+    const turns: { speaker: string; text: string }[] = [];
+
+    // Common patterns for speaker identification in TOEIC
+    // Pattern 1: "Man:" or "Woman:" or "M:" or "W:"
+    // Pattern 2: "Speaker 1:" or "Speaker A:"
+    // Pattern 3: Lines separated by newlines (alternate speakers)
+    const speakerPattern = /^(Man|Woman|M|W|Speaker\s*[A-Z0-9]|Person\s*[A-Z0-9])\s*[:\-]/im;
+
+    // Check if text has explicit speaker labels
+    if (speakerPattern.test(text)) {
+      // Split by speaker labels
+      const parts = text.split(/(?=(?:Man|Woman|M|W|Speaker\s*[A-Z0-9]|Person\s*[A-Z0-9])\s*[:\-])/i);
+      parts.forEach(part => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+
+        const match = trimmed.match(/^(Man|Woman|M|W|Speaker\s*[A-Z0-9]|Person\s*[A-Z0-9])\s*[:\-]\s*/i);
+        if (match) {
+          const speaker = match[1].toLowerCase();
+          const content = trimmed.slice(match[0].length).trim();
+          // Normalize speaker to "male" or "female"
+          const normalizedSpeaker = (speaker === 'man' || speaker === 'm') ? 'male' :
+                                    (speaker === 'woman' || speaker === 'w') ? 'female' :
+                                    speaker.includes('1') || speaker.includes('a') ? 'male' : 'female';
+          if (content) {
+            turns.push({ speaker: normalizedSpeaker, text: content });
+          }
+        } else {
+          // No speaker label, add with alternating speaker
+          const lastSpeaker = turns.length > 0 ? turns[turns.length - 1].speaker : 'female';
+          turns.push({ speaker: lastSpeaker === 'male' ? 'female' : 'male', text: trimmed });
+        }
+      });
+    } else {
+      // No explicit labels - split by newlines and alternate speakers
+      const lines = text.split(/\n+/).filter(line => line.trim());
+      if (lines.length > 1) {
+        lines.forEach((line, idx) => {
+          const trimmed = line.trim();
+          if (trimmed) {
+            turns.push({ speaker: idx % 2 === 0 ? 'male' : 'female', text: trimmed });
+          }
+        });
+      } else {
+        // Single block of text - just use one voice
+        turns.push({ speaker: 'male', text: text.trim() });
+      }
+    }
+
+    return turns;
+  }, []);
+
+  // Speak conversation with multiple voices (Part 3)
+  const speakConversation = useCallback((conversationText: string, questionText: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      console.log("TTS: speechSynthesis not available");
+      setAudioDuration(5);
+      setIsAudioPlaying(true);
+      setTimeout(() => {
+        setIsAudioPlaying(false);
+        setAudioEnded(true);
+      }, 5000);
+      return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const voices = window.speechSynthesis.getVoices();
+    console.log("TTS: Available voices:", voices.length);
+
+    // Find male and female English voices
+    const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+    const maleVoice = englishVoices.find(v =>
+      v.name.toLowerCase().includes("male") ||
+      v.name.toLowerCase().includes("david") ||
+      v.name.toLowerCase().includes("james") ||
+      v.name.toLowerCase().includes("daniel") ||
+      v.name.toLowerCase().includes("google us english")
+    ) || englishVoices[0];
+
+    const femaleVoice = englishVoices.find(v =>
+      v.name.toLowerCase().includes("female") ||
+      v.name.toLowerCase().includes("zira") ||
+      v.name.toLowerCase().includes("samantha") ||
+      v.name.toLowerCase().includes("google uk english female") ||
+      v.name.toLowerCase().includes("karen")
+    ) || englishVoices[1] || englishVoices[0];
+
+    console.log("TTS: Male voice:", maleVoice?.name, "Female voice:", femaleVoice?.name);
+
+    // Parse conversation into turns
+    const turns = parseConversation(conversationText);
+    console.log("TTS: Parsed conversation turns:", turns.length);
+
+    // Add question at the end if provided
+    if (questionText) {
+      turns.push({ speaker: 'narrator', text: questionText });
+    }
+
+    // Estimate total duration
+    const totalWords = turns.reduce((sum, t) => sum + t.text.split(/\s+/).length, 0);
+    const estimatedDuration = Math.max(5, Math.ceil((totalWords / 150) * 60));
+    setAudioDuration(estimatedDuration);
+
+    let currentTurnIndex = 0;
+    let startTime: number;
+
+    const speakNextTurn = () => {
+      if (currentTurnIndex >= turns.length) {
+        // All turns completed
+        if (ttsIntervalRef.current) {
+          clearInterval(ttsIntervalRef.current);
+          ttsIntervalRef.current = null;
+        }
+        setAudioProgress(estimatedDuration);
+        setIsAudioPlaying(false);
+        setAudioEnded(true);
+        return;
+      }
+
+      const turn = turns[currentTurnIndex];
+      const utterance = new SpeechSynthesisUtterance(turn.text);
+      speechSynthRef.current = utterance;
+
+      // Set voice based on speaker
+      if (turn.speaker === 'male' && maleVoice) {
+        utterance.voice = maleVoice;
+        utterance.pitch = 0.9; // Slightly lower pitch for male
+      } else if (turn.speaker === 'female' && femaleVoice) {
+        utterance.voice = femaleVoice;
+        utterance.pitch = 1.1; // Slightly higher pitch for female
+      } else {
+        // Narrator voice for questions
+        utterance.voice = maleVoice || femaleVoice;
+        utterance.pitch = 1.0;
+      }
+
+      utterance.lang = "en-US";
+      utterance.rate = 1.0;
+      utterance.volume = 1;
+
+      utterance.onstart = () => {
+        if (currentTurnIndex === 0) {
+          startTime = Date.now();
+          setIsAudioPlaying(true);
+          setAudioEnded(false);
+          setAudioProgress(0);
+
+          ttsIntervalRef.current = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            setAudioProgress(Math.min(elapsed, estimatedDuration));
+          }, 500);
+        }
+      };
+
+      utterance.onend = () => {
+        currentTurnIndex++;
+        // Small pause between speakers
+        setTimeout(speakNextTurn, 300);
+      };
+
+      utterance.onerror = (event) => {
+        if (event.error !== "interrupted" && event.error !== "canceled") {
+          console.error("TTS Error:", event.error);
+          // Try to continue with next turn
+          currentTurnIndex++;
+          setTimeout(speakNextTurn, 100);
+        } else {
+          // Interrupted - stop everything
+          if (ttsIntervalRef.current) {
+            clearInterval(ttsIntervalRef.current);
+            ttsIntervalRef.current = null;
+          }
+          setIsAudioPlaying(false);
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // Start speaking
+    speakNextTurn();
+  }, [parseConversation]);
+
+  const speakText = useCallback((text: string, isConversation: boolean = false, questionText: string = "") => {
+    // For Part 3/4 conversations, use multi-voice speaking
+    // Use multi-voice if isConversation=true and text has speaker patterns or newlines
+    if (isConversation && text) {
+      const hasMultipleSpeakers = text.includes('\n') ||
+                                  /(?:Man|Woman|M|W)\s*[:\-]/i.test(text);
+      if (hasMultipleSpeakers) {
+        speakConversation(text, questionText);
+        return;
+      }
+    }
+
+    // Cancel any ongoing speech
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
+    console.log("TTS speakText called with:", text?.substring(0, 100) || "(empty)");
+
+    if (!text || typeof window === "undefined" || !window.speechSynthesis) {
+      console.log("TTS: No text or speechSynthesis not available");
+      // No text to speak or TTS not supported, simulate quick audio
+      setAudioDuration(5);
+      setIsAudioPlaying(true);
+      // Auto-end after simulated duration
+      setTimeout(() => {
+        setIsAudioPlaying(false);
+        setAudioEnded(true);
+      }, 5000);
+      return;
+    }
+
+    // Check if voices are loaded
+    const voices = window.speechSynthesis.getVoices();
+    console.log("TTS: Available voices:", voices.length);
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    speechSynthRef.current = utterance;
+
+    // Try to use an English voice
+    const englishVoice = voices.find(v => v.lang.startsWith("en"));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+      console.log("TTS: Using voice:", englishVoice.name);
+    }
+
+    // Configure TTS settings - TOEIC speed (natural pace, ~150 words per minute)
+    utterance.lang = "en-US"; // English for TOEIC
+    utterance.rate = 1.0; // Natural speed like real TOEIC test
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    // Estimate duration based on text length (roughly 150 words per minute for TOEIC)
+    const words = text.split(/\s+/).length;
+    const estimatedDuration = Math.max(5, Math.ceil((words / 150) * 60));
+    setAudioDuration(estimatedDuration);
+
+    // Track start time for progress
+    let startTime: number;
+
+    utterance.onstart = () => {
+      startTime = Date.now();
+      setIsAudioPlaying(true);
+      setAudioEnded(false);
+      setAudioProgress(0);
+
+      // Update progress during speech
+      ttsIntervalRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setAudioProgress(Math.min(elapsed, estimatedDuration));
+      }, 500);
+    };
+
+    utterance.onend = () => {
+      if (ttsIntervalRef.current) {
+        clearInterval(ttsIntervalRef.current);
+        ttsIntervalRef.current = null;
+      }
+      setAudioProgress(estimatedDuration);
+      setIsAudioPlaying(false);
+      setAudioEnded(true);
+    };
+
+    utterance.onerror = (event) => {
+      // "interrupted" is not a real error - it happens when we cancel speech (e.g., changing questions)
+      if (event.error !== "interrupted") {
+        console.error("TTS Error:", event.error);
+      }
+      if (ttsIntervalRef.current) {
+        clearInterval(ttsIntervalRef.current);
+        ttsIntervalRef.current = null;
+      }
+      setIsAudioPlaying(false);
+      // Only mark as ended if it's not just an interruption from navigating
+      if (event.error !== "interrupted" && event.error !== "canceled") {
+        setAudioEnded(true);
+      }
+    };
+
+    // Start speaking
+    window.speechSynthesis.speak(utterance);
+  }, [speakConversation]);
+
+  // Cleanup TTS on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (ttsIntervalRef.current) {
+        clearInterval(ttsIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Get all question IDs in order
   const allQuestionIds = useMemo(
@@ -660,9 +1115,9 @@ export default function ToeicTestPage() {
         if (inProgressAttempt.saved_answers) {
           const restoredAnswers: Record<number, string> = {};
           inProgressAttempt.saved_answers.forEach((sa) => {
-            if (sa.selected_option_id) {
-              // Map option ID to label (A, B, C, D) - simplified
-              restoredAnswers[sa.question_id] = sa.text_answer || "A";
+            if (sa.text_answer) {
+              // text_answer contains the label (A, B, C, D)
+              restoredAnswers[sa.question_id] = sa.text_answer;
             }
           });
           setAnswers(restoredAnswers);
@@ -704,20 +1159,31 @@ export default function ToeicTestPage() {
     const saveInterval = setInterval(async () => {
       try {
         const answersArray = Object.entries(answers).map(
-          ([questionId, answer]) => ({
-            questionId: Number(questionId),
-            selectedOptionId: undefined, // Would need to map answer label to option ID
-            textAnswer: answer,
-          })
+          ([questionId, answer]) => {
+            // Map label (A, B, C, D) to actual option ID
+            const optionId = getOptionIdByLabel.get(`${questionId}-${answer}`);
+            return {
+              questionId: Number(questionId),
+              selectedOptionId: optionId, // Gửi option ID thực
+              textAnswer: answer,
+            };
+          }
         );
-        await saveProgress({ id: attemptId, data: { answers: answersArray } });
-      } catch (error) {
-        console.error("Failed to auto-save progress:", error);
+        await saveProgress({ id: attemptId, data: { answers: answersArray } }).unwrap();
+      } catch (error: unknown) {
+        // If attempt not found (404), it may have been submitted already
+        // Stop trying to save by clearing the interval
+        const err = error as { status?: number };
+        if (err?.status === 404) {
+          console.warn("Attempt not found - may have been submitted already");
+        } else {
+          console.error("Failed to auto-save progress:", error);
+        }
       }
     }, 30000);
 
     return () => clearInterval(saveInterval);
-  }, [attemptId, answers, saveProgress]);
+  }, [attemptId, answers, saveProgress, getOptionIdByLabel]);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -760,10 +1226,8 @@ export default function ToeicTestPage() {
   );
 
   const handleAnswer = (questionId: number, answer: string) => {
-    const displayNo = questionIdToDisplayNo.get(questionId);
-    if (!displayNo) return;
-
-    setAnswers((prev) => ({ ...prev, [displayNo]: answer }));
+    // Lưu theo questionId thực (từ DB), không phải displayNo
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
   const handleFlag = (questionId: number) => {
@@ -803,6 +1267,17 @@ export default function ToeicTestPage() {
       // Cancel auto-advance countdown nếu người dùng tự chuyển
       setAutoAdvanceCountdown(null);
 
+      // Reset audio states when moving to Reading section
+      if (nextDisplayNo && nextDisplayNo > LISTENING_END) {
+        setAudioEnded(false);
+        setAudioProgress(0);
+        setIsAudioPlaying(false);
+        // Cancel any ongoing speech
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      }
+
       setCurrentQuestionIndex(nextIndex);
     } else if (direction === "prev") {
       // Listening: không cho quay lại
@@ -812,9 +1287,10 @@ export default function ToeicTestPage() {
       if (currentQuestionIndex > 0) {
         const prevIndex = currentQuestionIndex - 1;
         const prevQuestionId = allQuestionIds[prevIndex];
+        const prevDisplayNo = questionIdToDisplayNo.get(prevQuestionId);
 
         // Không cho quay lại phần Listening từ Reading
-        if (prevQuestionId <= LISTENING_END) return;
+        if (prevDisplayNo && prevDisplayNo <= LISTENING_END) return;
 
         setCurrentQuestionIndex(prevIndex);
       }
@@ -843,13 +1319,17 @@ export default function ToeicTestPage() {
 
     setIsSubmitting(true);
     try {
-      // First save current progress
+      // First save current progress with correct option IDs
       const answersArray = Object.entries(answers).map(
-        ([questionId, answer]) => ({
-          questionId: Number(questionId),
-          selectedOptionId: undefined,
-          textAnswer: answer,
-        })
+        ([questionId, answer]) => {
+          // Map label (A, B, C, D) to actual option ID
+          const optionId = getOptionIdByLabel.get(`${questionId}-${answer}`);
+          return {
+            questionId: Number(questionId),
+            selectedOptionId: optionId, // Gửi option ID thực
+            textAnswer: answer,
+          };
+        }
       );
       await saveProgress({ id: attemptId, data: { answers: answersArray } });
 
@@ -870,42 +1350,85 @@ export default function ToeicTestPage() {
     setShowSubmitDialog(true);
   }, []);
 
-  // Auto-play audio when entering a new Listening question
+  // Get current part number for TTS
+  const getCurrentPartNumber = useCallback((): number => {
+    if (!currentPart) return 1;
+    const partName = currentPart.name.toLowerCase();
+    if (partName.includes("part 1") || partName.includes("photographs")) return 1;
+    if (partName.includes("part 2") || partName.includes("question-response")) return 2;
+    if (partName.includes("part 3") || partName.includes("conversations")) return 3;
+    if (partName.includes("part 4") || partName.includes("talks")) return 4;
+    // Fallback based on question number
+    if (currentDisplayNo <= 6) return 1;
+    if (currentDisplayNo <= 31) return 2;
+    if (currentDisplayNo <= 70) return 3;
+    if (currentDisplayNo <= 100) return 4;
+    return 1;
+  }, [currentPart, currentDisplayNo]);
+
+  // Check if current question is the first in its group (for Part 3/4)
+  const isFirstQuestionInGroup = useMemo(() => {
+    if (!parentQuestion || !parentQuestion.subQuestions || !subQuestion) {
+      return true; // No group, so it's the "first"
+    }
+    // Check if current subQuestion is the first in the parent's subQuestions array
+    return parentQuestion.subQuestions[0]?.id === subQuestion.id;
+  }, [parentQuestion, subQuestion]);
+
+  // Auto-play TTS when entering a new Listening question
   useEffect(() => {
     if (isListeningSection) {
+      // Cancel any ongoing speech
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
       // Reset audio states for new question
       setAudioProgress(0);
       setAudioEnded(false);
       setAutoAdvanceCountdown(null);
       countdownStartedRef.current = false; // Reset countdown flag
 
-      // Auto-start audio after a short delay
+      // Build TTS text based on part format
+      // For Part 3/4: only read conversation/talk on first question of the group
+      const partNumber = getCurrentPartNumber();
+
+      // Auto-start TTS after a short delay
       const startTimer = setTimeout(() => {
-        setIsAudioPlaying(true);
+        // For Part 3/4 with conversation - use multi-voice
+        if ((partNumber === 3 || partNumber === 4) && isFirstQuestionInGroup) {
+          // Try conversationText/talkText first, then fallback to passage (which may contain script)
+          const conversation = parentQuestion?.conversationText || parentQuestion?.talkText ||
+                               currentQuestion?.conversationText || currentQuestion?.talkText ||
+                               parentQuestion?.passage || currentQuestion?.passage || "";
+          const questionText = subQuestion?.questionText || currentQuestion?.questionText || "";
+
+          console.log("Part 3/4 TTS - conversation:", conversation?.substring(0, 100));
+
+          if (conversation) {
+            // Use multi-voice for conversation
+            speakText(conversation, true, questionText);
+          } else {
+            // No conversation, just read normally
+            const textToSpeak = buildTTSText(partNumber, currentQuestion, subQuestion, parentQuestion, isFirstQuestionInGroup);
+            speakText(textToSpeak);
+          }
+        } else {
+          // Other parts or non-first questions: single voice
+          const textToSpeak = buildTTSText(partNumber, currentQuestion, subQuestion, parentQuestion, isFirstQuestionInGroup);
+          speakText(textToSpeak);
+        }
       }, 500);
 
-      return () => clearTimeout(startTimer);
-    }
-  }, [currentQuestionId, isListeningSection]);
-
-  // Simulate audio playing progress
-  useEffect(() => {
-    if (!isAudioPlaying || !isListeningSection) return;
-
-    const progressInterval = setInterval(() => {
-      setAudioProgress((prev) => {
-        if (prev >= audioDuration) {
-          clearInterval(progressInterval);
-          setIsAudioPlaying(false);
-          setAudioEnded(true);
-          return audioDuration;
+      return () => {
+        clearTimeout(startTimer);
+        // Cancel speech when leaving question
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
         }
-        return prev + 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(progressInterval);
-  }, [isAudioPlaying, isListeningSection, audioDuration]);
+      };
+    }
+  }, [currentQuestionId, isListeningSection, parentQuestion, currentQuestion, subQuestion, speakText, buildTTSText, getCurrentPartNumber, isFirstQuestionInGroup]);
 
   // Auto-advance countdown after audio ends
   useEffect(() => {
@@ -938,6 +1461,18 @@ export default function ToeicTestPage() {
           ) {
             setListeningProgress(nextDisplayNo);
           }
+
+          // Reset audio states when moving to Reading section
+          if (nextDisplayNo && nextDisplayNo > LISTENING_END) {
+            setAudioEnded(false);
+            setAudioProgress(0);
+            setIsAudioPlaying(false);
+            // Cancel any ongoing speech
+            if (typeof window !== "undefined" && window.speechSynthesis) {
+              window.speechSynthesis.cancel();
+            }
+          }
+
           setCurrentQuestionIndex(nextIndex);
         }
       } else {
@@ -1248,7 +1783,7 @@ export default function ToeicTestPage() {
                           Phần Listening
                         </Typography>
                         <Typography variant="caption" color="#92400e">
-                          Audio sẽ tự động phát và chuyển câu sau{" "}
+                          Nội dung sẽ được đọc tự động và chuyển câu sau{" "}
                           {AUTO_ADVANCE_DELAY} giây. Bạn không thể quay lại câu
                           trước.
                         </Typography>
@@ -1257,31 +1792,54 @@ export default function ToeicTestPage() {
                   </Paper>
                 )}
 
-                {/* Image for Part 1 */}
-                {(currentQuestion?.imageUrl || parentQuestion?.imageUrl) && (
+                {/* Image for Question */}
+                {(subQuestion?.imageUrl || currentQuestion?.imageUrl || parentQuestion?.imageUrl) && (
                   <Box
                     sx={{
                       width: "100%",
-                      height: 300,
                       bgcolor: "#f3f4f6",
                       borderRadius: 2,
                       mb: 3,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      overflow: "hidden",
+                      p: 2,
                     }}
                   >
-                    <Stack spacing={1} alignItems="center">
+                    <Box
+                      component="img"
+                      src={subQuestion?.imageUrl || currentQuestion?.imageUrl || parentQuestion?.imageUrl}
+                      alt={`Hình ảnh câu ${currentDisplayNo}`}
+                      sx={{
+                        maxWidth: "100%",
+                        maxHeight: 350,
+                        objectFit: "contain",
+                        borderRadius: 1,
+                      }}
+                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                        const target = e.currentTarget;
+                        target.onerror = null;
+                        target.style.display = "none";
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <Stack
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ display: "none", py: 4 }}
+                    >
                       <ImageIcon size={48} color="#9ca3af" />
                       <Typography variant="body2" color="text.secondary">
-                        [Hình ảnh câu hỏi]
+                        Không thể tải hình ảnh
                       </Typography>
                     </Stack>
                   </Box>
                 )}
 
-                {/* Audio Player for Listening */}
-                {(currentQuestion?.audioUrl || parentQuestion?.audioUrl) && (
+                {/* TTS Player for Listening */}
+                {isListeningSection && (
                   <Paper
                     sx={{
                       p: 2,
@@ -1294,6 +1852,36 @@ export default function ToeicTestPage() {
                     <Stack spacing={2}>
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Box
+                          onClick={() => {
+                            if (!isAudioPlaying) {
+                              const partNumber = getCurrentPartNumber();
+                              console.log("Manual play clicked, Part:", partNumber, "isFirstInGroup:", isFirstQuestionInGroup);
+
+                              // For Part 3/4 with conversation - use multi-voice
+                              if ((partNumber === 3 || partNumber === 4) && isFirstQuestionInGroup) {
+                                // Try conversationText/talkText first, then fallback to passage (which may contain script)
+                                const conversation = parentQuestion?.conversationText || parentQuestion?.talkText ||
+                                                     currentQuestion?.conversationText || currentQuestion?.talkText ||
+                                                     parentQuestion?.passage || currentQuestion?.passage || "";
+                                const questionText = subQuestion?.questionText || currentQuestion?.questionText || "";
+
+                                console.log("Manual play Part 3/4 - conversation:", conversation?.substring(0, 100));
+
+                                if (conversation) {
+                                  // Use multi-voice for conversation
+                                  speakText(conversation, true, questionText);
+                                } else {
+                                  // No conversation, just read normally
+                                  const textToSpeak = buildTTSText(partNumber, currentQuestion, subQuestion, parentQuestion, isFirstQuestionInGroup);
+                                  speakText(textToSpeak);
+                                }
+                              } else {
+                                // Other parts or non-first questions: single voice
+                                const textToSpeak = buildTTSText(partNumber, currentQuestion, subQuestion, parentQuestion, isFirstQuestionInGroup);
+                                speakText(textToSpeak);
+                              }
+                            }
+                          }}
                           sx={{
                             width: 40,
                             height: 40,
@@ -1307,6 +1895,7 @@ export default function ToeicTestPage() {
                             alignItems: "center",
                             justifyContent: "center",
                             color: "white",
+                            cursor: isAudioPlaying ? "default" : "pointer",
                             animation: isAudioPlaying
                               ? "pulse 1.5s infinite"
                               : "none",
@@ -1320,6 +1909,9 @@ export default function ToeicTestPage() {
                               "100%": {
                                 boxShadow: "0 0 0 0 rgba(14, 165, 233, 0)",
                               },
+                            },
+                            "&:hover": {
+                              opacity: isAudioPlaying ? 1 : 0.8,
                             },
                           }}
                         >
@@ -1360,7 +1952,7 @@ export default function ToeicTestPage() {
                         </Typography>
                       </Stack>
 
-                      {/* Audio Status */}
+                      {/* TTS Status */}
                       {isAudioPlaying && (
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Headphones size={16} color="#0ea5e9" />
@@ -1369,7 +1961,21 @@ export default function ToeicTestPage() {
                             color="#0284c7"
                             fontWeight={600}
                           >
-                            Đang phát audio... Hãy lắng nghe cẩn thận
+                            Đang đọc nội dung... Hãy lắng nghe cẩn thận
+                          </Typography>
+                        </Stack>
+                      )}
+
+                      {/* Not playing - show hint to click play */}
+                      {!isAudioPlaying && !audioEnded && (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Play size={16} color="#64748b" />
+                          <Typography
+                            variant="caption"
+                            color="#64748b"
+                            fontWeight={600}
+                          >
+                            Nhấn nút Play để nghe nội dung
                           </Typography>
                         </Stack>
                       )}
@@ -1434,7 +2040,7 @@ export default function ToeicTestPage() {
                             color="#92400e"
                             fontWeight={600}
                           >
-                            Audio đã kết thúc
+                            Đã đọc xong nội dung
                           </Typography>
                         </Stack>
                       )}
@@ -1442,24 +2048,12 @@ export default function ToeicTestPage() {
                   </Paper>
                 )}
 
-                {/* Conversation/Talk Text */}
-                {(parentQuestion?.conversationText ||
-                  parentQuestion?.talkText) && (
-                  <Paper
-                    sx={{ p: 2, mb: 3, bgcolor: "#f8fafc", borderRadius: 2 }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}
-                    >
-                      {parentQuestion.conversationText ||
-                        parentQuestion.talkText}
-                    </Typography>
-                  </Paper>
-                )}
+                {/* Conversation/Talk Text - Hidden for Part 3/4 (TOEIC format: listen only) */}
+                {/* In real TOEIC, conversation/talk is only heard, not displayed */}
 
-                {/* Passage for Part 6, 7 */}
-                {(currentQuestion?.passage || parentQuestion?.passage) && (
+                {/* Passage for Part 5, 6, 7 (Reading only - not for Listening Part 3/4) */}
+                {(currentQuestion?.passage || parentQuestion?.passage) &&
+                  getCurrentPartNumber() > 4 && (
                   <Paper
                     sx={{
                       p: 2,
@@ -1479,9 +2073,10 @@ export default function ToeicTestPage() {
                   </Paper>
                 )}
 
-                {/* Question Text */}
+                {/* Question Text - Hidden for Part 2 (TOEIC format: listen only) */}
                 {(currentQuestion?.questionText ||
-                  subQuestion?.questionText) && (
+                  subQuestion?.questionText) &&
+                  getCurrentPartNumber() !== 2 && (
                   <Typography variant="body1" fontWeight={600} mb={3}>
                     {currentQuestion?.questionText || subQuestion?.questionText}
                   </Typography>
@@ -1489,14 +2084,14 @@ export default function ToeicTestPage() {
 
                 {/* Options */}
                 <RadioGroup
-                  value={answers[currentDisplayNo] || ""}
+                  value={answers[currentQuestionId] || ""}
                   onChange={(e) =>
                     handleAnswer(currentQuestionId, e.target.value)
                   }
                 >
                   <Stack spacing={1.5}>
                     {(currentQuestion?.options || subQuestion?.options)?.map(
-                      (option) => (
+                      (option: { label: string; text: string }) => (
                         <Paper
                           key={option.label}
                           elevation={0}
@@ -1505,11 +2100,11 @@ export default function ToeicTestPage() {
                             borderRadius: 2,
                             border: "2px solid",
                             borderColor:
-                              answers[currentDisplayNo] === option.label
+                              answers[currentQuestionId] === option.label
                                 ? theme.colors.primary
                                 : "#e5e7eb",
                             bgcolor:
-                              answers[currentDisplayNo] === option.label
+                              answers[currentQuestionId] === option.label
                                 ? "#f0fdf4"
                                 : "white",
                             cursor: "pointer",
@@ -1568,9 +2163,12 @@ export default function ToeicTestPage() {
                                     {option.label}
                                   </Typography>
                                 </Box>
-                                <Typography variant="body2">
-                                  {option.text}
-                                </Typography>
+                                {/* Part 1 & 2 (câu 1-31): chỉ hiện label, không hiện nội dung đáp án */}
+                                {currentDisplayNo > 31 && (
+                                  <Typography variant="body2">
+                                    {option.text}
+                                  </Typography>
+                                )}
                               </Stack>
                             }
                             sx={{ m: 0, width: "100%" }}
@@ -1638,10 +2236,10 @@ export default function ToeicTestPage() {
                 answers={answers}
                 flaggedQuestions={flaggedQuestions}
                 currentDisplayNo={currentDisplayNo}
-                currentQuestion={currentDisplayNo}
                 onQuestionClick={handleQuestionClick}
                 isListeningSection={isListeningSection}
                 listeningProgress={listeningProgress}
+                displayNoToQuestionId={displayNoToQuestionId}
               />
             </Box>
           </Grid>

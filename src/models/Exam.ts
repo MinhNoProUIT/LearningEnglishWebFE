@@ -116,9 +116,11 @@ export interface IQuestion {
   options: IQuestionOption[];
 }
 
-export interface IQuestionCreate {
+// Payload for multipart/form-data upload (with audio file)
+export interface IQuestionCreatePayload {
+  audio?: File;
   question_text?: string;
-  question_type: QuestionType;
+  question_type: string;
   audio_url?: string;
   points?: number;
   order_index?: number;
@@ -127,15 +129,15 @@ export interface IQuestionCreate {
   options?: IQuestionOptionCreate[];
 }
 
-export interface IQuestionUpdate {
+export interface IQuestionUpdatePayload {
+  audio?: File;
   question_text?: string;
-  question_type?: QuestionType;
+  question_type?: string;
   audio_url?: string;
   points?: number;
   order_index?: number;
   explanation?: string;
   metadata?: Record<string, unknown>;
-  options?: IQuestionOptionCreate[];
 }
 
 // ==================== QUESTION GROUP ====================
@@ -152,7 +154,9 @@ export interface IQuestionGroup {
   questions?: IQuestion[];
 }
 
-export interface IQuestionGroupCreate {
+// Payload for multipart/form-data upload (with image file)
+export interface IQuestionGroupCreatePayload {
+  image?: File;
   group_title?: string;
   content_text?: string;
   media_url?: string;
@@ -161,7 +165,8 @@ export interface IQuestionGroupCreate {
   order_index?: number;
 }
 
-export interface IQuestionGroupUpdate {
+export interface IQuestionGroupUpdatePayload {
+  image?: File;
   group_title?: string;
   content_text?: string;
   media_url?: string;
@@ -392,6 +397,19 @@ export interface ISectionDetail {
   question_groups: IQuestionGroupDetail[];
 }
 
+export interface ISectionFeedback {
+  section_title: string;
+  skill_type: SkillType;
+  score_obtained: number;
+  max_score: number;
+  ai_feedback: string;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  encouragement: string;
+  writing_scores: IWritingScores | null;
+}
+
 export interface IExamAttemptDetailResponse {
   id: number;
   exam_id: number;
@@ -401,6 +419,7 @@ export interface IExamAttemptDetailResponse {
   percentage: number;
   status: AttemptStatus;
   sections: ISectionDetail[];
+  section_feedbacks?: ISectionFeedback[];
 }
 
 export interface IExamAttemptInProgressResponse {
@@ -419,7 +438,7 @@ export interface IExamAttemptInProgressResponse {
 
 // ==================== PRACTICE ====================
 export interface IPracticeStartPayload {
-  sectionId: number;
+  sectionId: string | number;
 }
 
 export interface IPracticeStartResponse {

@@ -2,16 +2,51 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { createBaseQuery } from "./api";
 import {
   IQuestion,
-  IQuestionCreate,
-  IQuestionUpdate,
   IQuestionOption,
   IQuestionOptionCreate,
   IQuestionReorderPayload,
+  IQuestionCreatePayload,
+  IQuestionUpdatePayload,
   IApiResponse,
 } from "@/models/Exam";
 
 const apiPath =
   "https://english-app-backend-production-5ecc.up.railway.app/api/question";
+
+// Helper to build FormData for multipart/form-data requests
+const buildFormData = (data: IQuestionCreatePayload | IQuestionUpdatePayload): FormData => {
+  const formData = new FormData();
+
+  if ('audio' in data && data.audio) {
+    formData.append('audio', data.audio);
+  }
+  if (data.question_text !== undefined) {
+    formData.append('question_text', data.question_text);
+  }
+  if (data.question_type !== undefined) {
+    formData.append('question_type', data.question_type);
+  }
+  if (data.audio_url !== undefined) {
+    formData.append('audio_url', data.audio_url);
+  }
+  if (data.points !== undefined) {
+    formData.append('points', data.points.toString());
+  }
+  if (data.order_index !== undefined) {
+    formData.append('order_index', data.order_index.toString());
+  }
+  if (data.explanation !== undefined) {
+    formData.append('explanation', data.explanation);
+  }
+  if (data.metadata !== undefined) {
+    formData.append('metadata', JSON.stringify(data.metadata));
+  }
+  if ('options' in data && data.options !== undefined) {
+    formData.append('options', JSON.stringify(data.options));
+  }
+
+  return formData;
+};
 
 export const questionApi = createApi({
   reducerPath: "questionApi",
@@ -37,16 +72,16 @@ export const questionApi = createApi({
       providesTags: (_result, _error, id) => [{ type: "Question", id }],
     }),
 
-    // ==================== CREATE ====================
+    // ==================== CREATE (multipart/form-data) ====================
     // POST /Create/:groupId
     createQuestion: builder.mutation<
       IQuestion,
-      { groupId: number | string; data: IQuestionCreate }
+      { groupId: number | string; data: IQuestionCreatePayload }
     >({
       query: ({ groupId, data }) => ({
         url: `Create/${groupId}`,
         method: "POST",
-        body: data,
+        body: buildFormData(data),
       }),
       transformResponse: (response: IApiResponse<IQuestion>) => response.data!,
       invalidatesTags: (_result, _error, { groupId }) => [
@@ -55,16 +90,16 @@ export const questionApi = createApi({
       ],
     }),
 
-    // ==================== UPDATE ====================
+    // ==================== UPDATE (multipart/form-data) ====================
     // PUT /Update/:id
     updateQuestion: builder.mutation<
       IQuestion,
-      { id: number | string; data: IQuestionUpdate; groupId?: number | string }
+      { id: number | string; data: IQuestionUpdatePayload; groupId?: number | string }
     >({
       query: ({ id, data }) => ({
         url: `Update/${id}`,
         method: "PUT",
-        body: data,
+        body: buildFormData(data),
       }),
       transformResponse: (response: IApiResponse<IQuestion>) => response.data!,
       invalidatesTags: (_result, _error, { id, groupId }) => {

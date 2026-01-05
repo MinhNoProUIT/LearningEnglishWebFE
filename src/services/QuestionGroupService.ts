@@ -2,14 +2,43 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { createBaseQuery } from "./api";
 import {
   IQuestionGroup,
-  IQuestionGroupCreate,
-  IQuestionGroupUpdate,
+  IQuestionGroupCreatePayload,
+  IQuestionGroupUpdatePayload,
   IGroupReorderPayload,
   IApiResponse,
 } from "@/models/Exam";
 
 const apiPath =
   "https://english-app-backend-production-5ecc.up.railway.app/api/question-group";
+
+// Helper to build FormData for multipart/form-data requests
+const buildFormData = (data: IQuestionGroupCreatePayload | IQuestionGroupUpdatePayload): FormData => {
+  const formData = new FormData();
+
+  if (data.image) {
+    formData.append('image', data.image);
+  }
+  if (data.group_title !== undefined) {
+    formData.append('group_title', data.group_title);
+  }
+  if (data.content_text !== undefined) {
+    formData.append('content_text', data.content_text);
+  }
+  if (data.media_url !== undefined) {
+    formData.append('media_url', data.media_url);
+  }
+  if (data.media_type !== undefined) {
+    formData.append('media_type', data.media_type);
+  }
+  if (data.script_text !== undefined) {
+    formData.append('script_text', data.script_text);
+  }
+  if (data.order_index !== undefined) {
+    formData.append('order_index', data.order_index.toString());
+  }
+
+  return formData;
+};
 
 export const questionGroupApi = createApi({
   reducerPath: "questionGroupApi",
@@ -36,16 +65,16 @@ export const questionGroupApi = createApi({
       providesTags: (_result, _error, id) => [{ type: "QuestionGroup", id }],
     }),
 
-    // ==================== CREATE ====================
+    // ==================== CREATE (multipart/form-data) ====================
     // POST /Create/:sectionId
     createGroup: builder.mutation<
       IQuestionGroup,
-      { sectionId: number | string; data: IQuestionGroupCreate }
+      { sectionId: number | string; data: IQuestionGroupCreatePayload }
     >({
       query: ({ sectionId, data }) => ({
         url: `Create/${sectionId}`,
         method: "POST",
-        body: data,
+        body: buildFormData(data),
       }),
       transformResponse: (response: IApiResponse<IQuestionGroup>) =>
         response.data!,
@@ -55,16 +84,16 @@ export const questionGroupApi = createApi({
       ],
     }),
 
-    // ==================== UPDATE ====================
+    // ==================== UPDATE (multipart/form-data) ====================
     // PUT /Update/:id
     updateGroup: builder.mutation<
       IQuestionGroup,
-      { id: number | string; data: IQuestionGroupUpdate; sectionId?: number | string }
+      { id: number | string; data: IQuestionGroupUpdatePayload; sectionId?: number | string }
     >({
       query: ({ id, data }) => ({
         url: `Update/${id}`,
         method: "PUT",
-        body: data,
+        body: buildFormData(data),
       }),
       transformResponse: (response: IApiResponse<IQuestionGroup>) =>
         response.data!,
@@ -82,14 +111,14 @@ export const questionGroupApi = createApi({
     // ==================== DELETE ====================
     // DELETE /Delete/:id
     deleteGroup: builder.mutation<
-      IQuestionGroup,
+      { id: string; group_title: string },
       { id: number | string; sectionId?: number | string }
     >({
       query: ({ id }) => ({
         url: `Delete/${id}`,
         method: "DELETE",
       }),
-      transformResponse: (response: IApiResponse<IQuestionGroup>) =>
+      transformResponse: (response: IApiResponse<{ id: string; group_title: string }>) =>
         response.data!,
       invalidatesTags: (_result, _error, { sectionId }) => {
         if (sectionId) {

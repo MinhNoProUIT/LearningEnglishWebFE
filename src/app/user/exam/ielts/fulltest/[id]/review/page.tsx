@@ -8,12 +8,10 @@ import {
   Typography,
   Button,
   Stack,
-  Grid,
   Chip,
   Tabs,
   Tab,
   IconButton,
-  LinearProgress,
   CircularProgress,
 } from "@mui/material";
 import {
@@ -23,14 +21,16 @@ import {
   Headphones,
   BookOpen,
   Lightbulb,
-  Play,
   RotateCcw,
+  Sparkles,
+  ThumbsUp,
+  AlertTriangle,
   Target,
+  Heart,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
 import { useGetExamAttemptDetailQuery } from "@/services/ExamAttemptService";
-import { useGetExamByIdQuery } from "@/services/ExamService";
-import { ISectionDetail, IQuestionDetail, IQuestionGroupDetail } from "@/models/Exam";
+import { ISectionDetail, IQuestionDetail, ISectionFeedback } from "@/models/Exam";
 
 const theme = examTheme;
 
@@ -143,8 +143,114 @@ const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: n
   );
 };
 
+// Section Feedback Component (same as TOEIC)
+const SectionFeedbackCard = ({ feedback }: { feedback: ISectionFeedback }) => {
+  return (
+    <Paper sx={{ p: 3, borderRadius: 3, mb: 3, bgcolor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            bgcolor: "#dcfce7",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Sparkles size={20} color="#16a34a" />
+        </Box>
+        <Typography variant="h6" fontWeight={700} color="#166534">
+          Nhận xét AI cho {feedback.section_title}
+        </Typography>
+      </Stack>
+
+      {/* AI Feedback */}
+      {feedback.ai_feedback && (
+        <Paper sx={{ p: 2, mb: 2, bgcolor: "white", borderRadius: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+            {feedback.ai_feedback}
+          </Typography>
+        </Paper>
+      )}
+
+      <Stack spacing={2}>
+        {/* Strengths */}
+        {feedback.strengths && feedback.strengths.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#dcfce7", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <ThumbsUp size={16} color="#16a34a" />
+              <Typography variant="subtitle2" fontWeight={700} color="#166534">
+                Điểm mạnh
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.strengths.map((item, idx) => (
+                <Typography key={idx} variant="body2" color="#166534">
+                  • {item}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Weaknesses */}
+        {feedback.weaknesses && feedback.weaknesses.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#fef2f2", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <AlertTriangle size={16} color="#dc2626" />
+              <Typography variant="subtitle2" fontWeight={700} color="#991b1b">
+                Điểm cần cải thiện
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.weaknesses.map((item, idx) => (
+                <Typography key={idx} variant="body2" color="#991b1b">
+                  • {item}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Suggestions */}
+        {feedback.suggestions && feedback.suggestions.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#fffbeb", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <Target size={16} color="#d97706" />
+              <Typography variant="subtitle2" fontWeight={700} color="#92400e">
+                Gợi ý cải thiện
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.suggestions.map((item, idx) => (
+                <Typography key={idx} variant="body2" color="#92400e">
+                  • {item}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Encouragement */}
+        {feedback.encouragement && (
+          <Paper sx={{ p: 2, bgcolor: "#f0f9ff", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Heart size={16} color="#0284c7" />
+              <Typography variant="body2" color="#0369a1" fontWeight={600}>
+                {feedback.encouragement}
+              </Typography>
+            </Stack>
+          </Paper>
+        )}
+      </Stack>
+    </Paper>
+  );
+};
+
 // Section Component
-const SectionReview = ({ section, sectionIndex }: { section: ISectionDetail; sectionIndex: number }) => {
+const SectionReview = ({ section, sectionIndex, feedback }: { section: ISectionDetail; sectionIndex: number; feedback?: ISectionFeedback }) => {
   const totalQuestions = section.question_groups.reduce((sum, g) => sum + g.questions.length, 0);
   const correctQuestions = section.question_groups.reduce(
     (sum, g) => sum + g.questions.filter(q => q.is_correct).length, 0
@@ -169,6 +275,9 @@ const SectionReview = ({ section, sectionIndex }: { section: ISectionDetail; sec
           </Typography>
         </Stack>
       </Paper>
+
+      {/* AI Feedback for this section */}
+      {feedback && <SectionFeedbackCard feedback={feedback} />}
 
       <Stack spacing={3}>
         {section.question_groups.map((group, groupIdx) => (
@@ -238,6 +347,7 @@ export default function IeltsReviewPage() {
       listeningBand: percentageToBand(listeningPercentage),
       readingBand: percentageToBand(readingPercentage),
       sections: attemptDetail.sections,
+      sectionFeedbacks: attemptDetail.section_feedbacks || [],
     };
   }, [attemptDetail]);
 
@@ -357,6 +467,10 @@ export default function IeltsReviewPage() {
           <SectionReview
             section={allSections[activeSection]}
             sectionIndex={activeSection}
+            feedback={reviewData.sectionFeedbacks?.find(
+              f => f.section_title === allSections[activeSection].title ||
+                   f.skill_type === allSections[activeSection].skill_type
+            )}
           />
         )}
 
