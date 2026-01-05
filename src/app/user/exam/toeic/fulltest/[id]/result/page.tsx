@@ -138,6 +138,7 @@ interface Feedback {
 
 interface WrongAnswer {
   id: number;
+  displayNo: number;
   part: number;
   partName: string;
   question: string;
@@ -176,10 +177,10 @@ const transformApiToResult = (
   const listeningSections = attemptDetail.sections.filter(s => s.skill_type === "LISTENING");
   const readingSections = attemptDetail.sections.filter(s => s.skill_type === "READING");
 
-  const listeningScore = listeningSections.reduce((sum, s) => sum + s.score, 0);
-  const listeningMax = listeningSections.reduce((sum, s) => sum + s.max_score, 0);
-  const readingScore = readingSections.reduce((sum, s) => sum + s.score, 0);
-  const readingMax = readingSections.reduce((sum, s) => sum + s.max_score, 0);
+  const listeningScore = listeningSections.reduce((sum, s) => sum + (s.score || 0), 0);
+  const listeningMax = listeningSections.reduce((sum, s) => sum + (s.max_score || 0), 0);
+  const readingScore = readingSections.reduce((sum, s) => sum + (s.score || 0), 0);
+  const readingMax = readingSections.reduce((sum, s) => sum + (s.max_score || 0), 0);
 
   // Transform sections to parts
   const parts: PartResult[] = attemptDetail.sections.map((section, idx) => {
@@ -205,19 +206,58 @@ const transformApiToResult = (
   const totalQuestions = parts.reduce((sum, p) => sum + p.total, 0);
   const correctAnswers = parts.reduce((sum, p) => sum + p.correct, 0);
 
-  // Extract wrong answers
+  // Extract wrong answers with correct display numbers
   const wrongAnswers: WrongAnswer[] = [];
+  let questionCounter = 0; // Counter for display_no across all sections
+
   attemptDetail.sections.forEach((section, sectionIdx) => {
     section.question_groups.forEach((group) => {
       group.questions.forEach((question) => {
+        questionCounter++; // Increment for each question
+
         if (!question.is_correct) {
+          // Get user answer text - try selected_option_text first, then find from options
+          let userAnswerText = question.user_answer?.selected_option_text || question.user_answer?.text_answer;
+          if (!userAnswerText && question.user_answer?.selected_option_id && question.options) {
+            const selectedOption = question.options.find(
+              opt => opt.id === question.user_answer.selected_option_id
+            );
+            userAnswerText = selectedOption?.option_text;
+          }
+
+          // Get correct answer text - try correct_option_text first, then find from options
+          let correctAnswerText = question.correct_answer?.correct_option_text;
+          if (!correctAnswerText && question.correct_answer?.correct_option_id && question.options) {
+            const correctOption = question.options.find(
+              opt => opt.id === question.correct_answer.correct_option_id
+            );
+            correctAnswerText = correctOption?.option_text;
+          }
+
+          // For TOEIC single choice, show option letter (A, B, C, D) instead of full text
+          const getOptionLetter = (optionId: number | undefined) => {
+            if (!optionId || !question.options) return null;
+            const option = question.options.find(opt => opt.id === optionId);
+            if (!option) return null;
+            // Use order_index if available, otherwise find position in sorted array
+            const sortedOptions = [...question.options].sort((a, b) => a.order_index - b.order_index);
+            const optionIndex = sortedOptions.findIndex(opt => opt.id === optionId);
+            if (optionIndex === -1) return null;
+            return String.fromCharCode(65 + optionIndex); // A, B, C, D
+          };
+
+          // Determine display values
+          const userOptionLetter = getOptionLetter(question.user_answer?.selected_option_id);
+          const correctOptionLetter = getOptionLetter(question.correct_answer?.correct_option_id);
+
           wrongAnswers.push({
             id: question.id,
+            displayNo: questionCounter,
             part: sectionIdx + 1,
             partName: section.title || `Part ${sectionIdx + 1}`,
-            question: question.question_text || `Câu ${question.id}`,
-            yourAnswer: question.user_answer?.selected_option_text || question.user_answer?.text_answer || "-",
-            correctAnswer: question.correct_answer?.correct_option_text || "-",
+            question: question.question_text || "",
+            yourAnswer: userOptionLetter || userAnswerText || "-",
+            correctAnswer: correctOptionLetter || correctAnswerText || "-",
             explanation: question.explanation || "",
           });
         }
@@ -336,28 +376,42 @@ export default function TestResultPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const attemptId = searchParams.get("attemptId");
+  const attemptIdFromUrl = searchParams.get("attemptId");
+  const examId = params.id as string;
 
   const [activeTab, setActiveTab] = useState(0);
   const [showWrongAnswers, setShowWrongAnswers] = useState(false);
 
   // ==================== API HOOKS ====================
+  // First, fetch history to get latest attemptId if not provided in URL
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+  } = useGetExamHistoryQuery({
+    examId: Number(examId),
+    limit: 100,
+  });
+
+  // Find the latest completed attempt for this exam
+  const latestAttemptId = useMemo(() => {
+    if (attemptIdFromUrl) return attemptIdFromUrl;
+    if (historyData?.data && historyData.data.length > 0) {
+      // Sort by submit_time desc and get the first completed one
+      const sortedAttempts = [...historyData.data]
+        .filter(h => h.status === "COMPLETED")
+        .sort((a, b) => new Date(b.submit_time).getTime() - new Date(a.submit_time).getTime());
+      return sortedAttempts[0]?.id?.toString() || null;
+    }
+    return null;
+  }, [attemptIdFromUrl, historyData]);
+
   const {
     data: attemptDetail,
     isLoading: isLoadingDetail,
     error: detailError,
     refetch: refetchDetail,
-  } = useGetExamAttemptDetailQuery(attemptId || "", {
-    skip: !attemptId,
-  });
-
-  const {
-    data: historyData,
-  } = useGetExamHistoryQuery({
-    examId: attemptDetail?.exam_id,
-    limit: 100,
-  }, {
-    skip: !attemptDetail?.exam_id,
+  } = useGetExamAttemptDetailQuery(latestAttemptId || "", {
+    skip: !latestAttemptId,
   });
 
   // ==================== DERIVED DATA ====================
@@ -370,7 +424,7 @@ export default function TestResultPage() {
   }, [attemptDetail, historyData]);
 
   // ==================== LOADING STATE ====================
-  if (isLoadingDetail || !result) {
+  if (isLoadingHistory || isLoadingDetail) {
     return (
       <Box
         sx={{
@@ -389,6 +443,53 @@ export default function TestResultPage() {
           <Typography variant="body2" color="text.secondary">
             Vui lòng đợi trong giây lát
           </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // ==================== NO RESULT STATE ====================
+  if (!latestAttemptId || !result) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#f8fafc",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}>
+          <AlertTriangle size={48} color="#d97706" style={{ marginBottom: 16 }} />
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            Chưa có kết quả
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Bạn chưa hoàn thành bài thi này. Hãy làm bài thi trước để xem kết quả.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowLeft size={18} />}
+              onClick={() => router.push("/user/exam/toeic/fulltest")}
+              sx={{ textTransform: "none", borderRadius: 2 }}
+            >
+              Quay lại
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => router.push(`/user/exam/toeic/fulltest/${examId}`)}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                background: theme.gradients.primary,
+                "&:hover": { background: theme.gradients.primaryDark },
+              }}
+            >
+              Làm bài thi
+            </Button>
+          </Stack>
         </Paper>
       </Box>
     );
@@ -596,7 +697,7 @@ export default function TestResultPage() {
                 <Button
                   variant="outlined"
                   startIcon={<Eye size={18} />}
-                  onClick={() => router.push(`/user/exam/toeic/fulltest/${params.id}/review`)}
+                  onClick={() => router.push(`/user/exam/toeic/fulltest/${params.id}/review${latestAttemptId ? `?attemptId=${latestAttemptId}` : ''}`)}
                   sx={{
                     borderColor: "rgba(255,255,255,0.5)",
                     color: "white",
@@ -863,9 +964,9 @@ export default function TestResultPage() {
             </Stack>
 
             <Stack spacing={2}>
-              {result.wrongAnswers.slice(0, showWrongAnswers ? undefined : 5).map((item) => (
+              {result.wrongAnswers.slice(0, showWrongAnswers ? undefined : 5).map((item, idx) => (
                 <Paper
-                  key={item.id}
+                  key={`wrong-${item.id}-${idx}`}
                   elevation={0}
                   sx={{
                     p: 2,
@@ -878,7 +979,7 @@ export default function TestResultPage() {
                     <Box sx={{ flex: 1 }}>
                       <Stack direction="row" spacing={1} alignItems="center" mb={1} flexWrap="wrap">
                         <Chip
-                          label={`Câu ${item.id}`}
+                          label={`Câu ${item.displayNo}`}
                           size="small"
                           sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
                         />

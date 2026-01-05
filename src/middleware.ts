@@ -10,6 +10,7 @@ const AUTH_COOKIE_NAME = "auth_access_token";
 
 // Routes yêu cầu authentication
 const PROTECTED_ROUTES = [
+  "/home",
   "/user/profile",
   "/user/achievements",
   "/user/exam",

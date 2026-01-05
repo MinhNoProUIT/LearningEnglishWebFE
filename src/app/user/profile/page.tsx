@@ -156,7 +156,7 @@ export default function ProfilePage() {
     address: "Hồ Chí Minh, Việt Nam",
     joinDate: "01/01/2024",
     bio: "Đang học IELTS để đi du học. Mục tiêu band 7.5!",
-    avatar: "/avatar-default.png",
+    avatar: "/avatar-default.svg",
   });
 
   const stats = {
@@ -359,7 +359,7 @@ export default function ProfilePage() {
                 {/* Avatar Section */}
                 <Box sx={{ position: "relative" }}>
                   <Avatar
-                    src={currentUser.image_url || userData.avatar}
+                    src={currentUser?.image_url || userData.avatar}
                     sx={{
                       width: 120,
                       height: 120,
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                     color="grey.900"
                     mb={0.5}
                   >
-                    {currentUser.fullname}
+                    {currentUser?.fullname || "Người dùng"}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" mb={2}>
                     {userData.bio}
@@ -493,7 +493,7 @@ export default function ProfilePage() {
                         fontWeight={600}
                         color="grey.800"
                       >
-                        {currentUser.email}
+                        {currentUser?.email || ""}
                       </Typography>
                     </Box>
                   </Stack>
@@ -532,7 +532,7 @@ export default function ProfilePage() {
                         fontWeight={600}
                         color="grey.800"
                       >
-                        {currentUser.phonenumber || "Chưa cập nhật"}
+                        {currentUser?.phonenumber || "Chưa cập nhật"}
                       </Typography>
                     </Box>
                   </Stack>
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                         fontWeight={600}
                         color="grey.800"
                       >
-                        {currentUser.address || "Chưa cập nhật"}
+                        {currentUser?.address || "Chưa cập nhật"}
                       </Typography>
                     </Box>
                   </Stack>
@@ -929,7 +929,7 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Họ và tên"
-                      value={currentUser.fullname}
+                      value={currentUser?.fullname || "Người dùng"}
                       disabled={!isEditing}
                       onChange={(e) =>
                         setUserData({ ...userData, fullName: e.target.value })
@@ -951,7 +951,7 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Email"
-                      value={currentUser.email}
+                      value={currentUser?.email || ""}
                       disabled={!isEditing}
                       onChange={(e) =>
                         setUserData({ ...userData, email: e.target.value })
@@ -973,7 +973,7 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Số điện thoại"
-                      value={currentUser.phonenumber || "Chưa cập nhật"}
+                      value={currentUser?.phonenumber || "Chưa cập nhật"}
                       disabled={!isEditing}
                       onChange={(e) =>
                         setUserData({ ...userData, phone: e.target.value })
@@ -995,7 +995,7 @@ export default function ProfilePage() {
                     <TextField
                       fullWidth
                       label="Địa chỉ"
-                      value={currentUser.address || "Chưa cập nhật"}
+                      value={currentUser?.address || "Chưa cập nhật"}
                       disabled={!isEditing}
                       onChange={(e) =>
                         setUserData({ ...userData, address: e.target.value })

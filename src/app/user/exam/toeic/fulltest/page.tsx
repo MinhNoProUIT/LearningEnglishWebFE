@@ -180,7 +180,7 @@ const TestCard = ({ test }: { test: TestItem }) => {
           </Stack>
         </Box>
 
-        {isCompleted && test.score && (
+        {isCompleted && test.score !== undefined && (
           <Box textAlign="right">
             <Typography variant="h5" fontWeight={800} color={theme.colors.primary}>
               {test.score}
@@ -446,26 +446,6 @@ export default function ToeicFullTestPage() {
 
       {/* Main Content */}
       <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 }, mt: -8, position: "relative", zIndex: 10 }}>
-        {/* Loading State */}
-        {isLoading && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 6,
-              textAlign: "center",
-              borderRadius: 3,
-              bgcolor: "white",
-              border: "1px solid #e5e7eb",
-              mb: 4,
-            }}
-          >
-            <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
-              Đang tải danh sách bài test...
-            </Typography>
-          </Paper>
-        )}
-
         {/* Error State */}
         {examsError && !isLoading && (
           <Alert
@@ -581,16 +561,37 @@ export default function ToeicFullTestPage() {
           </Stack>
         </Paper>
 
-        {/* Test List */}
-        <Grid container spacing={2.5}>
-          {filteredTests.map((test) => (
-            <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={test.id}>
-              <TestCard test={test} />
-            </Grid>
-          ))}
-        </Grid>
+        {/* Loading State */}
+        {isLoading && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 6,
+              textAlign: "center",
+              borderRadius: 3,
+              bgcolor: "white",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <CircularProgress sx={{ color: theme.colors.primary, mb: 2 }} />
+            <Typography variant="body1" color="text.secondary">
+              Đang tải danh sách bài test...
+            </Typography>
+          </Paper>
+        )}
 
-        {filteredTests.length === 0 && (
+        {/* Test List */}
+        {!isLoading && (
+          <Grid container spacing={2.5}>
+            {filteredTests.map((test) => (
+              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={test.id}>
+                <TestCard test={test} />
+              </Grid>
+            ))}
+          </Grid>
+        )}
+
+        {!isLoading && filteredTests.length === 0 && (
           <Paper
             elevation={0}
             sx={{

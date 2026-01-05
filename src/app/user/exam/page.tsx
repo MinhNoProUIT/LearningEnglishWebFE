@@ -348,6 +348,7 @@ type ToeicPartCardProps = {
   time: string;
   difficulty: "Dễ" | "Trung bình" | "Khó";
   progress: number;
+  onClick?: () => void;
 };
 
 const ToeicPartCard = ({
@@ -359,6 +360,7 @@ const ToeicPartCard = ({
   time,
   difficulty,
   progress,
+  onClick,
 }: ToeicPartCardProps) => {
   const difficultyConfig = {
     Dễ: { color: "#22c55e", bg: "#dcfce7" },
@@ -369,6 +371,7 @@ const ToeicPartCard = ({
   return (
     <Paper
       elevation={0}
+      onClick={onClick}
       sx={{
         borderRadius: 3,
         overflow: "hidden",
@@ -1312,7 +1315,7 @@ export default function TestOnlinePage() {
                 <Grid container spacing={2} mb={4}>
                   {toeicParts.slice(0, 4).map((part, i) => (
                     <Grid size={{ xs: 12, sm: 6 }} key={i}>
-                      <ToeicPartCard {...part} />
+                      <ToeicPartCard {...part} onClick={() => router.push(`/user/exam/practice/toeic/part/${part.part}`)} />
                     </Grid>
                   ))}
                 </Grid>
@@ -1340,7 +1343,7 @@ export default function TestOnlinePage() {
                 <Grid container spacing={2} mb={4}>
                   {toeicParts.slice(4, 7).map((part, i) => (
                     <Grid size={{ xs: 12, sm: 6 }} key={i}>
-                      <ToeicPartCard {...part} />
+                      <ToeicPartCard {...part} onClick={() => router.push(`/user/exam/practice/toeic/part/${part.part}`)} />
                     </Grid>
                   ))}
                 </Grid>
@@ -1368,7 +1371,7 @@ export default function TestOnlinePage() {
                 <Grid container spacing={2}>
                   {toeicParts.slice(7).map((part, i) => (
                     <Grid size={{ xs: 12, sm: 6 }} key={i}>
-                      <ToeicPartCard {...part} />
+                      <ToeicPartCard {...part} onClick={() => router.push(`/user/exam/practice/toeic/part/${part.part}`)} />
                     </Grid>
                   ))}
                 </Grid>

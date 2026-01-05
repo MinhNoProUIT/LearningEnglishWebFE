@@ -14,7 +14,6 @@ import {
   Tabs,
   Tab,
   CircularProgress,
-  Alert,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -37,7 +36,7 @@ import {
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
 import { useGetExamAttemptDetailQuery, useGetExamHistoryQuery } from "@/services/ExamAttemptService";
-import { useGetExamByIdQuery } from "@/services/ExamService";
+import { useStartExamQuery } from "@/services/ExamService";
 
 const theme = examTheme;
 
@@ -246,31 +245,91 @@ export default function IeltsTestResultPage() {
     skip: !attemptId,
   });
 
-  // Fetch exam info
+  // Fetch exam info - use useStartExamQuery like TOEIC
   const {
     data: examData,
     isLoading: isLoadingExam,
-  } = useGetExamByIdQuery(testId);
+  } = useStartExamQuery(testId);
 
   // Fetch exam history for this exam
   const { data: historyData } = useGetExamHistoryQuery({ examId: Number(testId) });
 
-  // Transform API data to result format
+  // Transform API data to result format - use real data from attemptDetail sections
   const result = useMemo(() => {
     if (!attemptDetail) return null;
 
     const score = attemptDetail.percentage || 0;
     const overallBand = percentageToBand(score);
 
-    // Calculate section scores (if available from API)
-    // For now, estimate based on overall score
-    const listeningBand = overallBand + 0.5 > 9 ? 9 : overallBand + 0.5;
-    const readingBand = overallBand;
-    const writingBand = overallBand - 0.5 < 0 ? 0 : overallBand - 0.5;
+    // Calculate section scores from real data
+    const listeningSections = attemptDetail.sections?.filter(s => s.skill_type === "LISTENING") || [];
+    const readingSections = attemptDetail.sections?.filter(s => s.skill_type === "READING") || [];
+    const writingSections = attemptDetail.sections?.filter(s => s.skill_type === "WRITING") || [];
 
-    // Estimate correct answers
-    const listeningCorrect = Math.round((listeningBand / 9) * 40);
-    const readingCorrect = Math.round((readingBand / 9) * 40);
+    const listeningScore = listeningSections.reduce((sum, s) => sum + s.score, 0);
+    const listeningMax = listeningSections.reduce((sum, s) => sum + s.max_score, 0);
+    const readingScore = readingSections.reduce((sum, s) => sum + s.score, 0);
+    const readingMax = readingSections.reduce((sum, s) => sum + s.max_score, 0);
+    const writingScore = writingSections.reduce((sum, s) => sum + s.score, 0);
+    const writingMax = writingSections.reduce((sum, s) => sum + s.max_score, 0);
+
+    const listeningPercentage = listeningMax > 0 ? (listeningScore / listeningMax) * 100 : score;
+    const readingPercentage = readingMax > 0 ? (readingScore / readingMax) * 100 : score;
+    const writingPercentage = writingMax > 0 ? (writingScore / writingMax) * 100 : score;
+
+    const listeningBand = percentageToBand(listeningPercentage);
+    const readingBand = percentageToBand(readingPercentage);
+    const writingBand = percentageToBand(writingPercentage);
+
+    // Calculate correct answers from sections
+    const listeningCorrect = listeningSections.reduce((sum, s) => {
+      return sum + s.question_groups.reduce((gSum, g) =>
+        gSum + g.questions.filter(q => q.is_correct).length, 0
+      );
+    }, 0);
+    const listeningTotal = listeningSections.reduce((sum, s) => {
+      return sum + s.question_groups.reduce((gSum, g) => gSum + g.questions.length, 0);
+    }, 0) || 40;
+
+    const readingCorrect = readingSections.reduce((sum, s) => {
+      return sum + s.question_groups.reduce((gSum, g) =>
+        gSum + g.questions.filter(q => q.is_correct).length, 0
+      );
+    }, 0);
+    const readingTotal = readingSections.reduce((sum, s) => {
+      return sum + s.question_groups.reduce((gSum, g) => gSum + g.questions.length, 0);
+    }, 0) || 40;
+
+    // Build sections from real API data
+    const sections: SectionResult[] = [];
+
+    listeningSections.forEach((s, idx) => {
+      const correctCount = s.question_groups.reduce((sum, g) =>
+        sum + g.questions.filter(q => q.is_correct).length, 0
+      );
+      const totalCount = s.question_groups.reduce((sum, g) => sum + g.questions.length, 0);
+      sections.push({
+        section: "Listening",
+        name: s.title || `Section ${idx + 1}`,
+        correct: correctCount,
+        total: totalCount,
+        type: idx === 0 ? "Conversation" : idx === 1 ? "Monologue" : idx === 2 ? "Discussion" : "Lecture",
+      });
+    });
+
+    readingSections.forEach((s, idx) => {
+      const correctCount = s.question_groups.reduce((sum, g) =>
+        sum + g.questions.filter(q => q.is_correct).length, 0
+      );
+      const totalCount = s.question_groups.reduce((sum, g) => sum + g.questions.length, 0);
+      sections.push({
+        section: "Reading",
+        name: s.title || `Passage ${idx + 1}`,
+        correct: correctCount,
+        total: totalCount,
+        type: "Academic",
+      });
+    });
 
     // Build history from API data
     const history = historyData?.data
@@ -290,9 +349,14 @@ export default function IeltsTestResultPage() {
       ? Math.max(...history.map((h) => h.overall))
       : overallBand;
 
+    // Get AI feedback from section_feedbacks if available
+    const sectionFeedbacks = attemptDetail.section_feedbacks || [];
+    const listeningFeedback = sectionFeedbacks.find(f => f.skill_type === "LISTENING");
+    const readingFeedback = sectionFeedbacks.find(f => f.skill_type === "READING");
+
     return {
       id: attemptDetail.id,
-      testTitle: examData?.title || `IELTS Test ${testId}`,
+      testTitle: examData?.title || attemptDetail.exam_title || `IELTS Test ${testId}`,
       completedAt: historyData?.data?.[0]?.submit_time
         ? new Date(historyData.data[0].submit_time).toLocaleString("vi-VN")
         : "",
@@ -302,12 +366,12 @@ export default function IeltsTestResultPage() {
       readingBand,
       writingBand,
       listeningCorrect,
-      listeningTotal: 40,
+      listeningTotal,
       readingCorrect,
-      readingTotal: 40,
+      readingTotal,
       attempts: history.length || 1,
       bestBand,
-      sections: [
+      sections: sections.length > 0 ? sections : [
         { section: "Listening", name: "Section 1", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Conversation" },
         { section: "Listening", name: "Section 2", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Monologue" },
         { section: "Listening", name: "Section 3", correct: Math.round(listeningCorrect * 0.25), total: 10, type: "Discussion" },
@@ -324,14 +388,14 @@ export default function IeltsTestResultPage() {
       wrongAnswers: [], // Would need detailed question-level data from API
       feedback: {
         listening: {
-          strengths: ["Hoàn thành bài thi"],
-          weaknesses: ["Cần luyện tập thêm"],
-          tips: "Tiếp tục luyện nghe hàng ngày để cải thiện điểm số.",
+          strengths: listeningFeedback?.strengths || ["Hoàn thành bài thi"],
+          weaknesses: listeningFeedback?.weaknesses || ["Cần luyện tập thêm"],
+          tips: listeningFeedback?.suggestions?.[0] || "Tiếp tục luyện nghe hàng ngày để cải thiện điểm số.",
         },
         reading: {
-          strengths: ["Hoàn thành bài thi"],
-          weaknesses: ["Cần luyện tập thêm"],
-          tips: "Đọc nhiều tài liệu học thuật để cải thiện kỹ năng đọc hiểu.",
+          strengths: readingFeedback?.strengths || ["Hoàn thành bài thi"],
+          weaknesses: readingFeedback?.weaknesses || ["Cần luyện tập thêm"],
+          tips: readingFeedback?.suggestions?.[0] || "Đọc nhiều tài liệu học thuật để cải thiện kỹ năng đọc hiểu.",
         },
       },
     };
@@ -552,7 +616,7 @@ export default function IeltsTestResultPage() {
                 <Button
                   variant="outlined"
                   startIcon={<Eye size={18} />}
-                  onClick={() => router.push(`/user/exam/ielts/fulltest/${params.id}/review`)}
+                  onClick={() => router.push(`/user/exam/ielts/fulltest/${params.id}/review?attemptId=${attemptId}`)}
                   sx={{
                     borderColor: "rgba(255,255,255,0.5)",
                     color: "white",

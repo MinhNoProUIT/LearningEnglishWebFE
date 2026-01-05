@@ -21,10 +21,7 @@ import {
   RadioGroup,
   FormControlLabel,
   TextField,
-  Checkbox,
-  FormGroup,
   CircularProgress,
-  Alert,
 } from "@mui/material";
 import {
   ArrowLeft,
@@ -37,23 +34,19 @@ import {
   Play,
   Volume2,
   AlertTriangle,
-  FileText,
-  BookOpen,
-  CheckSquare,
   Edit3,
-  List,
-  Loader2,
   RefreshCw,
+  Image as ImageIcon,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
-import { useGetExamByIdQuery } from "@/services/ExamService";
+import { useStartExamQuery } from "@/services/ExamService";
 import {
   useStartExamMutation,
   useSaveProgressMutation,
   useSubmitExamMutation,
   useGetInProgressAttemptQuery,
 } from "@/services/ExamAttemptService";
-import { IExamSection, IQuestionGroup, IQuestion, IQuestionOption } from "@/models/Exam";
+import { IExamStart } from "@/models/Exam";
 
 const theme = examTheme;
 
@@ -75,16 +68,24 @@ type QuestionType =
   | "form-completion"
   | "plan-map-labeling";
 
+type QuestionOption = {
+  id: number;
+  label: string;
+  text: string;
+};
+
 type Question = {
   id: number;
+  displayNo: number;
   sectionId: number;
   type: QuestionType;
+  imageUrl?: string;
   audioUrl?: string;
   passage?: string;
   passageTitle?: string;
   questionText?: string;
   instructions?: string;
-  options?: { label: string; text: string; id?: number }[];
+  options?: QuestionOption[];
   // For matching questions
   matchingOptions?: string[];
   statements?: { id: number; text: string }[];
@@ -96,12 +97,12 @@ type Question = {
   // Sub-questions for grouped questions
   subQuestions?: {
     id: number;
+    displayNo: number;
     questionText: string;
-    options?: { label: string; text: string }[];
+    imageUrl?: string;
+    options?: QuestionOption[];
     blankLabel?: string;
   }[];
-  // Order index for display
-  orderIndex?: number;
 };
 
 type Section = {
@@ -118,6 +119,15 @@ type Section = {
 
 
 // ================== HELPER FUNCTIONS FOR API DATA ==================
+
+// Helper: Check if URL is an image
+const isImageUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+  const lowerUrl = url.toLowerCase();
+  return imageExtensions.some(ext => lowerUrl.includes(ext));
+};
+
 // Convert API question type to local question type
 const convertQuestionType = (apiType: string): QuestionType => {
   const typeMap: Record<string, QuestionType> = {
@@ -131,73 +141,114 @@ const convertQuestionType = (apiType: string): QuestionType => {
   return typeMap[apiType] || "multiple-choice";
 };
 
-// Build questions from API exam data
-const buildQuestionsFromExam = (examSections: IExamSection[]): Question[] => {
+// Transform API exam data to local Question format (same as TOEIC)
+const transformApiToQuestions = (exam: IExamStart): Question[] => {
   const questions: Question[] = [];
-  let questionOrder = 0;
 
-  examSections.forEach((section) => {
-    const isListening = section.skill_type === "LISTENING";
+  if (!exam.sections) return questions;
 
+  exam.sections.forEach((section) => {
     section.question_groups?.forEach((group) => {
-      group.questions?.forEach((q) => {
-        questionOrder++;
-        const questionType = convertQuestionType(q.question_type);
+      if (group.questions && group.questions.length > 0) {
+        // Get group-level image URL
+        const groupImageUrl = group.media_type === "IMAGE" ? group.media_url : undefined;
 
-        // Build options array for multiple choice
-        const options = q.options?.map((opt, idx) => ({
-          label: String.fromCharCode(65 + idx),
-          text: opt.option_text,
-          id: opt.id,
-        }));
+        // Check if this is a grouped question (multiple questions per passage/audio)
+        if (
+          group.questions.length > 1 &&
+          (group.content_text || group.media_url)
+        ) {
+          // Create a grouped question
+          const firstQ = group.questions[0];
+          questions.push({
+            id: Number(firstQ.id),
+            displayNo: firstQ.display_no,
+            sectionId: section.id,
+            type: convertQuestionType(firstQ.question_type),
+            imageUrl: groupImageUrl || (isImageUrl(firstQ.audio_url) ? firstQ.audio_url : undefined),
+            audioUrl:
+              group.media_type === "AUDIO" ? group.media_url : undefined,
+            passage: group.content_text || undefined,
+            passageTitle: group.group_title || undefined,
+            instructions: section.instructions || group.group_title,
+            subQuestions: group.questions.map((q) => ({
+              id: q.id,
+              displayNo: q.display_no,
+              questionText: q.question_text || "",
+              imageUrl: isImageUrl(q.audio_url) ? q.audio_url : undefined,
+              options: q.options.map((opt, idx) => ({
+                id: opt.id,
+                label: String.fromCharCode(65 + idx),
+                text: opt.option_text,
+              })),
+            })),
+          });
+        } else {
+          // Single questions
+          group.questions.forEach((q) => {
+            // Check if audio_url is actually an image
+            const questionImageUrl = isImageUrl(q.audio_url) ? q.audio_url : undefined;
+            const questionAudioUrl = !isImageUrl(q.audio_url) ? q.audio_url : undefined;
 
-        questions.push({
-          id: q.id,
-          sectionId: section.id,
-          type: questionType,
-          audioUrl: isListening ? (group.media_url || q.audio_url) : undefined,
-          passage: !isListening ? group.content_text : undefined,
-          passageTitle: !isListening ? group.group_title : undefined,
-          questionText: q.question_text,
-          instructions: section.instructions || group.group_title,
-          options: options,
-          orderIndex: questionOrder,
-        });
-      });
+            questions.push({
+              id: Number(q.id),
+              displayNo: q.display_no,
+              sectionId: section.id,
+              type: convertQuestionType(q.question_type),
+              imageUrl: groupImageUrl || questionImageUrl,
+              audioUrl:
+                group.media_type === "AUDIO"
+                  ? group.media_url
+                  : questionAudioUrl || undefined,
+              passage: group.content_text || undefined,
+              passageTitle: group.group_title || undefined,
+              questionText: q.question_text || "",
+              instructions: section.instructions || group.group_title,
+              options: q.options.map((opt, idx) => ({
+                id: opt.id,
+                label: String.fromCharCode(65 + idx),
+                text: opt.option_text,
+              })),
+            });
+          });
+        }
+      }
     });
   });
 
   return questions;
 };
 
-// Build sections info from API exam data
-const buildSectionsFromExam = (examSections: IExamSection[]): Section[] => {
-  const sections: Section[] = [];
-  let questionCounter = 0;
+// Transform API sections to local Section format (same as TOEIC)
+const transformApiToSections = (exam: IExamStart): Section[] => {
+  if (!exam.sections) return [];
 
-  examSections.forEach((section, idx) => {
-    const questionCount = section.question_groups?.reduce(
-      (sum, group) => sum + (group.questions?.length || 0), 0
-    ) || 0;
+  return exam.sections.map((section, idx) => {
+    const displayNos: number[] = [];
 
-    const startQuestion = questionCounter + 1;
-    questionCounter += questionCount;
-    const endQuestion = questionCounter;
+    section.question_groups?.forEach((group) => {
+      group.questions?.forEach((q) => {
+        if (q.display_no != null) {
+          displayNos.push(q.display_no);
+        }
+      });
+    });
 
-    sections.push({
+    const startQuestion = displayNos.length > 0 ? Math.min(...displayNos) : 1;
+    const endQuestion = displayNos.length > 0 ? Math.max(...displayNos) : 1;
+
+    return {
       id: section.id,
       name: section.title || `Section ${idx + 1}`,
-      category: section.skill_type === "LISTENING" ? "Listening" : "Reading",
-      questionCount,
+      category: section.skill_type === "LISTENING" ? "Listening" as const : "Reading" as const,
+      questionCount: displayNos.length,
       startQuestion,
       endQuestion,
       icon: section.skill_type === "LISTENING" ? "Headphones" : "BookOpen",
       instructions: section.instructions || "",
       timeLimit: section.time_limit_minutes,
-    });
+    };
   });
-
-  return sections;
 };
 
 // ================== TIMER COMPONENT ==================
@@ -414,13 +465,13 @@ export default function IeltsTestPage() {
   const params = useParams();
   const testId = params.id as string;
 
-  // API Hooks
+  // API Hooks - Use useStartExamQuery like TOEIC
   const {
     data: examData,
     isLoading: isLoadingExam,
     error: examError,
     refetch: refetchExam,
-  } = useGetExamByIdQuery(testId);
+  } = useStartExamQuery(testId);
 
   const { data: inProgressAttempt, isLoading: isLoadingProgress } =
     useGetInProgressAttemptQuery(testId);
@@ -537,14 +588,14 @@ export default function IeltsTestPage() {
 
   // Build questions and sections from API data
   const apiQuestions = useMemo(() => {
-    if (!examData?.sections) return [];
-    return buildQuestionsFromExam(examData.sections);
-  }, [examData?.sections]);
+    if (!examData) return [];
+    return transformApiToQuestions(examData);
+  }, [examData]);
 
   const apiSections = useMemo(() => {
-    if (!examData?.sections) return [];
-    return buildSectionsFromExam(examData.sections);
-  }, [examData?.sections]);
+    if (!examData) return [];
+    return transformApiToSections(examData);
+  }, [examData]);
 
   // Calculate listening end index
   const listeningEndIndex = useMemo(() => {
@@ -863,6 +914,52 @@ export default function IeltsTestPage() {
               {passage}
             </Typography>
           </Paper>
+        )}
+
+        {/* Image for Question */}
+        {currentQuestion.imageUrl && (
+          <Box
+            sx={{
+              width: "100%",
+              bgcolor: "#f3f4f6",
+              borderRadius: 2,
+              mb: 3,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              p: 2,
+            }}
+          >
+            <Box
+              component="img"
+              src={currentQuestion.imageUrl}
+              alt={`Hình ảnh câu ${currentDisplayIndex}`}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: 350,
+                objectFit: "contain",
+                borderRadius: 1,
+              }}
+              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                const target = e.currentTarget;
+                target.onerror = null;
+                target.style.display = "none";
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = "flex";
+              }}
+            />
+            <Stack
+              spacing={1}
+              alignItems="center"
+              sx={{ display: "none", py: 4 }}
+            >
+              <ImageIcon size={48} color="#9ca3af" />
+              <Typography variant="body2" color="text.secondary">
+                Không thể tải hình ảnh
+              </Typography>
+            </Stack>
+          </Box>
         )}
 
         {/* Matching Options */}

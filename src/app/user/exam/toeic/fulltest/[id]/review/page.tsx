@@ -8,7 +8,6 @@ import {
   Typography,
   Button,
   Stack,
-  Grid,
   Chip,
   Tabs,
   Tab,
@@ -30,11 +29,15 @@ import {
   PenTool,
   FileText,
   BookMarked,
+  Sparkles,
+  ThumbsUp,
+  AlertTriangle,
+  Target,
+  Heart,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
-import { useGetExamAttemptDetailQuery } from "@/services/ExamAttemptService";
-import { useGetExamByIdQuery } from "@/services/ExamService";
-import { ISectionDetail, IQuestionDetail } from "@/models/Exam";
+import { useGetExamAttemptDetailQuery, useGetExamHistoryQuery } from "@/services/ExamAttemptService";
+import { ISectionDetail, IQuestionDetail, ISectionFeedback } from "@/models/Exam";
 
 const theme = examTheme;
 
@@ -76,7 +79,7 @@ const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: n
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
         <Box sx={{ flex: 1 }}>
           <Typography variant="body2" fontWeight={600} mb={1}>
-            Câu {index}: {question.question_text || `Question ${question.id}`}
+            Câu {index}{question.question_text ? `: ${question.question_text.replace(/^\d+\.?\s*/, '')}` : ""}
           </Typography>
 
           {/* Options display */}
@@ -155,15 +158,154 @@ const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: n
   );
 };
 
+// Section Feedback Component
+const SectionFeedbackCard = ({ feedback }: { feedback: ISectionFeedback }) => {
+  return (
+    <Paper sx={{ p: 3, borderRadius: 3, mb: 3, bgcolor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            bgcolor: "#dcfce7",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Sparkles size={20} color="#16a34a" />
+        </Box>
+        <Typography variant="h6" fontWeight={700} color="#166534">
+          Nhận xét AI cho {feedback.section_title}
+        </Typography>
+      </Stack>
+
+      {/* AI Feedback */}
+      {feedback.ai_feedback && (
+        <Paper sx={{ p: 2, mb: 2, bgcolor: "white", borderRadius: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+            {feedback.ai_feedback}
+          </Typography>
+        </Paper>
+      )}
+
+      <Stack spacing={2}>
+        {/* Strengths */}
+        {feedback.strengths && feedback.strengths.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#dcfce7", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <ThumbsUp size={16} color="#16a34a" />
+              <Typography variant="subtitle2" fontWeight={700} color="#166534">
+                Điểm mạnh
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.strengths.map((strength, idx) => (
+                <Typography key={idx} variant="body2" color="#166534">
+                  • {strength}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Weaknesses */}
+        {feedback.weaknesses && feedback.weaknesses.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#fef3c7", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <AlertTriangle size={16} color="#b45309" />
+              <Typography variant="subtitle2" fontWeight={700} color="#92400e">
+                Điểm cần cải thiện
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.weaknesses.map((weakness, idx) => (
+                <Typography key={idx} variant="body2" color="#92400e">
+                  • {weakness}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Suggestions */}
+        {feedback.suggestions && feedback.suggestions.length > 0 && (
+          <Paper sx={{ p: 2, bgcolor: "#dbeafe", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <Target size={16} color="#1d4ed8" />
+              <Typography variant="subtitle2" fontWeight={700} color="#1e40af">
+                Gợi ý luyện tập
+              </Typography>
+            </Stack>
+            <Stack spacing={0.5}>
+              {feedback.suggestions.map((suggestion, idx) => (
+                <Typography key={idx} variant="body2" color="#1e40af">
+                  • {suggestion}
+                </Typography>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Encouragement */}
+        {feedback.encouragement && (
+          <Paper sx={{ p: 2, bgcolor: "#fce7f3", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+              <Heart size={16} color="#db2777" />
+              <Typography variant="subtitle2" fontWeight={700} color="#be185d">
+                Lời động viên
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="#be185d">
+              {feedback.encouragement}
+            </Typography>
+          </Paper>
+        )}
+
+        {/* Writing Scores (for WRITING skill type) */}
+        {feedback.writing_scores && (
+          <Paper sx={{ p: 2, bgcolor: "#f3e8ff", borderRadius: 2 }}>
+            <Typography variant="subtitle2" fontWeight={700} color="#7c3aed" mb={1}>
+              Điểm chi tiết bài viết
+            </Typography>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              <Chip label={`Task Achievement: ${feedback.writing_scores.task_achievement}`} size="small" sx={{ bgcolor: "#ede9fe", color: "#7c3aed" }} />
+              <Chip label={`Coherence: ${feedback.writing_scores.coherence_cohesion}`} size="small" sx={{ bgcolor: "#ede9fe", color: "#7c3aed" }} />
+              <Chip label={`Lexical Resource: ${feedback.writing_scores.lexical_resource}`} size="small" sx={{ bgcolor: "#ede9fe", color: "#7c3aed" }} />
+              <Chip label={`Grammar: ${feedback.writing_scores.grammatical_range}`} size="small" sx={{ bgcolor: "#ede9fe", color: "#7c3aed" }} />
+              <Chip label={`Overall: ${feedback.writing_scores.overall_band}`} size="small" sx={{ bgcolor: "#7c3aed", color: "white", fontWeight: 700 }} />
+            </Stack>
+          </Paper>
+        )}
+      </Stack>
+    </Paper>
+  );
+};
+
 // Section Component
-const SectionReview = ({ section, partNumber }: { section: ISectionDetail; partNumber: number }) => {
+const SectionReview = ({ section, startQuestionNumber, sectionFeedback }: { section: ISectionDetail; startQuestionNumber: number; sectionFeedback?: ISectionFeedback }) => {
   const totalQuestions = section.question_groups.reduce((sum, g) => sum + g.questions.length, 0);
   const correctQuestions = section.question_groups.reduce(
     (sum, g) => sum + g.questions.filter(q => q.is_correct).length, 0
   );
 
+  // Determine part number based on section title or skill type
+  const getPartNumber = () => {
+    const title = section.title?.toLowerCase() || "";
+    if (title.includes("part 1") || title.includes("photographs")) return 1;
+    if (title.includes("part 2") || title.includes("question-response")) return 2;
+    if (title.includes("part 3") || title.includes("conversations")) return 3;
+    if (title.includes("part 4") || title.includes("talks")) return 4;
+    if (title.includes("part 5") || title.includes("incomplete sentences")) return 5;
+    if (title.includes("part 6") || title.includes("text completion")) return 6;
+    if (title.includes("part 7") || title.includes("reading comprehension")) return 7;
+    return section.skill_type === "LISTENING" ? 1 : 5;
+  };
+
+  const partNumber = getPartNumber();
   const Icon = getPartIcon(partNumber, section.skill_type);
-  let questionCounter = (partNumber - 1) * 30; // Approximate starting question number
+  let questionCounter = startQuestionNumber - 1;
 
   return (
     <Box>
@@ -184,7 +326,7 @@ const SectionReview = ({ section, partNumber }: { section: ISectionDetail; partN
           </Box>
           <Box>
             <Typography variant="h5" fontWeight={800}>
-              Part {partNumber}: {section.title}
+              {section.title}
             </Typography>
             <Stack direction="row" spacing={2} alignItems="center">
               <Chip
@@ -204,8 +346,11 @@ const SectionReview = ({ section, partNumber }: { section: ISectionDetail; partN
         </Stack>
       </Paper>
 
+      {/* Section Feedback from AI */}
+      {sectionFeedback && <SectionFeedbackCard feedback={sectionFeedback} />}
+
       <Stack spacing={3}>
-        {section.question_groups.map((group, groupIdx) => (
+        {section.question_groups.map((group) => (
           <Paper key={group.id} elevation={0} sx={{ borderRadius: 3, border: "1px solid #e5e7eb", overflow: "hidden" }}>
             {group.group_title && (
               <Box sx={{ p: 2, bgcolor: "#f8fafc", borderBottom: "1px solid #e5e7eb" }}>
@@ -216,14 +361,15 @@ const SectionReview = ({ section, partNumber }: { section: ISectionDetail; partN
             )}
             <Box sx={{ p: 3 }}>
               <Stack spacing={2}>
-                {group.questions.map((question) => {
+                {group.questions.map((question, qIdx) => {
                   questionCounter++;
                   return (
-                    <QuestionItem
-                      key={question.id}
-                      question={question}
-                      index={questionCounter}
-                    />
+                    <Box key={`question-${group.id}-${question.id}-${qIdx}`}>
+                      <QuestionItem
+                        question={question}
+                        index={questionCounter}
+                      />
+                    </Box>
                   );
                 })}
               </Stack>
@@ -240,28 +386,78 @@ export default function ToeicReviewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const testId = params.id as string;
-  const attemptId = searchParams.get("attemptId");
+  const attemptIdFromUrl = searchParams.get("attemptId");
 
   const [activeSection, setActiveSection] = useState(0);
 
+  // Fetch history to get latest attemptId if not provided in URL
+  const { data: historyData, isLoading: isLoadingHistory } = useGetExamHistoryQuery({
+    examId: Number(testId),
+    limit: 100,
+  });
+
+  // Find the latest completed attempt for this exam
+  const latestAttemptId = useMemo(() => {
+    if (attemptIdFromUrl) return attemptIdFromUrl;
+    if (historyData?.data && historyData.data.length > 0) {
+      const sortedAttempts = [...historyData.data]
+        .filter(h => h.status === "COMPLETED")
+        .sort((a, b) => new Date(b.submit_time).getTime() - new Date(a.submit_time).getTime());
+      return sortedAttempts[0]?.id?.toString() || null;
+    }
+    return null;
+  }, [attemptIdFromUrl, historyData]);
+
   // Fetch attempt detail
   const { data: attemptDetail, isLoading: isLoadingDetail } = useGetExamAttemptDetailQuery(
-    attemptId ? Number(attemptId) : 0,
-    { skip: !attemptId }
+    latestAttemptId || "",
+    { skip: !latestAttemptId }
   );
 
-  // Fetch exam info
-  const { data: examData } = useGetExamByIdQuery(Number(testId), { skip: !testId });
+  // Debug: Log attemptDetail to see section_feedbacks
+  if (attemptDetail) {
+    console.log("=== Attempt Detail Full Response ===", JSON.stringify(attemptDetail, null, 2));
+    console.log("=== Section Feedbacks ===", attemptDetail.section_feedbacks);
+    console.log("=== Section Titles ===", attemptDetail.sections?.map(s => s.title));
+    console.log("=== Feedback Titles ===", attemptDetail.section_feedbacks?.map(f => f.section_title));
+  }
 
-  // Calculate scores
+  // Calculate scores and section start numbers
   const reviewData = useMemo(() => {
     if (!attemptDetail) return null;
 
     const listeningSections = attemptDetail.sections.filter(s => s.skill_type === "LISTENING");
     const readingSections = attemptDetail.sections.filter(s => s.skill_type === "READING");
 
-    const listeningScore = listeningSections.reduce((sum, s) => sum + s.score, 0);
-    const readingScore = readingSections.reduce((sum, s) => sum + s.score, 0);
+    const listeningScore = listeningSections.reduce((sum, s) => sum + (s.score || 0), 0);
+    const readingScore = readingSections.reduce((sum, s) => sum + (s.score || 0), 0);
+
+    // Sort sections: Listening first (Part 1-4), then Reading (Part 5-7)
+    // Extract part number from title for proper ordering
+    const getPartNumber = (title: string) => {
+      const match = title.match(/Part\s*(\d+)/i);
+      return match ? parseInt(match[1]) : 0;
+    };
+
+    const sortedSections = [...attemptDetail.sections].sort((a, b) => {
+      // First sort by skill type: LISTENING before READING
+      if (a.skill_type !== b.skill_type) {
+        return a.skill_type === "LISTENING" ? -1 : 1;
+      }
+      // Then sort by part number within each skill type
+      return getPartNumber(a.title || "") - getPartNumber(b.title || "");
+    });
+
+    // Calculate start question number for each sorted section
+    const sectionStartNumbers: number[] = [];
+    let currentQuestionNumber = 1;
+    sortedSections.forEach((section) => {
+      sectionStartNumbers.push(currentQuestionNumber);
+      const sectionQuestionCount = section.question_groups.reduce(
+        (sum, g) => sum + g.questions.length, 0
+      );
+      currentQuestionNumber += sectionQuestionCount;
+    });
 
     return {
       testTitle: attemptDetail.exam_title,
@@ -269,12 +465,14 @@ export default function ToeicReviewPage() {
       maxScore: attemptDetail.max_score,
       listeningScore,
       readingScore,
-      sections: attemptDetail.sections,
+      sections: sortedSections,
+      sectionStartNumbers,
+      sectionFeedbacks: attemptDetail.section_feedbacks || [],
     };
   }, [attemptDetail]);
 
   // Loading state
-  if (isLoadingDetail || !reviewData) {
+  if (isLoadingHistory || isLoadingDetail) {
     return (
       <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
@@ -282,6 +480,44 @@ export default function ToeicReviewPage() {
           <Typography variant="h6" fontWeight={600} mb={1}>
             Đang tải đáp án chi tiết...
           </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // No data state
+  if (!latestAttemptId || !reviewData) {
+    return (
+      <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 3, maxWidth: 400 }}>
+          <Typography variant="h6" fontWeight={600} mb={1}>
+            Chưa có kết quả
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Bạn chưa hoàn thành bài thi này. Hãy làm bài thi trước để xem đáp án chi tiết.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowLeft size={18} />}
+              onClick={() => router.push("/user/exam/toeic/fulltest")}
+              sx={{ textTransform: "none", borderRadius: 2 }}
+            >
+              Quay lại
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => router.push(`/user/exam/toeic/fulltest/${testId}`)}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                bgcolor: theme.colors.primary,
+                "&:hover": { bgcolor: theme.colors.primaryDark },
+              }}
+            >
+              Làm bài thi
+            </Button>
+          </Stack>
         </Paper>
       </Box>
     );
@@ -303,7 +539,7 @@ export default function ToeicReviewPage() {
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Stack direction="row" spacing={2} alignItems="center">
               <IconButton
-                onClick={() => router.push(`/user/exam/toeic/fulltest/${testId}/result?attemptId=${attemptId}`)}
+                onClick={() => router.push(`/user/exam/toeic/fulltest/${testId}/result${latestAttemptId ? `?attemptId=${latestAttemptId}` : ''}`)}
                 sx={{ color: "white" }}
               >
                 <ArrowLeft size={24} />
@@ -364,14 +600,21 @@ export default function ToeicReviewPage() {
               const totalCount = section.question_groups.reduce(
                 (sum, g) => sum + g.questions.length, 0
               );
-              const Icon = getPartIcon(idx + 1, section.skill_type);
+
+              // Extract part number from title
+              const getPartFromTitle = (title: string) => {
+                const match = title.match(/Part\s*(\d+)/i);
+                return match ? parseInt(match[1]) : idx + 1;
+              };
+              const partNum = getPartFromTitle(section.title || "");
+              const Icon = getPartIcon(partNum, section.skill_type);
 
               return (
                 <Tab
                   key={section.id}
                   icon={<Icon size={16} />}
                   iconPosition="start"
-                  label={`Part ${idx + 1} (${correctCount}/${totalCount})`}
+                  label={`Part ${partNum} (${correctCount}/${totalCount})`}
                 />
               );
             })}
@@ -384,7 +627,10 @@ export default function ToeicReviewPage() {
         {reviewData.sections[activeSection] && (
           <SectionReview
             section={reviewData.sections[activeSection]}
-            partNumber={activeSection + 1}
+            startQuestionNumber={reviewData.sectionStartNumbers[activeSection]}
+            sectionFeedback={reviewData.sectionFeedbacks.find(
+              (f) => f.section_title === reviewData.sections[activeSection].title
+            )}
           />
         )}
 
@@ -406,6 +652,55 @@ export default function ToeicReviewPage() {
             Part tiếp theo
           </Button>
         </Stack>
+
+        {/* All Section Feedbacks - displayed at the bottom */}
+        {reviewData.sectionFeedbacks && reviewData.sectionFeedbacks.length > 0 && (
+          <Box mt={4}>
+            <Paper sx={{ p: 3, borderRadius: 3, bgcolor: "#f0fdf4", border: "2px solid #16a34a" }}>
+              <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 3,
+                    bgcolor: "#dcfce7",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Sparkles size={24} color="#16a34a" />
+                </Box>
+                <Box>
+                  <Typography variant="h5" fontWeight={800} color="#166534">
+                    Nhận xét tổng hợp từ AI
+                  </Typography>
+                  <Typography variant="body2" color="#15803d">
+                    Phân tích chi tiết cho từng phần thi
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Stack spacing={3}>
+                {reviewData.sectionFeedbacks.map((feedback, idx) => (
+                  <SectionFeedbackCard key={idx} feedback={feedback} />
+                ))}
+              </Stack>
+            </Paper>
+          </Box>
+        )}
+
+        {/* Debug: Show if no section feedbacks */}
+        {(!reviewData.sectionFeedbacks || reviewData.sectionFeedbacks.length === 0) && (
+          <Paper sx={{ p: 2, mt: 4, bgcolor: "#fef3c7", borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <AlertTriangle size={18} color="#b45309" />
+              <Typography variant="body2" color="#92400e">
+                Chưa có nhận xét AI cho bài thi này. (Debug: section_feedbacks = {JSON.stringify(attemptDetail?.section_feedbacks)})
+              </Typography>
+            </Stack>
+          </Paper>
+        )}
       </Box>
     </Box>
   );

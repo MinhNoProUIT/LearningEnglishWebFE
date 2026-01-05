@@ -34,7 +34,7 @@ const AvatarMenu = () => {
   const open = Boolean(anchorEl);
 
   // Lấy thông tin từ user
-  const avatarPath = "/avatar-default.png"; // TODO: thêm avatar vào user model nếu cần
+  const avatarPath = user?.avatar_url || "/avatar-default.svg";
   const fullName = user?.username || "Người dùng";
   const email = user?.email || "";
   const roles = isAdmin ? ["Admin"] : ["User"];

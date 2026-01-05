@@ -71,10 +71,9 @@ export const createBaseQuery = (baseUrl: string) => {
         headers.set("Authorization", `Bearer ${token}`);
       }
 
-      // Đảm bảo Content-Type cho JSON requests
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
+      // Không set Content-Type mặc định
+      // - Với JSON: RTK Query sẽ tự set
+      // - Với FormData: browser tự set multipart/form-data với boundary
 
       return headers;
     },
@@ -182,9 +181,7 @@ export const createAuthBaseQuery = () => {
         headers.set("Authorization", `Bearer ${token}`);
       }
 
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
+      // Không set Content-Type mặc định - RTK Query/browser tự handle
 
       return headers;
     },
