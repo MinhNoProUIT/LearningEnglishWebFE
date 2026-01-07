@@ -173,14 +173,35 @@ const transformApiToResult = (
   attemptDetail: IExamAttemptDetailResponse,
   historyData: IExamAttemptHistory[]
 ): ResultData => {
-  // Calculate listening and reading scores from sections
-  const listeningSections = attemptDetail.sections.filter(s => s.skill_type === "LISTENING");
-  const readingSections = attemptDetail.sections.filter(s => s.skill_type === "READING");
+  // Calculate listening and reading scores from questions' score_obtained
+  // Note: section.score might not be populated, so we calculate from questions
+  let listeningScore = 0;
+  let listeningMax = 0;
+  let readingScore = 0;
+  let readingMax = 0;
 
-  const listeningScore = listeningSections.reduce((sum, s) => sum + (s.score || 0), 0);
-  const listeningMax = listeningSections.reduce((sum, s) => sum + (s.max_score || 0), 0);
-  const readingScore = readingSections.reduce((sum, s) => sum + (s.score || 0), 0);
-  const readingMax = readingSections.reduce((sum, s) => sum + (s.max_score || 0), 0);
+  attemptDetail.sections.forEach((section) => {
+    let sectionScore = 0;
+    let sectionMax = 0;
+
+    section.question_groups.forEach((group) => {
+      group.questions.forEach((question) => {
+        const points = (question as any).max_points || (question as any).points || 5;
+        sectionMax += points;
+        if (question.is_correct) {
+          sectionScore += (question as any).score_obtained || points;
+        }
+      });
+    });
+
+    if (section.skill_type === "LISTENING") {
+      listeningScore += sectionScore;
+      listeningMax += sectionMax;
+    } else if (section.skill_type === "READING") {
+      readingScore += sectionScore;
+      readingMax += sectionMax;
+    }
+  });
 
   // Transform sections to parts
   const parts: PartResult[] = attemptDetail.sections.map((section, idx) => {
