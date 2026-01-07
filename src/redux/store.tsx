@@ -180,7 +180,7 @@ export const store = configureStore({
       // User Custom Topic (SoTay)
       userCustomTopicApi.middleware,
       // Writing API
-      writingApi.middleware
+      writingApi.middleware,
       // Payment
       paymentApi.middleware,
       // Post
