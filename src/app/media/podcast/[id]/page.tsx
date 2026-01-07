@@ -22,9 +22,6 @@ import {
   VolumeX,
   SkipBack,
   SkipForward,
-  Heart,
-  Share2,
-  Bookmark,
   Clock,
   Headphones,
   Calendar,
@@ -131,6 +128,63 @@ const formatDate = (dateString: string): string => {
   });
 };
 
+// Interface for parsed transcript lines
+interface TranscriptLine {
+  startTime: number; // in seconds
+  endTime: number; // in seconds
+  text: string;
+  timestamp: string; // original format [MM:SS]
+}
+
+// Parse transcript with timestamps like [0:00] Hello and welcome
+const parseTranscript = (transcript: string): TranscriptLine[] => {
+  const lines = transcript.split('\n').filter(line => line.trim());
+  const parsed: TranscriptLine[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Match format [M:SS] or [MM:SS] or [H:MM:SS]
+    const match = line.match(/^\[(\d{1,2}):(\d{2})(?::(\d{2}))?\]\s*(.*)$/);
+    
+    if (match) {
+      let startTime: number;
+      let text: string;
+      let timestamp: string;
+      
+      if (match[3]) {
+        // Format [H:MM:SS]
+        const hours = parseInt(match[1]);
+        const mins = parseInt(match[2]);
+        const secs = parseInt(match[3]);
+        startTime = hours * 3600 + mins * 60 + secs;
+        timestamp = `[${match[1]}:${match[2]}:${match[3]}]`;
+        text = match[4];
+      } else {
+        // Format [M:SS] or [MM:SS]
+        const mins = parseInt(match[1]);
+        const secs = parseInt(match[2]);
+        startTime = mins * 60 + secs;
+        timestamp = `[${match[1]}:${match[2]}]`;
+        text = match[4];
+      }
+      
+      parsed.push({ startTime, endTime: 0, text, timestamp });
+    }
+  }
+
+  // Calculate end times (next line's start time)
+  for (let i = 0; i < parsed.length; i++) {
+    if (i < parsed.length - 1) {
+      parsed[i].endTime = parsed[i + 1].startTime;
+    } else {
+      // Last line: add 30 seconds as buffer
+      parsed[i].endTime = parsed[i].startTime + 30;
+    }
+  }
+
+  return parsed;
+};
+
 export default function PodcastDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -138,12 +192,10 @@ export default function PodcastDetailPage() {
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(80);
@@ -276,6 +328,26 @@ export default function PodcastDetailPage() {
       }
     }
   }, [isMuted, isPlayerReady]);
+
+  // Auto-scroll transcript to active line
+  useEffect(() => {
+    if (!transcriptRef.current || !podcast?.transcript) return;
+    
+    const lines = parseTranscript(podcast.transcript);
+    const activeIndex = lines.findIndex(
+      (line) => currentTime >= line.startTime && currentTime < line.endTime
+    );
+    
+    if (activeIndex >= 0) {
+      const activeElement = document.getElementById(`transcript-line-${activeIndex}`);
+      if (activeElement && transcriptRef.current) {
+        activeElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [currentTime, podcast?.transcript]);
 
   const togglePlay = useCallback(() => {
     if (!playerRef.current || !isPlayerReady) return;
@@ -781,46 +853,6 @@ export default function PodcastDetailPage() {
                     }}
                   />
                 </Stack>
-
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant={isLiked ? "contained" : "outlined"}
-                    startIcon={
-                      <Heart size={16} fill={isLiked ? "white" : "none"} />
-                    }
-                    onClick={() => setIsLiked(!isLiked)}
-                    size="small"
-                    sx={{
-                      textTransform: "none",
-                      borderColor: "#e5e7eb",
-                      color: isLiked ? "white" : "#4b5563",
-                      bgcolor: isLiked ? theme.podcastPrimary : "transparent",
-                      "&:hover": {
-                        borderColor: theme.podcastPrimary,
-                        bgcolor: isLiked ? "#6d28d9" : "#f5f3ff",
-                      },
-                    }}
-                  >
-                    Thích
-                  </Button>
-                  <IconButton
-                    size="small"
-                    onClick={() => setIsBookmarked(!isBookmarked)}
-                    sx={{
-                      border: "1px solid #e5e7eb",
-                      bgcolor: isBookmarked ? "#fef3c7" : "transparent",
-                    }}
-                  >
-                    <Bookmark
-                      size={18}
-                      color={isBookmarked ? "#d97706" : "#6b7280"}
-                      fill={isBookmarked ? "#d97706" : "none"}
-                    />
-                  </IconButton>
-                  <IconButton size="small" sx={{ border: "1px solid #e5e7eb" }}>
-                    <Share2 size={18} color="#6b7280" />
-                  </IconButton>
-                </Stack>
               </Stack>
 
               {!podcast.youtube_video_id && (
@@ -905,114 +937,166 @@ export default function PodcastDetailPage() {
               </Paper>
             )}
 
-            {/* Transcript */}
-            {podcast.transcript && (
+          </Grid>
+
+          {/* Sidebar - Transcript with Sync */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            {podcast.transcript ? (
               <Paper
                 elevation={0}
                 sx={{
                   borderRadius: 3,
                   border: "1px solid #e5e7eb",
+                  position: "sticky",
+                  top: 20,
                   overflow: "hidden",
                 }}
               >
-                <Box
-                  onClick={() => setShowTranscript(!showTranscript)}
-                  sx={{
-                    p: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    "&:hover": { bgcolor: "#f8fafc" },
-                  }}
-                >
+                <Box sx={{ p: 2, borderBottom: "1px solid #e5e7eb", bgcolor: "#f5f3ff" }}>
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <FileText size={20} color={theme.podcastPrimary} />
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" fontWeight={600} color={theme.podcastPrimary}>
                       Transcript
                     </Typography>
                   </Stack>
-                  {showTranscript ? (
-                    <ChevronUp size={20} color="#6b7280" />
-                  ) : (
-                    <ChevronDown size={20} color="#6b7280" />
-                  )}
                 </Box>
 
-                {showTranscript && (
-                  <Box sx={{ p: 2, pt: 0 }}>
-                    <Divider sx={{ mb: 2 }} />
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ whiteSpace: "pre-line" }}
-                    >
-                      {podcast.transcript}
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            )}
-          </Grid>
-
-          {/* Sidebar - Related Podcasts */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                border: "1px solid #e5e7eb",
-                position: "sticky",
-                top: 100,
-                overflow: "hidden",
-              }}
-            >
-              <Box sx={{ p: 2, borderBottom: "1px solid #e5e7eb" }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Headphones size={20} color={theme.podcastPrimary} />
-                  <Typography variant="h6" fontWeight={600}>
-                    Podcast liên quan
-                  </Typography>
-                </Stack>
-              </Box>
-
-              <Box sx={{ maxHeight: 400, overflow: "auto" }}>
-                {relatedPodcasts && relatedPodcasts.length > 0 ? (
-                  <Stack spacing={0.5} sx={{ p: 1 }}>
-                    {relatedPodcasts.map((item) => (
-                      <RelatedPodcastCard key={item.id} item={item} />
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    textAlign="center"
-                    py={4}
-                  >
-                    Không có podcast liên quan
-                  </Typography>
-                )}
-              </Box>
-
-              <Box sx={{ p: 2, borderTop: "1px solid #e5e7eb" }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
+                <Box
+                  ref={transcriptRef}
                   sx={{
-                    textTransform: "none",
-                    borderColor: theme.podcastPrimary,
-                    color: theme.podcastPrimary,
-                    "&:hover": {
-                      borderColor: "#6d28d9",
-                      bgcolor: "#f5f3ff",
+                    maxHeight: 500,
+                    overflow: "auto",
+                    p: 2,
+                    "&::-webkit-scrollbar": { width: 6 },
+                    "&::-webkit-scrollbar-thumb": {
+                      bgcolor: theme.podcastPrimary,
+                      borderRadius: 3,
                     },
                   }}
                 >
-                  Xem tất cả Podcast
-                </Button>
-              </Box>
-            </Paper>
+                  {(() => {
+                    const lines = parseTranscript(podcast.transcript || "");
+                    
+                    return lines.length > 0 ? (
+                      <Stack spacing={0.5}>
+                        {lines.map((line, index) => {
+                          const isActive = currentTime >= line.startTime && currentTime < line.endTime;
+                          
+                          return (
+                            <Box
+                              key={index}
+                              id={`transcript-line-${index}`}
+                              onClick={() => {
+                                if (playerRef.current && isPlayerReady) {
+                                  playerRef.current.seekTo(line.startTime, true);
+                                }
+                              }}
+                              sx={{
+                                p: 1.5,
+                                borderRadius: 2,
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                bgcolor: isActive ? `${theme.podcastPrimary}15` : "transparent",
+                                borderLeft: isActive ? `3px solid ${theme.podcastPrimary}` : "3px solid transparent",
+                                "&:hover": {
+                                  bgcolor: isActive ? `${theme.podcastPrimary}20` : "#f8fafc",
+                                },
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: isActive ? theme.podcastPrimary : "#9ca3af",
+                                  fontWeight: isActive ? 600 : 400,
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                {line.timestamp}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: isActive ? theme.podcastPrimary : "#4b5563",
+                                  fontWeight: isActive ? 600 : 400,
+                                  mt: 0.5,
+                                }}
+                              >
+                                {line.text}
+                              </Typography>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ whiteSpace: "pre-line" }}
+                      >
+                        {podcast.transcript}
+                      </Typography>
+                    );
+                  })()}
+                </Box>
+              </Paper>
+            ) : (
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  border: "1px solid #e5e7eb",
+                  position: "sticky",
+                  top: 20,
+                  overflow: "hidden",
+                }}
+              >
+                <Box sx={{ p: 2, borderBottom: "1px solid #e5e7eb" }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Headphones size={20} color={theme.podcastPrimary} />
+                    <Typography variant="h6" fontWeight={600}>
+                      Podcast liên quan
+                    </Typography>
+                  </Stack>
+                </Box>
+
+                <Box sx={{ maxHeight: 400, overflow: "auto" }}>
+                  {relatedPodcasts && relatedPodcasts.length > 0 ? (
+                    <Stack spacing={0.5} sx={{ p: 1 }}>
+                      {relatedPodcasts.map((item) => (
+                        <RelatedPodcastCard key={item.id} item={item} />
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      textAlign="center"
+                      py={4}
+                    >
+                      Không có podcast liên quan
+                    </Typography>
+                  )}
+                </Box>
+
+                <Box sx={{ p: 2, borderTop: "1px solid #e5e7eb" }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      textTransform: "none",
+                      borderColor: theme.podcastPrimary,
+                      color: theme.podcastPrimary,
+                      "&:hover": {
+                        borderColor: "#6d28d9",
+                        bgcolor: "#f5f3ff",
+                      },
+                    }}
+                  >
+                    Xem tất cả Podcast
+                  </Button>
+                </Box>
+              </Paper>
+            )}
           </Grid>
         </Grid>
       </Box>

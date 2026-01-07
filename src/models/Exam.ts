@@ -507,6 +507,7 @@ export interface IPracticeHistory {
 
 export interface IPracticeUserAnswer {
   selected_option_id?: number;
+  text_answer?: string;
   is_correct: boolean;
   score_obtained: number;
 }
@@ -522,6 +523,7 @@ export interface IPracticeQuestionDetail {
 export interface IPracticeQuestionGroupDetail {
   id: number;
   group_title?: string;
+  content_text?: string;
   questions: IPracticeQuestionDetail[];
 }
 
@@ -535,6 +537,8 @@ export interface IPracticeDetailResponse {
   strengths?: string[];
   weaknesses?: string[];
   suggestions?: string[];
+  writing_scores?: any;
+  sample_corrections?: string[];
   question_groups: IPracticeQuestionGroupDetail[];
 }
 

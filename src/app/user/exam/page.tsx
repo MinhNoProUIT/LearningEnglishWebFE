@@ -1017,40 +1017,6 @@ export default function TestOnlinePage() {
 
       {/* Main Content */}
       <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 4 }, mt: -6, position: "relative", zIndex: 2 }}>
-        {/* Quick Tests Section */}
-        <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, mb: 5, boxShadow: "0 10px 40px rgba(0,0,0,0.08)" }}>
-          <Stack direction="row" alignItems="center" spacing={2} mb={3}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: theme.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Zap size={24} color="white" />
-            </Box>
-            <Box>
-              <Typography variant="h5" fontWeight={800} color="grey.900">
-                Test Nhanh
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Luyện tập 15-20 phút mỗi ngày để cải thiện nhanh chóng
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Grid container spacing={3}>
-            {quickTests.map((test, i) => (
-              <Grid size={{ xs: 12, md: 4 }} key={i}>
-                <QuickTestCard {...test} />
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
 
         {/* Full Tests Section */}
         <Paper
