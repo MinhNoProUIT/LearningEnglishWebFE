@@ -32,6 +32,7 @@ import {
   BookMarked,
   Sparkles,
   AlertCircle,
+  Pencil,
 } from "lucide-react";
 import { examTheme } from "@/components/exam";
 import { useGetPracticeDetailQuery } from "@/services/PracticeService";
@@ -86,6 +87,12 @@ const PART_INFO: Record<number, {
     description: "Đọc hiểu",
     icon: <BookMarked size={24} />,
     skillType: "READING",
+  },
+  8: {
+    title: "Part 8: Writing",
+    description: "Viết câu, viết email và viết bài luận",
+    icon: <PenTool size={24} />,
+    skillType: "WRITING",
   },
 };
 
@@ -504,6 +511,26 @@ export default function PracticeResultPage() {
               </Box>
             </Stack>
 
+            {practiceDetail.writing_scores && (
+              <Grid container spacing={2} mb={4}>
+                {Object.entries(practiceDetail.writing_scores).map(([key, score]: [string, any]) => {
+                   if (key === 'overall' || typeof score !== 'number') return null;
+                   return (
+                    <Grid size={{ xs: 6, sm: 3 }} key={key}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                        <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                          {key}
+                        </Typography>
+                        <Typography variant="h6" fontWeight={800} color={theme.colors.primary}>
+                          {score}/10
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
+
             <Typography
               variant="body1"
               color="text.secondary"
@@ -620,6 +647,34 @@ export default function PracticeResultPage() {
                 </Stack>
               </Paper>
             )}
+
+            {/* Sample Corrections (For Writing) */}
+            {practiceDetail.sample_corrections && practiceDetail.sample_corrections.length > 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mt: 3,
+                    borderRadius: 2,
+                    bgcolor: "#fff7ed",
+                    border: "1px solid #ffedd5",
+                  }}
+                >
+                  <Typography variant="subtitle1" fontWeight={700} color="#c2410c" mb={2}>
+                    Sửa lỗi mẫu
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    {practiceDetail.sample_corrections.map((correction, idx) => (
+                      <Stack key={idx} direction="row" alignItems="flex-start" spacing={1}>
+                         <Pencil size={16} color="#f97316" style={{ marginTop: 4, flexShrink: 0 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {correction}
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Paper>
+            )}
           </Paper>
         )}
 
@@ -642,9 +697,32 @@ export default function PracticeResultPage() {
             {practiceDetail.question_groups?.map((group, groupIdx) => (
               <Box key={groupIdx}>
                 {group.group_title && (
-                  <Typography variant="subtitle2" fontWeight={700} color="grey.600" mb={2}>
+                  <Typography variant="subtitle2" fontWeight={700} color="grey.600" mb={1}>
                     {group.group_title}
                   </Typography>
+                )}
+
+                {group.content_text && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      mb: 2,
+                      borderRadius: 2,
+                      bgcolor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        lineHeight: 1.6,
+                        color: "grey.700",
+                        "& p": { mb: 1.5 },
+                        "& b": { color: "grey.900" },
+                      }}
+                      dangerouslySetInnerHTML={{ __html: group.content_text }}
+                    />
+                  </Paper>
                 )}
 
                 <Stack spacing={2}>
@@ -689,73 +767,91 @@ export default function PracticeResultPage() {
                             </Typography>
 
                             <Stack spacing={1}>
-                              {question.options?.map((option) => {
-                                const isUserChoice = option.id === userOptionId;
-                                const isCorrectOption = option.is_correct;
+                              {question.options && question.options.length > 0 ? (
+                                question.options.map((option: any) => {
+                                  const isUserChoice = option.id === userOptionId;
+                                  const isCorrectOption = option.is_correct;
 
-                                return (
-                                  <Box
-                                    key={option.id}
-                                    sx={{
-                                      p: 1.5,
-                                      borderRadius: 1.5,
-                                      bgcolor: isCorrectOption
-                                        ? "#dcfce7"
-                                        : isUserChoice && !isCorrect
-                                        ? "#fee2e2"
-                                        : "white",
-                                      border: `1px solid ${
-                                        isCorrectOption
-                                          ? "#a7f3d0"
+                                  return (
+                                    <Box
+                                      key={option.id}
+                                      sx={{
+                                        p: 1.5,
+                                        borderRadius: 1.5,
+                                        bgcolor: isCorrectOption
+                                          ? "#dcfce7"
                                           : isUserChoice && !isCorrect
-                                          ? "#fca5a5"
-                                          : "#e5e7eb"
-                                      }`,
-                                    }}
-                                  >
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                      <Typography
-                                        variant="body2"
-                                        fontWeight={isCorrectOption || isUserChoice ? 700 : 500}
-                                        color={
+                                          ? "#fee2e2"
+                                          : "white",
+                                        border: `1px solid ${
                                           isCorrectOption
-                                            ? "#166534"
+                                            ? "#a7f3d0"
                                             : isUserChoice && !isCorrect
-                                            ? "#991b1b"
-                                            : "text.secondary"
-                                        }
-                                      >
-                                        {String.fromCharCode(65 + question.options.indexOf(option))}.{" "}
-                                        {option.option_text}
-                                      </Typography>
-                                      {isCorrectOption && (
-                                        <Chip
-                                          label="Đáp án đúng"
-                                          size="small"
-                                          sx={{
-                                            height: 20,
-                                            fontSize: "0.65rem",
-                                            bgcolor: "#22c55e",
-                                            color: "white",
-                                          }}
-                                        />
-                                      )}
-                                      {isUserChoice && !isCorrect && (
-                                        <Chip
-                                          label="Bạn chọn"
-                                          size="small"
-                                          sx={{
-                                            height: 20,
-                                            fontSize: "0.65rem",
-                                            bgcolor: "#ef4444",
-                                            color: "white",
-                                          }}
-                                        />
-                                      )}
-                                    </Stack>
-                                  </Box>
-                                );
-                              })}
+                                            ? "#fca5a5"
+                                            : "#e5e7eb"
+                                        }`,
+                                      }}
+                                    >
+                                      <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography
+                                          variant="body2"
+                                          fontWeight={isCorrectOption || isUserChoice ? 700 : 500}
+                                          color={
+                                            isCorrectOption
+                                              ? "#166534"
+                                              : isUserChoice && !isCorrect
+                                              ? "#991b1b"
+                                              : "text.secondary"
+                                          }
+                                        >
+                                          {String.fromCharCode(65 + (question.options?.indexOf(option) || 0))}.{" "}
+                                          {option.option_text}
+                                        </Typography>
+                                        {isCorrectOption && (
+                                          <Chip
+                                            label="Đáp án đúng"
+                                            size="small"
+                                            sx={{
+                                              height: 20,
+                                              fontSize: "0.65rem",
+                                              bgcolor: "#22c55e",
+                                              color: "white",
+                                            }}
+                                          />
+                                        )}
+                                        {isUserChoice && !isCorrect && (
+                                          <Chip
+                                            label="Bạn chọn"
+                                            size="small"
+                                            sx={{
+                                              height: 20,
+                                              fontSize: "0.65rem",
+                                              bgcolor: "#ef4444",
+                                              color: "white",
+                                            }}
+                                          />
+                                        )}
+                                      </Stack>
+                                    </Box>
+                                  );
+                                })
+                              ) : (
+                                <Box
+                                  sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    bgcolor: "white",
+                                    border: "1px solid #e5e7eb",
+                                  }}
+                                >
+                                  <Typography variant="body2" color="text.secondary" fontWeight={700} mb={1}>
+                                    Câu trả lời của bạn:
+                                  </Typography>
+                                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", color: "grey.800" }}>
+                                    {question.user_answer?.text_answer || "Không có câu trả lời"}
+                                  </Typography>
+                                </Box>
+                              )}
                             </Stack>
 
                             {question.explanation && (

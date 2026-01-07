@@ -181,6 +181,9 @@ export default function HomePage() {
                   bgcolor: "white",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
                   "&:hover": {
                     borderColor: action.color,
                     transform: "translateY(-4px)",
@@ -206,7 +209,7 @@ export default function HomePage() {
                 <Typography variant="subtitle1" fontWeight={700} color="grey.900" mb={0.5}>
                   {action.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
                   {action.description}
                 </Typography>
               </Paper>

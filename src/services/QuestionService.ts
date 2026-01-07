@@ -10,8 +10,7 @@ import {
   IApiResponse,
 } from "@/models/Exam";
 
-const apiPath =
-  "https://english-app-backend-production-5ecc.up.railway.app/api/question";
+const apiPath = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000") + "/api/question";
 
 // Helper to build FormData for multipart/form-data requests
 const buildFormData = (data: IQuestionCreatePayload | IQuestionUpdatePayload): FormData => {

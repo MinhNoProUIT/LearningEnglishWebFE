@@ -13,8 +13,9 @@ import {
   IPagination,
 } from "@/models/Exam";
 
-const apiPath =
-  "https://english-app-backend-production-5ecc.up.railway.app/api/practice";
+const apiPath = process.env.NEXT_PUBLIC_API_URL 
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/practice` 
+  : "http://localhost:5000/api/practice";
 
 interface IPracticeHistoryResponse {
   success: boolean;
@@ -140,6 +141,13 @@ export const practiceApi = createApi({
         { type: "Practice", id: `in-progress-${sectionId}` },
       ],
     }),
+
+    // GET /list
+    getPracticeList: builder.query<any[], { skill: string; examType: string }>({
+      query: ({ skill, examType }) => `list?skill=${skill}&examType=${examType}`,
+      transformResponse: (response: { success: boolean; data: any[] }) => response.data,
+      providesTags: ["Practice"],
+    }),
   }),
 });
 
@@ -150,4 +158,5 @@ export const {
   useGetPracticeHistoryQuery,
   useGetPracticeDetailQuery,
   useGetInProgressPracticeQuery,
+  useGetPracticeListQuery,
 } = practiceApi;

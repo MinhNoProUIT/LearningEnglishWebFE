@@ -65,6 +65,8 @@ import { leaderboardApi } from "@/services/LeaderboardService";
 
 // User Custom Topic API (SoTay)
 import { userCustomTopicApi } from "@/services/UserCustomTopicService";
+// Writing API
+import { writingApi } from "@/services/WritingService";
 
 export const store = configureStore({
   reducer: {
@@ -119,6 +121,8 @@ export const store = configureStore({
     [leaderboardApi.reducerPath]: leaderboardApi.reducer,
     // User Custom Topic (SoTay)
     [userCustomTopicApi.reducerPath]: userCustomTopicApi.reducer,
+    // Writing API
+    [writingApi.reducerPath]: writingApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -164,7 +168,9 @@ export const store = configureStore({
       // Leaderboard
       leaderboardApi.middleware,
       // User Custom Topic (SoTay)
-      userCustomTopicApi.middleware
+      userCustomTopicApi.middleware,
+      // Writing API
+      writingApi.middleware
     ),
 });
 

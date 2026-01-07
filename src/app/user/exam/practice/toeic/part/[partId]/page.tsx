@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Box,
@@ -15,759 +9,294 @@ import {
   Button,
   Stack,
   Grid,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Chip,
-  LinearProgress,
-  Tooltip,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
+  Tab,
+  Tabs,
   CircularProgress,
-  Alert,
+  LinearProgress,
 } from "@mui/material";
 import {
   ArrowLeft,
-  Clock,
-  Flag,
-  Send,
-  ChevronLeft,
-  ChevronRight,
-  Headphones,
   Play,
-  Pause,
-  Volume2,
-  AlertTriangle,
+  Clock,
+  CheckCircle,
+  RotateCcw,
+  Eye,
   Image as ImageIcon,
   MessageSquare,
   Users,
+  Volume2,
   PenTool,
   FileText,
   BookMarked,
+  Pencil,
+  Trophy,
+  Target,
+  Calendar,
 } from "lucide-react";
-import { examTheme } from "@/components/exam";
-import {
-  useStartPracticeMutation,
-  useSavePracticeProgressMutation,
-  useSubmitPracticeMutation,
-  useGetInProgressPracticeQuery,
-} from "@/services/PracticeService";
-import { IPracticeStartResponse, IUserAnswer } from "@/models/Exam";
+import { useGetPracticeHistoryQuery, useGetPracticeListQuery } from "@/services/PracticeService";
+import { SkillType } from "@/models/Exam";
 
-const theme = examTheme;
-
-// ================== TYPES ==================
-type QuestionOption = {
-  id: number;
-  label: string;
-  text: string;
-};
-
-type Question = {
-  id: number;
-  displayNo: number;
-  type: string;
-  imageUrl?: string;
-  audioUrl?: string;
-  conversationText?: string;
-  passage?: string;
-  questionText?: string;
-  options?: QuestionOption[];
-  subQuestions?: {
-    id: number;
-    displayNo: number;
-    questionText: string;
-    options: QuestionOption[];
-  }[];
+// ================== THEME ==================
+const theme = {
+  primary: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  primaryDark: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+  hero: "linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)",
+  colors: {
+    primary: "#10b981",
+    primaryDark: "#059669",
+    primaryLight: "#34d399",
+  },
 };
 
 // ================== PART INFO ==================
-const PART_INFO: Record<number, {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  skillType: "LISTENING" | "READING" | "WRITING";
-  instructions: string;
-}> = {
+const PART_INFO: Record<
+  number,
+  {
+    title: string;
+    fullTitle: string;
+    description: string;
+    icon: React.ReactNode;
+    skillType: SkillType;
+    skillLabel: string;
+    questions: number;
+    time: string;
+    tips: string[];
+  }
+> = {
   1: {
-    title: "Part 1: Photographs",
+    title: "Part 1",
+    fullTitle: "Photographs",
     description: "Mô tả hình ảnh - Nghe và chọn câu mô tả đúng",
-    icon: <ImageIcon size={24} />,
+    icon: <ImageIcon size={28} color="white" />,
     skillType: "LISTENING",
-    instructions: "Look at the photograph and listen to the four statements. Choose the statement that best describes what you see in the photograph.",
+    skillLabel: "Listening",
+    questions: 6,
+    time: "3 phút",
+    tips: [
+      "Quan sát kỹ hình ảnh trước khi nghe",
+      "Chú ý đến hành động và vị trí của người/vật",
+      "Loại trừ các đáp án sai rõ ràng",
+    ],
   },
   2: {
-    title: "Part 2: Question-Response",
+    title: "Part 2",
+    fullTitle: "Question-Response",
     description: "Hỏi đáp - Nghe và chọn câu trả lời phù hợp",
-    icon: <MessageSquare size={24} />,
+    icon: <MessageSquare size={28} color="white" />,
     skillType: "LISTENING",
-    instructions: "Listen to the question and the three responses. Choose the response that best answers the question.",
+    skillLabel: "Listening",
+    questions: 25,
+    time: "10 phút",
+    tips: [
+      "Nghe kỹ từ đầu câu hỏi (Who, What, When, Where, Why, How)",
+      "Loại trừ các câu trả lời không liên quan",
+      "Cẩn thận với các câu hỏi gián tiếp",
+    ],
   },
   3: {
-    title: "Part 3: Conversations",
+    title: "Part 3",
+    fullTitle: "Conversations",
     description: "Hội thoại - Nghe đoạn hội thoại và trả lời",
-    icon: <Users size={24} />,
+    icon: <Users size={28} color="white" />,
     skillType: "LISTENING",
-    instructions: "Listen to the conversation and answer the questions based on what you hear.",
+    skillLabel: "Listening",
+    questions: 39,
+    time: "20 phút",
+    tips: [
+      "Đọc câu hỏi trước khi nghe",
+      "Chú ý đến ngữ cảnh và mối quan hệ giữa người nói",
+      "Ghi nhớ thông tin quan trọng như số, ngày, địa điểm",
+    ],
   },
   4: {
-    title: "Part 4: Talks",
+    title: "Part 4",
+    fullTitle: "Talks",
     description: "Bài nói - Nghe bài độc thoại và trả lời",
-    icon: <Volume2 size={24} />,
+    icon: <Volume2 size={28} color="white" />,
     skillType: "LISTENING",
-    instructions: "Listen to the talk and answer the questions based on what you hear.",
+    skillLabel: "Listening",
+    questions: 30,
+    time: "15 phút",
+    tips: [
+      "Xác định loại bài nói (thông báo, quảng cáo, tin nhắn...)",
+      "Đọc câu hỏi trước để biết cần tập trung vào thông tin gì",
+      "Chú ý đến mục đích và đối tượng của bài nói",
+    ],
   },
   5: {
-    title: "Part 5: Incomplete Sentences",
+    title: "Part 5",
+    fullTitle: "Incomplete Sentences",
     description: "Điền vào chỗ trống - Chọn từ/cụm từ phù hợp",
-    icon: <PenTool size={24} />,
+    icon: <PenTool size={28} color="white" />,
     skillType: "READING",
-    instructions: "A word or phrase is missing in each of the sentences below. Select the best answer to complete the sentence.",
+    skillLabel: "Reading",
+    questions: 30,
+    time: "12 phút",
+    tips: [
+      "Xác định loại từ cần điền (danh từ, động từ, tính từ...)",
+      "Chú ý đến ngữ pháp và cấu trúc câu",
+      "Không nên dành quá 30 giây cho mỗi câu",
+    ],
   },
   6: {
-    title: "Part 6: Text Completion",
+    title: "Part 6",
+    fullTitle: "Text Completion",
     description: "Hoàn thành đoạn văn - Điền từ vào đoạn văn",
-    icon: <FileText size={24} />,
+    icon: <FileText size={28} color="white" />,
     skillType: "READING",
-    instructions: "Read the text and select the best answer to complete each blank.",
+    skillLabel: "Reading",
+    questions: 16,
+    time: "8 phút",
+    tips: [
+      "Đọc qua cả đoạn văn trước khi trả lời",
+      "Chú ý đến ngữ cảnh và logic của đoạn văn",
+      "Xem xét các từ nối và liên kết",
+    ],
   },
   7: {
-    title: "Part 7: Reading Comprehension",
+    title: "Part 7",
+    fullTitle: "Reading Comprehension",
     description: "Đọc hiểu - Single & Multiple passages",
-    icon: <BookMarked size={24} />,
+    icon: <BookMarked size={28} color="white" />,
     skillType: "READING",
-    instructions: "Read the passages and select the best answer to each question.",
+    skillLabel: "Reading",
+    questions: 54,
+    time: "55 phút",
+    tips: [
+      "Skim qua bài đọc trước để nắm ý chính",
+      "Đọc câu hỏi trước để biết cần tìm thông tin gì",
+      "Quản lý thời gian tốt - không dành quá nhiều thời gian cho một câu",
+    ],
+  },
+  8: {
+    title: "Part 8",
+    fullTitle: "Writing",
+    description: "Viết câu, viết email và viết bài luận",
+    icon: <Pencil size={28} color="white" />,
+    skillType: "WRITING",
+    skillLabel: "Writing",
+    questions: 8,
+    time: "60 phút",
+    tips: [
+      "Đọc kỹ yêu cầu trước khi viết",
+      "Lập dàn ý trước khi viết",
+      "Dành thời gian kiểm tra lại bài viết",
+    ],
   },
 };
 
-// ================== API DATA TRANSFORMERS ==================
-const transformPracticeToQuestions = (data: IPracticeStartResponse): Question[] => {
-  const questions: Question[] = [];
-  let displayNo = 1;
-
-  if (!data.question_groups) return questions;
-
-  data.question_groups.forEach((group) => {
-    if (group.questions && group.questions.length > 0) {
-      // Check if this is a grouped question (multiple questions per passage/audio)
-      if (
-        group.questions.length > 1 &&
-        (group.content_text || group.media_url)
-      ) {
-        // Create a grouped question
-        const firstQ = group.questions[0];
-        questions.push({
-          id: Number(firstQ.id),
-          displayNo: displayNo,
-          type: group.media_type === "IMAGE" ? "photograph" : group.media_type === "AUDIO" ? "listening" : "reading",
-          imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
-          audioUrl: group.media_type === "AUDIO" ? group.media_url : undefined,
-          passage: group.content_text || undefined,
-          conversationText: group.script_text || undefined,
-          subQuestions: group.questions.map((q, idx) => ({
-            id: q.id,
-            displayNo: displayNo + idx,
-            questionText: q.question_text || "",
-            options: q.options.map((opt, optIdx) => ({
-              id: opt.id,
-              label: String.fromCharCode(65 + optIdx),
-              text: opt.option_text,
-            })),
-          })),
-        });
-        displayNo += group.questions.length;
-      } else {
-        // Single questions
-        group.questions.forEach((q) => {
-          questions.push({
-            id: Number(q.id),
-            displayNo: displayNo,
-            type: group.media_type === "IMAGE" ? "photograph" : group.media_type === "AUDIO" ? "listening" : "reading",
-            imageUrl: group.media_type === "IMAGE" ? group.media_url : undefined,
-            audioUrl: group.media_type === "AUDIO" ? group.media_url : (q as { audio_url?: string }).audio_url || undefined,
-            passage: group.content_text || undefined,
-            questionText: q.question_text || "",
-            options: q.options.map((opt, idx) => ({
-              id: opt.id,
-              label: String.fromCharCode(65 + idx),
-              text: opt.option_text,
-            })),
-          });
-          displayNo++;
-        });
-      }
-    }
-  });
-
-  return questions;
+// ================== PART TO SECTION MAPPING ==================
+// Maps Part numbers (1-8) to actual database section IDs
+// Section 4 = LISTENING (Part 1, 2, 3, 4)
+// Section 3 = READING (Part 5, 6, 7)
+// Section 14 = WRITING (Part 8)
+const PART_TO_SECTION: Record<number, number> = {
+  1: 4,  // Listening
+  2: 4,  // Listening
+  3: 4,  // Listening
+  4: 4,  // Listening
+  5: 3,  // Reading
+  6: 3,  // Reading
+  7: 3,  // Reading
+  8: 14, // Writing
 };
 
-// ================== COMPONENTS ==================
-
-// Timer Component
-const Timer = ({
-  initialTime,
-  onTimeUp,
-}: {
-  initialTime: number;
-  onTimeUp: () => void;
-}) => {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
-  const [isWarning, setIsWarning] = useState(false);
-
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      onTimeUp();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, onTimeUp]);
-
-  useEffect(() => {
-    if (timeLeft <= 60) {
-      setIsWarning(true);
-    }
-  }, [timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        px: 2,
-        py: 1,
-        borderRadius: 2,
-        bgcolor: isWarning ? "#fef2f2" : "#f0fdf4",
-        border: `1px solid ${isWarning ? "#fee2e2" : "#d1fae5"}`,
-      }}
-    >
-      <Clock size={18} color={isWarning ? "#dc2626" : theme.colors.primary} />
-      <Typography
-        variant="h6"
-        fontWeight={700}
-        color={isWarning ? "#dc2626" : theme.colors.primary}
-      >
-        {formatTime(timeLeft)}
-      </Typography>
-    </Box>
-  );
-};
-
-// Question Navigator
-const QuestionNavigator = ({
-  questions,
-  currentIndex,
-  answers,
-  flagged,
-  onSelect,
-}: {
-  questions: Question[];
-  currentIndex: number;
-  answers: Map<number, number>;
-  flagged: Set<number>;
-  onSelect: (index: number) => void;
-}) => {
-  // Flatten all displayNos for navigation
-  const allDisplayNos: { displayNo: number; questionId: number; index: number }[] = [];
-  questions.forEach((q, idx) => {
-    if (q.subQuestions) {
-      q.subQuestions.forEach((sub) => {
-        allDisplayNos.push({ displayNo: sub.displayNo, questionId: sub.id, index: idx });
-      });
-    } else {
-      allDisplayNos.push({ displayNo: q.displayNo, questionId: q.id, index: idx });
-    }
-  });
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        borderRadius: 3,
-        border: "1px solid #e5e7eb",
-        bgcolor: "white",
-      }}
-    >
-      <Typography variant="subtitle2" fontWeight={700} color="grey.700" mb={2}>
-        Danh sách câu hỏi
-      </Typography>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 1,
-        }}
-      >
-        {allDisplayNos.map(({ displayNo, questionId, index }) => {
-          const isAnswered = answers.has(questionId);
-          const isCurrent = index === currentIndex;
-          const isFlagged = flagged.has(questionId);
-
-          return (
-            <Tooltip
-              key={questionId}
-              title={
-                isFlagged
-                  ? "Đã đánh dấu"
-                  : isAnswered
-                  ? "Đã trả lời"
-                  : "Chưa trả lời"
-              }
-            >
-              <Box
-                onClick={() => onSelect(index)}
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 1.5,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  position: "relative",
-                  transition: "all 0.2s",
-                  bgcolor: isCurrent
-                    ? theme.colors.primary
-                    : isAnswered
-                    ? "#d1fae5"
-                    : "#f3f4f6",
-                  color: isCurrent
-                    ? "white"
-                    : isAnswered
-                    ? theme.colors.primary
-                    : "grey.600",
-                  border: isCurrent
-                    ? "none"
-                    : `1px solid ${isAnswered ? "#a7f3d0" : "#e5e7eb"}`,
-                  "&:hover": {
-                    transform: "scale(1.1)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  },
-                }}
-              >
-                {displayNo}
-                {isFlagged && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: -4,
-                      right: -4,
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      bgcolor: "#f59e0b",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Flag size={8} color="white" />
-                  </Box>
-                )}
-              </Box>
-            </Tooltip>
-          );
-        })}
-      </Box>
-
-      <Stack direction="row" spacing={2} mt={2} flexWrap="wrap" gap={1}>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: 0.5,
-              bgcolor: "#d1fae5",
-              border: "1px solid #a7f3d0",
-            }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            Đã trả lời
-          </Typography>
-        </Stack>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: 0.5,
-              bgcolor: "#f3f4f6",
-              border: "1px solid #e5e7eb",
-            }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            Chưa trả lời
-          </Typography>
-        </Stack>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              bgcolor: "#f59e0b",
-            }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            Đánh dấu
-          </Typography>
-        </Stack>
-      </Stack>
-    </Paper>
-  );
+// ================== TEST DATA ==================
+const generateTests = (partId: number) => {
+  const sectionId = PART_TO_SECTION[partId] || partId;
+  return [{
+    id: `part${partId}-test1`,
+    sectionId: sectionId,  // Use actual database sectionId
+    partNumber: partId,    // Keep track of which Part this is for filtering
+    title: "Bài test 1",
+    questions: PART_INFO[partId]?.questions || 10,
+    time: PART_INFO[partId]?.time || "10 phút",
+    difficulty: "Trung bình",
+  }];
 };
 
 // ================== MAIN PAGE ==================
-export default function ToeicPartPracticePage() {
+export default function PracticePartListPage() {
   const router = useRouter();
   const params = useParams();
   const partId = Number(params.partId);
+  const [activeTab, setActiveTab] = useState(0);
 
-  // State
-  const [practiceId, setPracticeId] = useState<number | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Map<number, number>>(new Map());
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [timeLimit, setTimeLimit] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Audio state
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // API hooks
-  const [startPractice, { isLoading: isStarting }] = useStartPracticeMutation();
-  const [savePracticeProgress] = useSavePracticeProgressMutation();
-  const [submitPractice] = useSubmitPracticeMutation();
-
-  // Get part info
   const partInfo = PART_INFO[partId];
 
-  // Get in-progress practice
-  const { data: inProgressData, isLoading: isCheckingProgress } = useGetInProgressPracticeQuery(partId, {
-    skip: !partId,
-  });
+  const { data: historyData, isLoading: isLoadingHistory } =
+    useGetPracticeHistoryQuery(
+      { skillType: partInfo?.skillType, limit: 20 },
+      { skip: !partInfo }
+    );
 
-  // Start or resume practice
-  useEffect(() => {
-    const initPractice = async () => {
-      if (isCheckingProgress) return;
+  // Show all history for this skill type (no part filter since section_title doesn't contain Part info)
+  const partHistory = historyData?.data || [];
 
-      // If there's an in-progress practice, resume it
-      if (inProgressData) {
-        setPracticeId(inProgressData.id);
-        setTimeLimit(inProgressData.time_remaining_minutes ? inProgressData.time_remaining_minutes * 60 : null);
-
-        // Restore saved answers
-        if (inProgressData.saved_answers) {
-          const savedAnswersMap = new Map<number, number>();
-          inProgressData.saved_answers.forEach((ans) => {
-            if (ans.selected_option_id) {
-              savedAnswersMap.set(ans.question_id, ans.selected_option_id);
-            }
-          });
-          setAnswers(savedAnswersMap);
-        }
-
-        // We need to start a new practice to get question data
-        try {
-          const result = await startPractice({ sectionId: String(partId) }).unwrap();
-          setQuestions(transformPracticeToQuestions(result));
-          if (!inProgressData.time_remaining_minutes && result.time_limit_minutes) {
-            setTimeLimit(result.time_limit_minutes * 60);
-          }
-        } catch (error) {
-          console.error("Failed to get practice data:", error);
-          const err = error as { data?: { message?: string }; status?: number };
-          if (err?.status === 404) {
-            setError("API luyện tập chưa sẵn sàng. Vui lòng thử lại sau.");
-          } else {
-            setError(err?.data?.message || "Không thể tải dữ liệu luyện tập.");
-          }
-        }
-      } else {
-        // Start new practice
-        try {
-          console.log("Starting practice with sectionId:", partId);
-          const result = await startPractice({ sectionId: String(partId) }).unwrap();
-          console.log("Practice started:", result);
-          setPracticeId(result.id);
-          setQuestions(transformPracticeToQuestions(result));
-          if (result.time_limit_minutes) {
-            setTimeLimit(result.time_limit_minutes * 60);
-          }
-        } catch (error: unknown) {
-          console.error("Failed to start practice:", error);
-          const err = error as { data?: { message?: string }; status?: number };
-          console.error("Error details:", err?.data?.message, "Status:", err?.status);
-          if (err?.status === 404) {
-            setError("API luyện tập chưa sẵn sàng. Vui lòng thử lại sau hoặc liên hệ quản trị viên.");
-          } else {
-            setError(err?.data?.message || "Không thể bắt đầu bài luyện tập. Vui lòng thử lại.");
-          }
-        }
-      }
-    };
-
-    if (partId) {
-      initPractice();
+  /* 
+   * NEW: Use dedicated Practice API List
+   * This queries /api/practice/list which returns flattened exams with matching sections 
+   */
+  const { data: examsData, isLoading: isLoadingExams } = useGetPracticeListQuery(
+    { skill: partInfo?.skillType || "", examType: "TOEIC" }, 
+    {
+      skip: !partInfo?.skillType,
+      refetchOnMountOrArgChange: true
     }
-  }, [partId, isCheckingProgress, inProgressData, startPractice]);
+  );
 
-  // Current question
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Handle answer selection
-  const handleAnswer = useCallback((questionId: number, optionId: number) => {
-    setAnswers((prev) => {
-      const newAnswers = new Map(prev);
-      newAnswers.set(questionId, optionId);
-      return newAnswers;
-    });
-  }, []);
-
-  // Handle flag toggle
-  const handleFlagToggle = useCallback((questionId: number) => {
-    setFlaggedQuestions((prev) => {
-      const newFlagged = new Set(prev);
-      if (newFlagged.has(questionId)) {
-        newFlagged.delete(questionId);
-      } else {
-        newFlagged.add(questionId);
-      }
-      return newFlagged;
-    });
-  }, []);
-
-  // Handle navigation
-  const handleNavigate = useCallback((direction: "prev" | "next") => {
-    if (direction === "prev" && currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    } else if (direction === "next" && currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    }
-  }, [currentQuestionIndex, questions.length]);
-
-  // Handle question select from navigator
-  const handleQuestionSelect = useCallback((index: number) => {
-    setCurrentQuestionIndex(index);
-  }, []);
-
-  // Auto-save progress
-  useEffect(() => {
-    if (!practiceId || answers.size === 0) return;
-
-    const saveTimer = setTimeout(async () => {
-      const answersArray: IUserAnswer[] = Array.from(answers.entries()).map(
-        ([questionId, selectedOptionId]) => ({
-          questionId,
-          selectedOptionId,
-        })
-      );
-
-      try {
-        await savePracticeProgress({
-          id: practiceId,
-          data: { answers: answersArray },
+  const tests = React.useMemo(() => {
+    if (!examsData || !partInfo) return [];
+    
+    // API returns list of exams, each with sections matching the skill
+    return examsData.reduce((acc: any[], exam: any) => {
+      // Each exam object has { id, title, sections: [...] }
+      const matchedSection = exam.sections?.[0]; // backend filtered
+      
+      if (matchedSection) {
+        acc.push({
+          id: `exam-${exam.id}-part-${partId}`,
+          sectionId: matchedSection.id,
+          partNumber: partId,
+          title: exam.title,
+          questions: matchedSection.question_count || PART_INFO[partId].questions, 
+          time: matchedSection.time_limit_minutes ? `${matchedSection.time_limit_minutes} phút` : PART_INFO[partId].time,
+          difficulty: "Trung bình",
+          examId: exam.id
         });
-      } catch (error) {
-        console.error("Failed to save progress:", error);
       }
-    }, 2000);
+      return acc;
+    }, []);
+  }, [examsData, partInfo, partId]);
 
-    return () => clearTimeout(saveTimer);
-  }, [practiceId, answers, savePracticeProgress]);
+  const handleStartPractice = (sectionId: number, partNumber: number) => {
+    // Pass both sectionId (for API) and partNumber (for filtering questions)
+    router.push(`/user/exam/practice/toeic/part/${partId}/test?sectionId=${sectionId}&partNumber=${partNumber}`);
+  };
 
-  // Handle submit
-  const handleSubmit = useCallback(async () => {
-    if (!practiceId) return;
+  const handleViewResult = (attemptId: number) => {
+    router.push(`/user/exam/practice/toeic/part/${partId}/result/${attemptId}`);
+  };
 
-    setIsSubmitting(true);
-
-    // Save final progress
-    const answersArray: IUserAnswer[] = Array.from(answers.entries()).map(
-      ([questionId, selectedOptionId]) => ({
-        questionId,
-        selectedOptionId,
-      })
-    );
-
-    try {
-      await savePracticeProgress({
-        id: practiceId,
-        data: { answers: answersArray },
-      });
-
-      // Submit practice
-      await submitPractice(practiceId).unwrap();
-
-      // Redirect to result page
-      router.push(`/user/exam/practice/toeic/part/${partId}/result/${practiceId}`);
-    } catch (error) {
-      console.error("Failed to submit practice:", error);
-      setIsSubmitting(false);
-    }
-  }, [practiceId, answers, savePracticeProgress, submitPractice, router, partId]);
-
-  // Handle time up
-  const handleTimeUp = useCallback(() => {
-    handleSubmit();
-  }, [handleSubmit]);
-
-  // Audio controls
-  const handlePlayPause = useCallback(() => {
-    if (audioRef.current) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsAudioPlaying(!isAudioPlaying);
-    }
-  }, [isAudioPlaying]);
-
-  // Calculate progress
-  const answeredCount = answers.size;
-  const totalQuestions = useMemo(() => {
-    let count = 0;
-    questions.forEach((q) => {
-      if (q.subQuestions) {
-        count += q.subQuestions.length;
-      } else {
-        count++;
-      }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-    return count;
-  }, [questions]);
-  const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+  };
 
-  // Error state
-  if (error) {
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "#f8fafc",
-        }}
-      >
-        <Paper sx={{ p: 4, borderRadius: 3, textAlign: "center", maxWidth: 450 }}>
-          <AlertTriangle size={48} color="#ef4444" />
-          <Typography variant="h6" fontWeight={700} mt={2} color="error.main">
-            Không thể tải bài luyện tập
-          </Typography>
-          <Typography color="text.secondary" mb={3}>
-            {error}
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center">
-            <Button
-              variant="outlined"
-              onClick={() => router.push("/user/exam")}
-              sx={{
-                borderColor: "#d1d5db",
-                color: "grey.700",
-                "&:hover": { borderColor: theme.colors.primary },
-              }}
-            >
-              Quay lại
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => window.location.reload()}
-              sx={{
-                bgcolor: theme.colors.primary,
-                "&:hover": { bgcolor: theme.colors.primaryDark },
-              }}
-            >
-              Thử lại
-            </Button>
-          </Stack>
-        </Paper>
-      </Box>
-    );
-  }
-
-  // Loading state
-  if (isStarting || isCheckingProgress || !currentQuestion) {
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "#f8fafc",
-        }}
-      >
-        <Stack alignItems="center" spacing={2}>
-          <CircularProgress sx={{ color: theme.colors.primary }} />
-          <Typography color="text.secondary">Đang tải bài luyện tập...</Typography>
-        </Stack>
-      </Box>
-    );
-  }
-
-  // Invalid part
   if (!partInfo) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "#f8fafc",
-        }}
-      >
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f8fafc" }}>
         <Paper sx={{ p: 4, borderRadius: 3, textAlign: "center" }}>
-          <AlertTriangle size={48} color="#f59e0b" />
-          <Typography variant="h6" fontWeight={700} mt={2}>
-            Part không hợp lệ
-          </Typography>
-          <Typography color="text.secondary" mb={3}>
-            Part {partId} không tồn tại trong hệ thống TOEIC
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => router.push("/user/exam")}
-            sx={{
-              bgcolor: theme.colors.primary,
-              "&:hover": { bgcolor: theme.colors.primaryDark },
-            }}
-          >
-            Quay lại trang luyện thi
+          <Typography variant="h6" fontWeight={700} color="error">Part không hợp lệ</Typography>
+          <Typography color="text.secondary" mb={3}>Part {partId} không tồn tại</Typography>
+          <Button variant="contained" onClick={() => router.push("/user/exam")} sx={{ bgcolor: theme.colors.primary }}>
+            Quay lại
           </Button>
         </Paper>
       </Box>
@@ -775,648 +304,188 @@ export default function ToeicPartPracticePage() {
   }
 
   return (
-    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 0,
-          borderBottom: "1px solid #e5e7eb",
-          bgcolor: "white",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 4 }, py: 2 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <IconButton
-                onClick={() => router.push("/user/exam")}
-                sx={{
-                  bgcolor: "#f3f4f6",
-                  "&:hover": { bgcolor: "#e5e7eb" },
-                }}
-              >
-                <ArrowLeft size={20} />
-              </IconButton>
-              <Box>
-                <Typography variant="h6" fontWeight={800} color="grey.900">
-                  {partInfo.title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {partInfo.description}
-                </Typography>
-              </Box>
-            </Stack>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 4 }}>
+      {/* Hero Header */}
+      <Box sx={{ background: theme.hero, pt: 3, pb: 6, borderRadius: "0 0 24px 24px" }}>
+        <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 } }}>
+          <Button startIcon={<ArrowLeft size={20} />} onClick={() => router.push("/user/exam")}
+            sx={{ color: "rgba(255,255,255,0.8)", mb: 3, textTransform: "none", "&:hover": { color: "white", bgcolor: "rgba(255,255,255,0.1)" } }}>
+            Quay lại
+          </Button>
 
-            <Stack direction="row" alignItems="center" spacing={2}>
-              {timeLimit && (
-                <Timer initialTime={timeLimit} onTimeUp={handleTimeUp} />
-              )}
-
-              <Chip
-                label={`${answeredCount}/${totalQuestions} câu`}
-                sx={{
-                  bgcolor: "#f0fdf4",
-                  color: theme.colors.primary,
-                  fontWeight: 600,
-                }}
-              />
-
-              <Button
-                variant="contained"
-                startIcon={<Send size={18} />}
-                onClick={() => setShowSubmitDialog(true)}
-                sx={{
-                  background: theme.gradients.primary,
-                  fontWeight: 700,
-                  px: 3,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  "&:hover": {
-                    background: theme.gradients.primaryDark,
-                  },
-                }}
-              >
-                Nộp bài
-              </Button>
-            </Stack>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ md: "center" }}>
+            <Box sx={{ width: 80, height: 80, borderRadius: 3, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {partInfo.icon}
+            </Box>
+            <Box flex={1}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                <Chip label={partInfo.skillLabel} size="small" sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white", fontWeight: 600 }} />
+                <Chip label={`${partInfo.questions} câu`} size="small" sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }} />
+                <Chip icon={<Clock size={12} color="rgba(255,255,255,0.8)" />} label={partInfo.time} size="small"
+                  sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)", "& .MuiChip-icon": { color: "rgba(255,255,255,0.8)" } }} />
+              </Stack>
+              <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>{partInfo.title}: {partInfo.fullTitle}</Typography>
+              <Typography variant="body1" color="rgba(255,255,255,0.85)">{partInfo.description}</Typography>
+            </Box>
           </Stack>
-
-          {/* Progress bar */}
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{
-              mt: 2,
-              height: 6,
-              borderRadius: 3,
-              bgcolor: "#e5e7eb",
-              "& .MuiLinearProgress-bar": {
-                borderRadius: 3,
-                background: theme.gradients.primary,
-              },
-            }}
-          />
         </Box>
-      </Paper>
-
-      {/* Main Content */}
-      <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 4 }, py: 4 }}>
-        <Grid container spacing={3}>
-          {/* Question Area */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: { xs: 2, md: 4 },
-                borderRadius: 3,
-                border: "1px solid #e5e7eb",
-                bgcolor: "white",
-                minHeight: 500,
-              }}
-            >
-              {/* Question Header */}
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-              >
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Chip
-                    label={`Câu ${currentQuestion.displayNo}${
-                      currentQuestion.subQuestions
-                        ? `-${currentQuestion.subQuestions[currentQuestion.subQuestions.length - 1].displayNo}`
-                        : ""
-                    }`}
-                    sx={{
-                      background: theme.gradients.primary,
-                      color: "white",
-                      fontWeight: 700,
-                      fontSize: "0.9rem",
-                    }}
-                  />
-                  <Chip
-                    label={partInfo.skillType === "LISTENING" ? "Listening" : "Reading"}
-                    size="small"
-                    icon={partInfo.skillType === "LISTENING" ? <Headphones size={14} /> : <BookMarked size={14} />}
-                    sx={{
-                      bgcolor: partInfo.skillType === "LISTENING" ? "#fef3c7" : "#dbeafe",
-                      color: partInfo.skillType === "LISTENING" ? "#92400e" : "#1e40af",
-                      fontWeight: 600,
-                    }}
-                  />
-                </Stack>
-
-                <Tooltip title={flaggedQuestions.has(currentQuestion.id) ? "Bỏ đánh dấu" : "Đánh dấu câu hỏi"}>
-                  <IconButton
-                    onClick={() => handleFlagToggle(currentQuestion.id)}
-                    sx={{
-                      bgcolor: flaggedQuestions.has(currentQuestion.id)
-                        ? "#fef3c7"
-                        : "#f3f4f6",
-                      "&:hover": {
-                        bgcolor: flaggedQuestions.has(currentQuestion.id)
-                          ? "#fde68a"
-                          : "#e5e7eb",
-                      },
-                    }}
-                  >
-                    <Flag
-                      size={20}
-                      color={
-                        flaggedQuestions.has(currentQuestion.id)
-                          ? "#f59e0b"
-                          : "#6b7280"
-                      }
-                      fill={
-                        flaggedQuestions.has(currentQuestion.id)
-                          ? "#f59e0b"
-                          : "none"
-                      }
-                    />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-
-              {/* Audio Player for Listening */}
-              {currentQuestion.audioUrl && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    borderRadius: 2,
-                    bgcolor: "#f0fdf4",
-                    border: "1px solid #d1fae5",
-                  }}
-                >
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <IconButton
-                      onClick={handlePlayPause}
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        bgcolor: theme.colors.primary,
-                        color: "white",
-                        "&:hover": { bgcolor: theme.colors.primaryDark },
-                      }}
-                    >
-                      {isAudioPlaying ? <Pause size={24} /> : <Play size={24} />}
-                    </IconButton>
-                    <Box sx={{ flex: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={audioProgress}
-                        sx={{
-                          height: 8,
-                          borderRadius: 4,
-                          bgcolor: "#d1fae5",
-                          "& .MuiLinearProgress-bar": {
-                            borderRadius: 4,
-                            bgcolor: theme.colors.primary,
-                          },
-                        }}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                      {partInfo.skillType === "LISTENING" ? "Nghe và trả lời" : ""}
-                    </Typography>
-                  </Stack>
-                  <audio
-                    ref={audioRef}
-                    src={currentQuestion.audioUrl}
-                    onTimeUpdate={(e) => {
-                      const audio = e.currentTarget;
-                      setAudioProgress((audio.currentTime / audio.duration) * 100);
-                    }}
-                    onEnded={() => setIsAudioPlaying(false)}
-                  />
-                </Paper>
-              )}
-
-              {/* Image for Part 1 */}
-              {currentQuestion.imageUrl && (
-                <Box
-                  sx={{
-                    mb: 3,
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  <img
-                    src={currentQuestion.imageUrl}
-                    alt="Question image"
-                    style={{
-                      width: "100%",
-                      maxHeight: 400,
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                  />
-                </Box>
-              )}
-
-              {/* Passage for Reading */}
-              {currentQuestion.passage && partInfo.skillType === "READING" && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    mb: 3,
-                    borderRadius: 2,
-                    bgcolor: "#f9fafb",
-                    border: "1px solid #e5e7eb",
-                    maxHeight: 300,
-                    overflow: "auto",
-                  }}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      lineHeight: 1.8,
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
-                    {currentQuestion.passage}
-                  </Typography>
-                </Paper>
-              )}
-
-              {/* Question Text & Options */}
-              {currentQuestion.subQuestions ? (
-                // Grouped questions
-                <Stack spacing={4}>
-                  {currentQuestion.subQuestions.map((subQ) => (
-                    <Box key={subQ.id}>
-                      <Typography
-                        variant="subtitle1"
-                        fontWeight={700}
-                        color="grey.800"
-                        mb={2}
-                      >
-                        {subQ.displayNo}. {subQ.questionText}
-                      </Typography>
-                      <RadioGroup
-                        value={answers.get(subQ.id) || ""}
-                        onChange={(e) => handleAnswer(subQ.id, Number(e.target.value))}
-                      >
-                        <Stack spacing={1.5}>
-                          {subQ.options.map((option) => (
-                            <Paper
-                              key={option.id}
-                              elevation={0}
-                              onClick={() => handleAnswer(subQ.id, option.id)}
-                              sx={{
-                                p: 2,
-                                borderRadius: 2,
-                                cursor: "pointer",
-                                border: `2px solid ${
-                                  answers.get(subQ.id) === option.id
-                                    ? theme.colors.primary
-                                    : "#e5e7eb"
-                                }`,
-                                bgcolor:
-                                  answers.get(subQ.id) === option.id
-                                    ? "#f0fdf4"
-                                    : "white",
-                                transition: "all 0.2s",
-                                "&:hover": {
-                                  borderColor: theme.colors.primary,
-                                  bgcolor: "#f0fdf4",
-                                },
-                              }}
-                            >
-                              <FormControlLabel
-                                value={option.id}
-                                control={
-                                  <Radio
-                                    sx={{
-                                      color: "#d1d5db",
-                                      "&.Mui-checked": {
-                                        color: theme.colors.primary,
-                                      },
-                                    }}
-                                  />
-                                }
-                                label={
-                                  <Typography fontWeight={500}>
-                                    <strong>{option.label}.</strong> {option.text}
-                                  </Typography>
-                                }
-                                sx={{ m: 0, width: "100%" }}
-                              />
-                            </Paper>
-                          ))}
-                        </Stack>
-                      </RadioGroup>
-                    </Box>
-                  ))}
-                </Stack>
-              ) : (
-                // Single question
-                <Box>
-                  {currentQuestion.questionText && (
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight={700}
-                      color="grey.800"
-                      mb={2}
-                    >
-                      {currentQuestion.questionText}
-                    </Typography>
-                  )}
-                  <RadioGroup
-                    value={answers.get(currentQuestion.id) || ""}
-                    onChange={(e) =>
-                      handleAnswer(currentQuestion.id, Number(e.target.value))
-                    }
-                  >
-                    <Stack spacing={1.5}>
-                      {currentQuestion.options?.map((option) => (
-                        <Paper
-                          key={option.id}
-                          elevation={0}
-                          onClick={() =>
-                            handleAnswer(currentQuestion.id, option.id)
-                          }
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            cursor: "pointer",
-                            border: `2px solid ${
-                              answers.get(currentQuestion.id) === option.id
-                                ? theme.colors.primary
-                                : "#e5e7eb"
-                            }`,
-                            bgcolor:
-                              answers.get(currentQuestion.id) === option.id
-                                ? "#f0fdf4"
-                                : "white",
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              borderColor: theme.colors.primary,
-                              bgcolor: "#f0fdf4",
-                            },
-                          }}
-                        >
-                          <FormControlLabel
-                            value={option.id}
-                            control={
-                              <Radio
-                                sx={{
-                                  color: "#d1d5db",
-                                  "&.Mui-checked": {
-                                    color: theme.colors.primary,
-                                  },
-                                }}
-                              />
-                            }
-                            label={
-                              <Typography fontWeight={500}>
-                                <strong>{option.label}.</strong> {option.text}
-                              </Typography>
-                            }
-                            sx={{ m: 0, width: "100%" }}
-                          />
-                        </Paper>
-                      ))}
-                    </Stack>
-                  </RadioGroup>
-                </Box>
-              )}
-
-              {/* Navigation Buttons */}
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mt={4}
-                pt={3}
-                borderTop="1px solid #e5e7eb"
-              >
-                <Button
-                  variant="outlined"
-                  startIcon={<ChevronLeft size={18} />}
-                  onClick={() => handleNavigate("prev")}
-                  disabled={currentQuestionIndex === 0}
-                  sx={{
-                    borderColor: "#d1d5db",
-                    color: "grey.700",
-                    fontWeight: 600,
-                    "&:hover": {
-                      borderColor: theme.colors.primary,
-                      bgcolor: "#f0fdf4",
-                    },
-                    "&:disabled": {
-                      borderColor: "#e5e7eb",
-                      color: "#9ca3af",
-                    },
-                  }}
-                >
-                  Câu trước
-                </Button>
-
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  {currentQuestionIndex + 1} / {questions.length}
-                </Typography>
-
-                <Button
-                  variant="contained"
-                  endIcon={<ChevronRight size={18} />}
-                  onClick={() => handleNavigate("next")}
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  sx={{
-                    background: theme.gradients.primary,
-                    fontWeight: 600,
-                    "&:hover": {
-                      background: theme.gradients.primaryDark,
-                    },
-                    "&:disabled": {
-                      background: "#e5e7eb",
-                      color: "#9ca3af",
-                    },
-                  }}
-                >
-                  Câu tiếp
-                </Button>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          {/* Sidebar */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Stack spacing={3}>
-              {/* Instructions */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  border: "1px solid #e5e7eb",
-                  bgcolor: "white",
-                }}
-              >
-                <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                  <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 2,
-                      background: theme.gradients.primary,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                    }}
-                  >
-                    {partInfo.icon}
-                  </Box>
-                  <Typography variant="subtitle1" fontWeight={700}>
-                    Hướng dẫn
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary" lineHeight={1.7}>
-                  {partInfo.instructions}
-                </Typography>
-              </Paper>
-
-              {/* Question Navigator */}
-              <QuestionNavigator
-                questions={questions}
-                currentIndex={currentQuestionIndex}
-                answers={answers}
-                flagged={flaggedQuestions}
-                onSelect={handleQuestionSelect}
-              />
-
-              {/* Stats */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  background: theme.gradients.card,
-                  border: "1px solid #d1fae5",
-                }}
-              >
-                <Typography variant="subtitle2" fontWeight={700} color={theme.colors.text} mb={2}>
-                  Tiến độ làm bài
-                </Typography>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Đã trả lời
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} color={theme.colors.primary}>
-                      {answeredCount}/{totalQuestions}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Đã đánh dấu
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} color="#f59e0b">
-                      {flaggedQuestions.size}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Chưa trả lời
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} color="grey.500">
-                      {totalQuestions - answeredCount}
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </Paper>
-            </Stack>
-          </Grid>
-        </Grid>
       </Box>
 
-      {/* Submit Dialog */}
-      <Dialog
-        open={showSubmitDialog}
-        onClose={() => setShowSubmitDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Send size={24} color={theme.colors.primary} />
-            <Typography variant="h6" fontWeight={700}>
-              Nộp bài luyện tập
-            </Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Alert
-            severity={answeredCount < totalQuestions ? "warning" : "success"}
-            sx={{ mb: 2 }}
-          >
-            {answeredCount < totalQuestions
-              ? `Bạn còn ${totalQuestions - answeredCount} câu chưa trả lời. Bạn có chắc muốn nộp bài?`
-              : "Bạn đã hoàn thành tất cả câu hỏi. Sẵn sàng nộp bài!"}
-          </Alert>
+      {/* Main Content */}
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 }, mt: -3 }}>
+        {/* Tabs */}
+        <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #e5e7eb", mb: 3, overflow: "hidden" }}>
+          <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}
+            sx={{ bgcolor: "white", px: 2, "& .MuiTab-root": { textTransform: "none", fontWeight: 600, fontSize: "0.95rem", minHeight: 56 },
+              "& .Mui-selected": { color: `${theme.colors.primary} !important` }, "& .MuiTabs-indicator": { bgcolor: theme.colors.primary, height: 3 } }}>
+            <Tab icon={<Target size={18} />} iconPosition="start" label="Danh sách bài test" />
+            <Tab icon={<Trophy size={18} />} iconPosition="start" label={`Lịch sử làm bài (${partHistory.length})`} />
+          </Tabs>
+        </Paper>
 
-          <Stack spacing={1.5}>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Tổng số câu:</Typography>
-              <Typography fontWeight={700}>{totalQuestions}</Typography>
-            </Stack>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Đã trả lời:</Typography>
-              <Typography fontWeight={700} color={theme.colors.primary}>
-                {answeredCount}
-              </Typography>
-            </Stack>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography color="text.secondary">Câu đánh dấu:</Typography>
-              <Typography fontWeight={700} color="#f59e0b">
-                {flaggedQuestions.size}
-              </Typography>
-            </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button
-            onClick={() => setShowSubmitDialog(false)}
-            sx={{
-              color: "grey.600",
-              fontWeight: 600,
-            }}
-          >
-            Tiếp tục làm bài
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <Send size={18} />}
-            sx={{
-              background: theme.gradients.primary,
-              fontWeight: 700,
-              px: 3,
-              "&:hover": {
-                background: theme.gradients.primaryDark,
-              },
-            }}
-          >
-            {isSubmitting ? "Đang nộp..." : "Xác nhận nộp bài"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* Tab Content */}
+        {activeTab === 0 && (
+          <>
+            {/* Tips */}
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #d1fae5", bgcolor: "#ecfdf5", mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight={700} color={theme.colors.primaryDark} mb={1.5}>💡 Mẹo làm bài {partInfo.title}</Typography>
+              <Stack spacing={1}>
+                {partInfo.tips.map((tip, idx) => (
+                  <Stack key={idx} direction="row" spacing={1} alignItems="flex-start">
+                    <CheckCircle size={16} color={theme.colors.primary} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <Typography variant="body2" color="text.secondary">{tip}</Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </Paper>
+
+            {/* Test List */}
+            {isLoadingExams ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress sx={{ color: theme.colors.primary }} />
+              </Box>
+            ) : tests.length > 0 ? (
+              <Grid container spacing={2}>
+                {tests.map((test) => {
+                  const completedAttempt = partHistory.find((h) => h.section_id === test.sectionId);
+                  return (
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={test.id}>
+                      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb", height: "100%", display: "flex", flexDirection: "column",
+                        transition: "all 0.3s ease", "&:hover": { borderColor: theme.colors.primary, boxShadow: "0 8px 25px rgba(16, 185, 129, 0.15)", transform: "translateY(-4px)" } }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="start" mb={2}>
+                          <Box>
+                            <Typography variant="h6" fontWeight={700} color="grey.900">{test.title}</Typography>
+                            <Chip label={test.difficulty} size="small" sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600, mt: 0.5,
+                              bgcolor: test.difficulty === "Dễ" ? "#dcfce7" : test.difficulty === "Trung bình" ? "#fef3c7" : "#fee2e2",
+                              color: test.difficulty === "Dễ" ? "#16a34a" : test.difficulty === "Trung bình" ? "#d97706" : "#dc2626" }} />
+                          </Box>
+                          {completedAttempt && (
+                            <Chip icon={<CheckCircle size={14} />} label="Đã làm" size="small"
+                              sx={{ bgcolor: "#ecfdf5", color: theme.colors.primary, fontWeight: 600, "& .MuiChip-icon": { color: theme.colors.primary } }} />
+                          )}
+                        </Stack>
+
+                        <Stack direction="row" spacing={2} mb={2}>
+                          <Typography variant="body2" color="text.secondary">📝 {test.questions} câu</Typography>
+                          <Typography variant="body2" color="text.secondary">⏱️ {test.time}</Typography>
+                        </Stack>
+
+                        {completedAttempt && (
+                          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#f8fafc", mb: 2 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="caption" color="text.secondary">Lần cuối: {formatDate(completedAttempt.submit_time)}</Typography>
+                              <Typography variant="body2" fontWeight={700} color={theme.colors.primary}>{completedAttempt.percentage}%</Typography>
+                            </Stack>
+                            <LinearProgress variant="determinate" value={completedAttempt.percentage}
+                              sx={{ mt: 1, height: 6, borderRadius: 3, bgcolor: "#e5e7eb", "& .MuiLinearProgress-bar": { bgcolor: theme.colors.primary, borderRadius: 3 } }} />
+                          </Box>
+                        )}
+
+                        <Box sx={{ mt: "auto" }}>
+                          {completedAttempt ? (
+                            <Stack direction="row" spacing={1}>
+                              <Button variant="outlined" startIcon={<Eye size={16} />} onClick={() => handleViewResult(completedAttempt.id)}
+                                sx={{ flex: 1, textTransform: "none", fontWeight: 600, borderColor: "#e5e7eb", color: "grey.700", "&:hover": { borderColor: theme.colors.primary, bgcolor: "#f0fdf4" } }}>
+                                Xem kết quả
+                              </Button>
+                              <Button variant="contained" startIcon={<RotateCcw size={16} />} onClick={() => handleStartPractice(test.sectionId, test.partNumber)}
+                                sx={{ flex: 1, textTransform: "none", fontWeight: 600, bgcolor: theme.colors.primary, "&:hover": { bgcolor: theme.colors.primaryDark } }}>
+                                Làm lại
+                              </Button>
+                            </Stack>
+                          ) : (
+                            <Button variant="contained" fullWidth startIcon={<Play size={18} />} onClick={() => handleStartPractice(test.sectionId, test.partNumber)}
+                              sx={{ py: 1.2, textTransform: "none", fontWeight: 700, fontSize: "0.95rem", background: theme.primary, "&:hover": { background: theme.primaryDark } }}>
+                              Bắt đầu làm bài
+                            </Button>
+                          )}
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            ) : (
+              <Box textAlign="center" py={6}>
+                 <Typography variant="body1" color="text.secondary">Chưa có bài thi nào phù hợp.</Typography>
+              </Box>
+            )}
+          </>
+        )}
+
+        {activeTab === 1 && (
+          <>
+            {isLoadingHistory ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress sx={{ color: theme.colors.primary }} />
+              </Box>
+            ) : partHistory.length > 0 ? (
+              <Stack spacing={2}>
+                {partHistory.map((attempt) => (
+                  <Paper key={attempt.id} elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb", transition: "all 0.2s",
+                    "&:hover": { borderColor: theme.colors.primary, boxShadow: "0 4px 15px rgba(16, 185, 129, 0.1)" } }}>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={700} color="grey.900">{attempt.section_title}</Typography>
+                        <Stack direction="row" spacing={2} mt={0.5}>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Calendar size={14} color="#6b7280" />
+                            <Typography variant="caption" color="text.secondary">{formatDate(attempt.submit_time)}</Typography>
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">{attempt.score_obtained}/{attempt.max_score} điểm</Typography>
+                        </Stack>
+                      </Box>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Box textAlign="center">
+                          <Typography variant="h5" fontWeight={800}
+                            color={attempt.percentage >= 80 ? theme.colors.primary : attempt.percentage >= 60 ? "#f59e0b" : "#ef4444"}>
+                            {attempt.percentage}%
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">Điểm số</Typography>
+                        </Box>
+                        <Button variant="outlined" startIcon={<Eye size={16} />} onClick={() => handleViewResult(attempt.id)}
+                          sx={{ textTransform: "none", fontWeight: 600, borderColor: theme.colors.primary, color: theme.colors.primary, "&:hover": { bgcolor: "#f0fdf4" } }}>
+                          Chi tiết
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <Paper elevation={0} sx={{ p: 6, borderRadius: 3, border: "1px solid #e5e7eb", textAlign: "center" }}>
+                <Trophy size={48} color="#d1d5db" />
+                <Typography variant="h6" color="text.secondary" mt={2} mb={1}>Chưa có lịch sử làm bài</Typography>
+                <Typography variant="body2" color="text.secondary" mb={3}>Hãy bắt đầu làm bài test để xem kết quả tại đây</Typography>
+                <Button variant="contained" startIcon={<Play size={18} />} onClick={() => setActiveTab(0)}
+                  sx={{ textTransform: "none", fontWeight: 600, bgcolor: theme.colors.primary, "&:hover": { bgcolor: theme.colors.primaryDark } }}>
+                  Bắt đầu luyện tập
+                </Button>
+              </Paper>
+            )}
+          </>
+        )}
+      </Box>
     </Box>
   );
 }
