@@ -63,8 +63,27 @@ const getPartIcon = (partNumber: number, skillType: string) => {
 
 // Question Item Component
 const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: number }) => {
-  const userAnswer = question.user_answer?.selected_option_text || question.user_answer?.text_answer || "Chưa trả lời";
-  const correctAnswer = question.correct_answer?.correct_option_text || "";
+  // Backend returns flat structure: selected_option_id is at question level, not nested in user_answer
+  // Try both patterns to be safe: direct access (backend) and nested access (model)
+  const selectedOptionId = (question as any).selected_option_id 
+    || question.user_answer?.selected_option_id;
+  const selectedOptionText = (question as any).selected_option_text 
+    || question.user_answer?.selected_option_text;
+  
+  // Find user's selected option text from options if not provided directly
+  const selectedOption = question.options?.find(opt => 
+    String(opt.id) === String(selectedOptionId)
+  );
+  const userAnswerText = selectedOptionText 
+    || selectedOption?.option_text 
+    || (question as any).text_answer
+    || question.user_answer?.text_answer;
+  const userAnswer = userAnswerText || "Chưa trả lời";
+  const hasAnswered = !!userAnswerText || !!selectedOptionId;
+  
+  const correctAnswer = (question as any).correct_option_text 
+    || question.correct_answer?.correct_option_text || "";
+
 
   return (
     <Paper
@@ -72,8 +91,8 @@ const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: n
       sx={{
         p: 2,
         borderRadius: 2,
-        bgcolor: question.is_correct ? "#f0fdf4" : "#fef2f2",
-        border: `1px solid ${question.is_correct ? "#d1fae5" : "#fee2e2"}`,
+        bgcolor: question.is_correct ? "#f0fdf4" : hasAnswered ? "#fef2f2" : "#fff7ed",
+        border: `1px solid ${question.is_correct ? "#d1fae5" : hasAnswered ? "#fee2e2" : "#fed7aa"}`,
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -87,8 +106,10 @@ const QuestionItem = ({ question, index }: { question: IQuestionDetail; index: n
             <Stack spacing={0.5} mb={1.5}>
               {question.options.map((opt, optIdx) => {
                 const optLabel = String.fromCharCode(65 + optIdx);
-                const isUserSelected = question.user_answer?.selected_option_id === opt.id;
-                const isCorrectOption = question.correct_answer?.correct_option_id === opt.id;
+                // Compare as strings to handle BigInt - check both flat and nested patterns
+                const isUserSelected = selectedOptionId && String(selectedOptionId) === String(opt.id);
+                const correctOptionId = (question as any).correct_option_id || question.correct_answer?.correct_option_id;
+                const isCorrectOption = correctOptionId && String(correctOptionId) === String(opt.id);
 
                 return (
                   <Box

@@ -74,6 +74,12 @@ import { paymentApi } from "@/services/PaymentService";
 // Post API
 import { postApi } from "@/services/PostService";
 
+// Notification API
+import { notificationApi } from "@/services/NotificationService";
+
+// Placement API
+import { placementApi } from "@/services/PlacementService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -133,6 +139,10 @@ export const store = configureStore({
     [paymentApi.reducerPath]: paymentApi.reducer,
     // Post
     [postApi.reducerPath]: postApi.reducer,
+    // Notification
+    [notificationApi.reducerPath]: notificationApi.reducer,
+    // Placement
+    [placementApi.reducerPath]: placementApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -184,7 +194,11 @@ export const store = configureStore({
       // Payment
       paymentApi.middleware,
       // Post
-      postApi.middleware
+      postApi.middleware,
+      // Notification
+      notificationApi.middleware,
+      // Placement
+      placementApi.middleware
     ),
 });
 
