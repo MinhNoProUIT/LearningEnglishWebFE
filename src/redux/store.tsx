@@ -68,6 +68,12 @@ import { userCustomTopicApi } from "@/services/UserCustomTopicService";
 // Writing API
 import { writingApi } from "@/services/WritingService";
 
+// Payment API
+import { paymentApi } from "@/services/PaymentService";
+
+// Post API
+import { postApi } from "@/services/PostService";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -123,6 +129,10 @@ export const store = configureStore({
     [userCustomTopicApi.reducerPath]: userCustomTopicApi.reducer,
     // Writing API
     [writingApi.reducerPath]: writingApi.reducer,
+    // Payment
+    [paymentApi.reducerPath]: paymentApi.reducer,
+    // Post
+    [postApi.reducerPath]: postApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -171,6 +181,10 @@ export const store = configureStore({
       userCustomTopicApi.middleware,
       // Writing API
       writingApi.middleware
+      // Payment
+      paymentApi.middleware,
+      // Post
+      postApi.middleware
     ),
 });
 

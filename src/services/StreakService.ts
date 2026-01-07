@@ -42,8 +42,66 @@ export interface LeaderboardUser {
     users: {
         id: string;
         username: string;
+        fullname?: string;
         email: string;
+        image_url?: string;
     };
+}
+
+export interface UserCoins {
+    id: string;
+    user_id: string;
+    total_coin: number;
+}
+
+export interface PointsLeaderboardUser {
+    id: string;
+    user_id: string;
+    total_coin: number;
+    users: {
+        id: string;
+        username: string;
+        fullname?: string;
+        email: string;
+        image_url?: string;
+    };
+}
+
+export interface CourseLeaderboardUser {
+    rank: number;
+    id: string;
+    user_id: string;
+    course_id: string;
+    total_score: number;
+    words_mastered: number;
+    accuracy_rate: number;
+    streak_days: number;
+    users: {
+        id: string;
+        username: string;
+        fullname?: string;
+        email: string;
+        image_url?: string;
+    };
+    courses: {
+        id: string;
+        title: string;
+    };
+}
+
+export interface UserTotalScore {
+    user_id: string;
+    total_score: number;
+    total_words_mastered: number;
+    total_games_played: number;
+    courses_count: number;
+    course_details: {
+        course_id: string;
+        course_title: string;
+        score: number;
+        words_mastered: number;
+        games_played: number;
+    }[];
 }
 
 interface ApiResponse<T> {
@@ -59,7 +117,7 @@ const apiPath = "http://localhost:5000/api/streaks";
 export const streakApi = createApi({
     reducerPath: "streakApi",
     baseQuery: createBaseQuery(apiPath),
-    tagTypes: ["Streak", "StreakHistory", "Leaderboard"],
+    tagTypes: ["Streak", "StreakHistory", "Leaderboard", "UserCoins", "PointsLeaderboard", "CourseLeaderboard", "UserTotalScore"],
     endpoints: (builder) => ({
         // ==================== GET MY STREAK ====================
         // GET /my-streak
@@ -128,6 +186,73 @@ export const streakApi = createApi({
                 response.Data || [],
             providesTags: ["Leaderboard"],
         }),
+
+        // ==================== GET MY COINS ====================
+        // GET /my-coins
+        getMyCoins: builder.query<UserCoins, void>({
+            query: () => "my-coins",
+            transformResponse: (response: ApiResponse<UserCoins>) =>
+                response.Data,
+            providesTags: ["UserCoins"],
+        }),
+
+        // ==================== GET POINTS LEADERBOARD ====================
+        // GET /points-leaderboard?limit=10
+        getPointsLeaderboard: builder.query<
+            PointsLeaderboardUser[],
+            { limit?: number }
+        >({
+            query: ({ limit = 10 }) =>
+                `points-leaderboard?limit=${limit}`,
+            transformResponse: (response: ApiResponse<PointsLeaderboardUser[]>) =>
+                response.Data || [],
+            providesTags: ["PointsLeaderboard"],
+        }),
+
+        // ==================== GET COURSE LEADERBOARD ====================
+        // GET /course-leaderboard/:courseId?limit=10
+        getCourseLeaderboard: builder.query<
+            CourseLeaderboardUser[],
+            { courseId: string; limit?: number }
+        >({
+            query: ({ courseId, limit = 10 }) =>
+                `course-leaderboard/${courseId}?limit=${limit}`,
+            transformResponse: (response: ApiResponse<CourseLeaderboardUser[]>) =>
+                response.Data || [],
+            providesTags: (result, error, { courseId }) => [
+                { type: "CourseLeaderboard", id: courseId },
+            ],
+        }),
+
+        // ==================== ADD COURSE SCORE ====================
+        // POST /add-course-score
+        addCourseScore: builder.mutation<
+            unknown,
+            { courseId: string; points: number; wordsMastered?: number; gamesPlayed?: number; studyTimeMinutes?: number }
+        >({
+            query: (body) => ({
+                url: "add-course-score",
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: (result, error, { courseId }) => [
+                { type: "CourseLeaderboard", id: courseId },
+                "UserCoins",
+                "UserTotalScore",
+            ],
+        }),
+
+        // ==================== GET MY TOTAL SCORE ====================
+        // GET /leaderboard/my-total-score
+        getMyTotalScore: builder.query<UserTotalScore, void>({
+            query: () => ({
+                url: "http://localhost:5000/api/leaderboard/my-total-score",
+                method: "GET",
+            }),
+            transformResponse: (response: ApiResponse<UserTotalScore>) =>
+                response.Data,
+            providesTags: ["UserTotalScore"],
+        }),
     }),
 });
 
@@ -139,4 +264,9 @@ export const {
     useUseFreezeMutation,
     useBuyFreezeMutation,
     useGetLeaderboardQuery,
+    useGetMyCoinsQuery,
+    useGetPointsLeaderboardQuery,
+    useGetCourseLeaderboardQuery,
+    useAddCourseScoreMutation,
+    useGetMyTotalScoreQuery,
 } = streakApi;

@@ -11,6 +11,9 @@ export const courseApi = createApi({
     getAllCourse: builder.query<IGetAllCourses[], void>({
       query: () => "",
     }),
+    getCourseById: builder.query<IGetAllCourses, string>({
+      query: (id) => `/${id}`,
+    }),
     createCourse: builder.mutation<IGetAllCourses, ICreateCourse>({
       query: (body) => ({
         url: "",
@@ -34,4 +37,11 @@ export const courseApi = createApi({
   }),
 });
 
-export const { useGetAllCourseQuery, useCreateCourseMutation, useUpdateCourseMutation, useDeleteCourseMutation } = courseApi;
+export const {
+  useGetAllCourseQuery,
+  useGetCourseByIdQuery,
+  useCreateCourseMutation,
+  useUpdateCourseMutation,
+  useDeleteCourseMutation
+} = courseApi;
+

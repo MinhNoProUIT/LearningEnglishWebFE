@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { Volume2, X, CheckCircle2, XCircle, Sparkles, Award, TrendingUp } from "lucide-react";
+import { Volume2, X, CheckCircle2, XCircle, Sparkles, Award, TrendingUp, Star } from "lucide-react";
 import { useGetWordsByMinorTopicQuery } from "@/services/WordService";
 import { transformWordToVocabulary, IVocabulary } from "@/models/Word";
 import { useBatchMarkWordsAsLearnedMutation, IWordResult } from "@/services/UserProgressService";
+import { useAddCourseScoreMutation } from "@/services/StreakService";
 
 type LearningMode = "flashcard" | "vietnamese-to-english" | "audio-to-english";
 
@@ -12,6 +13,7 @@ export default function VocabularyLearning() {
   const searchParams = useSearchParams();
   const minorTopicId = searchParams.get("minorTopicId");
   const topicName = searchParams.get("topicName") || "Học từ vựng";
+  const courseId = searchParams.get("courseId"); // Get courseId for leaderboard
 
   // Fetch words from API
   const { data: wordsData = [], isLoading, error } = useGetWordsByMinorTopicQuery(
@@ -21,6 +23,9 @@ export default function VocabularyLearning() {
 
   // Mutation to save progress
   const [batchMarkLearned, { isLoading: isSaving }] = useBatchMarkWordsAsLearnedMutation();
+
+  // Mutation to add score to leaderboard
+  const [addCourseScore, { isLoading: isAddingScore }] = useAddCourseScoreMutation();
 
   // Transform API data to vocabulary format
   const vocabularyData: IVocabulary[] = useMemo(() => {
@@ -37,6 +42,7 @@ export default function VocabularyLearning() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [score, setScore] = useState(0);
+  const [pointsAdded, setPointsAdded] = useState(false); // Track if points were added
 
   // Track word results for saving progress
   const wordResultsRef = useRef<Map<string, boolean>>(new Map());
@@ -58,6 +64,23 @@ export default function VocabularyLearning() {
         .catch((err) => console.error("Failed to save progress:", err));
     }
   }, [showCompletion, minorTopicId, vocabularyData, batchMarkLearned]);
+
+  // Add score to leaderboard when lesson completes
+  useEffect(() => {
+    if (showCompletion && courseId && score > 0 && !pointsAdded) {
+      addCourseScore({
+        courseId,
+        points: score, // Points = number of correct answers
+        wordsMastered: vocabularyData.length,
+      })
+        .unwrap()
+        .then(() => {
+          console.log(`✅ Added ${score} points to leaderboard for course ${courseId}`);
+          setPointsAdded(true);
+        })
+        .catch((err) => console.error("❌ Failed to add score to leaderboard:", err));
+    }
+  }, [showCompletion, courseId, score, pointsAdded, vocabularyData.length, addCourseScore]);
 
   // Play audio function
   const playAudio = (speed: "normal" | "slow" = "normal") => {
@@ -129,6 +152,7 @@ export default function VocabularyLearning() {
     setShowCompletion(false);
     setUserInput("");
     setShowModal(false);
+    setPointsAdded(false); // Reset points tracking
   };
 
   // Loading state
@@ -214,6 +238,19 @@ export default function VocabularyLearning() {
               <div className="text-sm text-gray-600 mt-2">Độ chính xác</div>
             </div>
           </div>
+
+          {/* Points Earned Badge */}
+          {courseId && score > 0 && (
+            <div className="mb-8 flex justify-center">
+              <div className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 px-6 py-3 rounded-full shadow-lg animate-pulse">
+                <Star className="w-6 h-6 text-white fill-white" />
+                <span className="text-white font-bold text-lg">
+                  +{score} điểm đã được cộng vào bảng xếp hạng!
+                </span>
+                <Star className="w-6 h-6 text-white fill-white" />
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-4 justify-center">
             <button

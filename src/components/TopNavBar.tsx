@@ -28,7 +28,7 @@ import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 const menuItems = [
   { label: "Khóa học", href: "/courses", icon: SchoolIcon },
   { label: "Ngữ pháp", href: "/user/grammar", icon: MenuBookIcon },
-  { label: "Luyện nghe", href: "/user/practice", icon: HeadphonesIcon },
+  { label: "Luyện nghe", href: "/listening", icon: HeadphonesIcon },
   { label: "Media", href: "/media", icon: PlayCircleOutlineIcon },
   { label: "Bài đăng", href: "/post", icon: ArticleIcon },
 ];
@@ -70,10 +70,10 @@ export default function TopNavBar() {
         position="static"
         elevation={0}
         sx={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
           color: "#fff",
           borderRadius: "0 0 16px 16px",
-          boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
+          boxShadow: "0 8px 32px rgba(34, 197, 94, 0.35)",
           backdropFilter: "blur(10px)",
         }}
       >
@@ -129,7 +129,7 @@ export default function TopNavBar() {
                     <AutoStoriesIcon
                       sx={{
                         fontSize: 22,
-                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        background: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                       }}
@@ -206,14 +206,14 @@ export default function TopNavBar() {
                       fontSize: "14px",
                       letterSpacing: 0.3,
                       textTransform: "none",
-                      color: active ? "#667eea" : "rgba(255,255,255,0.95)",
+                      color: active ? "#16a34a" : "rgba(255,255,255,0.95)",
                       bgcolor: active
                         ? "rgba(255,255,255,0.95)"
                         : isHovered
                           ? "rgba(255,255,255,0.15)"
                           : "transparent",
                       boxShadow: active
-                        ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                        ? "0 4px 15px rgba(34, 197, 94, 0.35)"
                         : "none",
                       transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                       position: "relative",
@@ -283,10 +283,10 @@ export default function TopNavBar() {
                   fontSize: "14px",
                   letterSpacing: 0.5,
                   textTransform: "none",
-                  color: "#764ba2",
+                  color: "#16a34a",
                   bgcolor: "#fff",
                   borderRadius: "12px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  boxShadow: "0 4px 20px rgba(34, 197, 94, 0.2)",
                   position: "relative",
                   overflow: "hidden",
                   transition: "all 0.3s ease",
@@ -298,14 +298,14 @@ export default function TopNavBar() {
                     right: 0,
                     bottom: 0,
                     background:
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
                     opacity: 0,
                     transition: "opacity 0.3s ease",
                   },
                   "&:hover": {
                     color: "#fff",
                     transform: "translateY(-3px)",
-                    boxShadow: "0 8px 25px rgba(118, 75, 162, 0.4)",
+                    boxShadow: "0 8px 25px rgba(34, 197, 94, 0.4)",
                     "&::before": {
                       opacity: 1,
                     },

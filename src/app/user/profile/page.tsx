@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useGetCurrentUserQuery } from "@/services/UserService";
 import { formatDate } from "@/utils/formatDate";
+import MyPostsTab from "@/components/profile/MyPostsTab";
 
 const theme = {
   primary: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
@@ -700,6 +701,7 @@ export default function ProfilePage() {
                 }}
               >
                 <Tab label="Hoạt động gần đây" />
+                <Tab label="Bài viết của tôi" />
                 <Tab label="Thành tích" />
                 <Tab label="Thông tin cá nhân" />
               </Tabs>
@@ -743,10 +745,10 @@ export default function ProfilePage() {
                                   activity.type === "test"
                                     ? "#ecfdf5"
                                     : activity.type === "vocab"
-                                    ? "#f5f3ff"
-                                    : activity.type === "grammar"
-                                    ? "#fef3c7"
-                                    : "#dbeafe",
+                                      ? "#f5f3ff"
+                                      : activity.type === "grammar"
+                                        ? "#fef3c7"
+                                        : "#dbeafe",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -790,18 +792,18 @@ export default function ProfilePage() {
                                 activity.type === "test"
                                   ? "#ecfdf5"
                                   : activity.type === "vocab"
-                                  ? "#f5f3ff"
-                                  : activity.type === "grammar"
-                                  ? "#fef3c7"
-                                  : "#dbeafe",
+                                    ? "#f5f3ff"
+                                    : activity.type === "grammar"
+                                      ? "#fef3c7"
+                                      : "#dbeafe",
                               color:
                                 activity.type === "test"
                                   ? "#059669"
                                   : activity.type === "vocab"
-                                  ? "#7c3aed"
-                                  : activity.type === "grammar"
-                                  ? "#d97706"
-                                  : "#3b82f6",
+                                    ? "#7c3aed"
+                                    : activity.type === "grammar"
+                                      ? "#d97706"
+                                      : "#3b82f6",
                               fontWeight: 700,
                               fontSize: 13,
                               px: 1,
@@ -814,8 +816,13 @@ export default function ProfilePage() {
                 </Stack>
               </TabPanel>
 
-              {/* Achievements Tab */}
+              {/* My Posts Tab */}
               <TabPanel value={tabValue} index={1}>
+                <MyPostsTab />
+              </TabPanel>
+
+              {/* Achievements Tab */}
+              <TabPanel value={tabValue} index={2}>
                 <Grid container spacing={2}>
                   {achievements.map((achievement, idx) => (
                     <Grid size={{ xs: 6, sm: 4, md: 3 }} key={achievement.id}>
@@ -923,7 +930,7 @@ export default function ProfilePage() {
               </TabPanel>
 
               {/* Personal Info Tab */}
-              <TabPanel value={tabValue} index={2}>
+              <TabPanel value={tabValue} index={3}>
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField

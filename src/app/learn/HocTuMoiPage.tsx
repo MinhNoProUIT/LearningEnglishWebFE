@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { useGetMajorTopicsByCourseQuery } from "@/services/MajorTopicService";
 import { useGetMinorTopicsByMajorTopicWithProgressQuery } from "@/services/MinorTopicService";
 import { useGetStreakLeaderboardQuery, useGetCourseLeaderboardQuery, ILeaderboardEntry } from "@/services/LeaderboardService";
@@ -29,6 +30,7 @@ export default function HocTuMoiPage() {
     const [showCourseList, setShowCourseList] = useState(false);
     const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
     const [leaderboardTab, setLeaderboardTab] = useState<"score" | "streak">("score");
+    const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
     // Fetch major topics from API
     const { data: majorTopics = [], isLoading, error } = useGetMajorTopicsByCourseQuery(
@@ -51,11 +53,20 @@ export default function HocTuMoiPage() {
     );
 
     // Fetch leaderboard data
-    const { data: streakLeaderboard, isLoading: isLoadingStreak } = useGetStreakLeaderboardQuery(5);
-    const { data: courseLeaderboard, isLoading: isLoadingCourse } = useGetCourseLeaderboardQuery(
+    const { data: streakLeaderboard, isLoading: isLoadingStreak, refetch: refetchStreak } = useGetStreakLeaderboardQuery(5);
+    const { data: courseLeaderboard, isLoading: isLoadingCourse, refetch: refetchCourse } = useGetCourseLeaderboardQuery(
         { courseId: courseId || "", limit: 5 },
         { skip: !courseId }
     );
+
+    // Handle leaderboard refresh
+    const handleRefreshLeaderboard = () => {
+        if (leaderboardTab === "score") {
+            refetchCourse();
+        } else {
+            refetchStreak();
+        }
+    };
 
     // Transform API data to include computed fields
     const topics = useMemo(() => {
@@ -237,7 +248,7 @@ export default function HocTuMoiPage() {
                                 minorTopics.map((minorTopic, index) => (
                                     <div
                                         key={minorTopic.id}
-                                        onClick={() => router.push(`/vocabulary?minorTopicId=${minorTopic.id}&topicName=${encodeURIComponent(minorTopic.name)}`)}
+                                        onClick={() => router.push(`/vocabulary?minorTopicId=${minorTopic.id}&topicName=${encodeURIComponent(minorTopic.name)}&courseId=${courseId}`)}
                                         className={`rounded-3xl shadow-lg p-6 flex items-center space-x-6 cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] ${minorTopic.completed
                                             ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500'
                                             : 'bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300'
@@ -287,7 +298,7 @@ export default function HocTuMoiPage() {
                         /* Visual Path View - Shows Minor Topics */
                         <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-3xl shadow-2xl p-6 min-h-[600px] relative overflow-visible border-2 border-purple-200">
                             {/* Selected Major Topic Header */}
-                            {selectedTopic && (
+                            {/* {selectedTopic && (
                                 <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-2xl p-4 mb-4 flex items-center justify-between relative z-20">
                                     <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -305,7 +316,7 @@ export default function HocTuMoiPage() {
                                         Đổi chủ đề ▼
                                     </button>
                                 </div>
-                            )}
+                            )} */}
 
                             {/* Enhanced decorative background elements */}
                             <div className="absolute inset-0 opacity-20">
@@ -330,119 +341,224 @@ export default function HocTuMoiPage() {
                                     </div>
                                 </div>
                             ) : (
-                                /* Learning Path */
-                                <div className="relative h-[500px]">
-                                    {/* Enhanced path line */}
-                                    <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-                                        <defs>
-                                            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" style={{ stopColor: '#8b5cf6', stopOpacity: 0.6 }} />
-                                                <stop offset="50%" style={{ stopColor: '#ec4899', stopOpacity: 0.6 }} />
-                                                <stop offset="100%" style={{ stopColor: '#f59e0b', stopOpacity: 0.6 }} />
-                                            </linearGradient>
-                                        </defs>
-                                        <path
-                                            d="M 50% 8% Q 30% 25% 45% 40% T 55% 60% Q 40% 75% 50% 92%"
-                                            stroke="url(#pathGradient)"
-                                            strokeWidth="6"
-                                            fill="none"
-                                            strokeDasharray="15,8"
-                                            strokeLinecap="round"
-                                        />
-                                    </svg>
+                                /* Learning Path - Scrollable with dynamic height */
+                                <div
+                                    className="relative overflow-y-auto overflow-x-hidden"
+                                    style={{
+                                        height: '600px',
+                                        scrollBehavior: 'smooth'
+                                    }}
+                                >
+                                    {/* Dynamic height container based on topic count */}
+                                    <div
+                                        className="relative w-full"
+                                        style={{
+                                            height: `${Math.max(600, minorTopics.length * 120)}px`,
+                                            minHeight: '600px'
+                                        }}
+                                    >
+                                        {/* Enhanced curved path line - extends full height */}
+                                        {(() => {
+                                            const svgHeight = Math.max(600, minorTopics.length * 120 + 60);
+                                            const svgWidth = 600; // Fixed width for viewBox
 
-                                    {/* Decorations */}
-                                    <div className="absolute text-7xl opacity-70 transform transition-transform duration-300 hover:scale-125 drop-shadow-lg" style={{ left: '80%', top: '30%' }}>🌳</div>
-                                    <div className="absolute text-5xl opacity-60 transform transition-transform duration-300 hover:scale-125 drop-shadow-lg" style={{ left: '15%', top: '60%' }}>🌸</div>
-                                    <div className="absolute text-4xl opacity-50 transform transition-transform duration-300 hover:scale-125 drop-shadow-lg" style={{ left: '85%', top: '70%' }}>⭐</div>
-
-                                    {/* Nodes from minor topics */}
-                                    {minorTopics.map((minorTopic, index) => {
-                                        // Calculate positions along the path
-                                        const positions = [
-                                            { x: 50, y: 8 },
-                                            { x: 35, y: 28 },
-                                            { x: 55, y: 48 },
-                                            { x: 45, y: 68 },
-                                            { x: 50, y: 88 },
-                                        ];
-                                        const pos = positions[index % positions.length];
-                                        const showTooltipOnLeft = pos.x > 50;
-
-                                        return (
-                                            <div
-                                                key={minorTopic.id}
-                                                className="absolute group"
-                                                style={{
-                                                    left: `${pos.x}%`,
-                                                    top: `${pos.y}%`,
-                                                    transform: "translate(-50%, -50%)",
-                                                    zIndex: 10,
-                                                }}
-                                            >
-                                                {/* Node Circle */}
-                                                <div
-                                                    className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl cursor-pointer transform transition-all duration-300 hover:scale-125 border-4 border-white ${minorTopic.completed
-                                                        ? "bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600"
-                                                        : "bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500"
-                                                        }`}
+                                            return (
+                                                <svg
+                                                    className="absolute inset-0 w-full"
+                                                    style={{
+                                                        zIndex: 1,
+                                                        height: `${svgHeight}px`
+                                                    }}
+                                                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                                                    preserveAspectRatio="xMidYMid meet"
                                                 >
-                                                    {minorTopic.completed ? (
-                                                        <span className="text-4xl text-white drop-shadow-lg">✓</span>
-                                                    ) : (
-                                                        <span className="text-3xl drop-shadow-lg">{minorTopic.icon || "�"}</span>
-                                                    )}
-                                                </div>
+                                                    <defs>
+                                                        <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                            <stop offset="0%" style={{ stopColor: '#c4b5fd', stopOpacity: 0.9 }} />
+                                                            <stop offset="50%" style={{ stopColor: '#f9a8d4', stopOpacity: 0.9 }} />
+                                                            <stop offset="100%" style={{ stopColor: '#fcd34d', stopOpacity: 0.9 }} />
+                                                        </linearGradient>
+                                                        <linearGradient id="completedPathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                            <stop offset="0%" style={{ stopColor: '#34d399', stopOpacity: 1 }} />
+                                                            <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                                                        </linearGradient>
+                                                    </defs>
 
-                                                {/* Lesson number badge */}
-                                                <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg border-2 border-white">
-                                                    {index + 1}
-                                                </div>
+                                                    {/* Background path (chưa hoàn thành) */}
+                                                    <path
+                                                        d={minorTopics.map((_, idx) => {
+                                                            const y = 60 + idx * 120;
+                                                            const x = idx % 2 === 0 ? svgWidth * 0.35 : svgWidth * 0.65;
 
-                                                {/* Tooltip */}
-                                                <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[100] ${showTooltipOnLeft ? 'right-full mr-6' : 'left-full ml-6'}`}>
-                                                    <div className="bg-white rounded-xl shadow-2xl p-4 w-[200px] border-2 border-purple-200 backdrop-blur-sm">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow">
-                                                                <span className="text-lg">{minorTopic.icon || "�"}</span>
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h4 className="font-bold text-gray-800 text-sm truncate">
-                                                                    {minorTopic.name}
-                                                                </h4>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                                                            {minorTopic.description || "Bài học từ vựng"}
-                                                        </p>
-                                                        <div className="space-y-1 text-xs">
-                                                            <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                                                                <span className="text-gray-700">Từ vựng:</span>
-                                                                <span className="font-bold text-blue-600">
-                                                                    {minorTopic.vocabulary_count || 0} từ
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                                                                <span className="text-gray-700">Trạng thái:</span>
-                                                                <span className={`font-bold ${minorTopic.completed ? "text-green-600" : "text-orange-600"}`}>
-                                                                    {minorTopic.completed ? "✓ Xong" : "⏳ Chưa học"}
-                                                                </span>
-                                                            </div>
-                                                        </div>
+                                                            if (idx === 0) return `M ${x} ${y}`;
+
+                                                            const prevY = 60 + (idx - 1) * 120;
+                                                            const prevX = (idx - 1) % 2 === 0 ? svgWidth * 0.35 : svgWidth * 0.65;
+                                                            const midY = (prevY + y) / 2;
+
+                                                            // Smooth S-curve using cubic bezier
+                                                            return `C ${prevX} ${midY} ${x} ${midY} ${x} ${y}`;
+                                                        }).join(' ')}
+                                                        stroke="url(#pathGradient)"
+                                                        strokeWidth="10"
+                                                        fill="none"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    />
+
+                                                    {/* Completed path overlay (đã hoàn thành - màu xanh) */}
+                                                    {(() => {
+                                                        let lastCompletedIdx = -1;
+                                                        for (let i = 0; i < minorTopics.length; i++) {
+                                                            if (minorTopics[i].completed) {
+                                                                lastCompletedIdx = i;
+                                                            } else {
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        if (lastCompletedIdx < 0) return null;
+
+                                                        return (
+                                                            <path
+                                                                d={minorTopics.slice(0, lastCompletedIdx + 1).map((_, idx) => {
+                                                                    const y = 60 + idx * 120;
+                                                                    const x = idx % 2 === 0 ? svgWidth * 0.35 : svgWidth * 0.65;
+
+                                                                    if (idx === 0) return `M ${x} ${y}`;
+
+                                                                    const prevY = 60 + (idx - 1) * 120;
+                                                                    const prevX = (idx - 1) % 2 === 0 ? svgWidth * 0.35 : svgWidth * 0.65;
+                                                                    const midY = (prevY + y) / 2;
+
+                                                                    return `C ${prevX} ${midY} ${x} ${midY} ${x} ${y}`;
+                                                                }).join(' ')}
+                                                                stroke="url(#completedPathGradient)"
+                                                                strokeWidth="10"
+                                                                fill="none"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                        );
+                                                    })()}
+                                                </svg>
+                                            );
+                                        })()}
+
+                                        {/* Repeating decorations every 5 items */}
+                                        {minorTopics.filter((_, i) => i % 5 === 0).map((_, groupIndex) => (
+                                            <React.Fragment key={`deco-${groupIndex}`}>
+                                                <div
+                                                    className="absolute text-6xl opacity-50 pointer-events-none"
+                                                    style={{ left: '85%', top: `${groupIndex * 600 + 150}px` }}
+                                                >
+                                                    🌳
+                                                </div>
+                                                <div
+                                                    className="absolute text-4xl opacity-40 pointer-events-none"
+                                                    style={{ left: '10%', top: `${groupIndex * 600 + 350}px` }}
+                                                >
+                                                    🌸
+                                                </div>
+                                                <div
+                                                    className="absolute text-3xl opacity-40 pointer-events-none"
+                                                    style={{ left: '90%', top: `${groupIndex * 600 + 500}px` }}
+                                                >
+                                                    ⭐
+                                                </div>
+                                            </React.Fragment>
+                                        ))}
+
+                                        {/* Nodes from minor topics */}
+                                        {minorTopics.map((minorTopic, index) => {
+                                            // Calculate positions: zigzag pattern
+                                            const y = 60 + index * 120; // 120px spacing between nodes
+                                            const x = index % 2 === 0 ? 35 : 65; // Alternate left/right
+                                            const showTooltipOnLeft = x > 50;
+
+                                            return (
+                                                <div
+                                                    key={minorTopic.id}
+                                                    className="absolute group cursor-pointer"
+                                                    style={{
+                                                        left: `${x}%`,
+                                                        top: `${y}px`,
+                                                        transform: "translate(-50%, -50%)",
+                                                        zIndex: hoveredNodeId === minorTopic.id ? 9999 : 10,
+                                                    }}
+                                                    onMouseEnter={() => setHoveredNodeId(minorTopic.id)}
+                                                    onMouseLeave={() => setHoveredNodeId(null)}
+                                                    onClick={() => router.push(`/vocabulary?minorTopicId=${minorTopic.id}&topicName=${encodeURIComponent(minorTopic.name)}&courseId=${courseId}`)}
+                                                >
+                                                    {/* Node Circle */}
+                                                    <div
+                                                        className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl cursor-pointer transform transition-all duration-300 hover:scale-125 border-4 border-white ${minorTopic.completed
+                                                            ? "bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600"
+                                                            : "bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500"
+                                                            }`}
+                                                    >
+                                                        {minorTopic.completed ? (
+                                                            <span className="text-4xl text-white drop-shadow-lg">✓</span>
+                                                        ) : (
+                                                            <span className="text-3xl drop-shadow-lg">{minorTopic.icon || "📖"}</span>
+                                                        )}
                                                     </div>
-                                                    {/* Arrow */}
-                                                    <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-purple-200 transform rotate-45 ${showTooltipOnLeft ? 'left-full ml-[-8px] border-r-0 border-t-0' : 'right-full mr-[-8px] border-l-0 border-b-0'}`}></div>
+
+                                                    {/* Lesson number badge */}
+                                                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg border-2 border-white">
+                                                        {index + 1}
+                                                    </div>
+
+                                                    {/* Tooltip */}
+                                                    <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[9999] ${showTooltipOnLeft ? 'right-full mr-6' : 'left-full ml-6'}`}>
+                                                        <div className="bg-white rounded-xl shadow-2xl p-4 w-[200px] border-2 border-purple-200 backdrop-blur-sm">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow">
+                                                                    <span className="text-lg">{minorTopic.icon || "📖"}</span>
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="font-bold text-gray-800 text-sm truncate">
+                                                                        {minorTopic.name}
+                                                                    </h4>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                                                {minorTopic.description || "Bài học từ vựng"}
+                                                            </p>
+                                                            <div className="space-y-1 text-xs">
+                                                                <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
+                                                                    <span className="text-gray-700">Từ vựng:</span>
+                                                                    <span className="font-bold text-blue-600">
+                                                                        {minorTopic.vocabulary_count || 0} từ
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                                                                    <span className="text-gray-700">Trạng thái:</span>
+                                                                    <span className={`font-bold ${minorTopic.completed ? "text-green-600" : "text-orange-600"}`}>
+                                                                        {minorTopic.completed ? "✓ Xong" : "⏳ Chưa học"}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <button className="w-full mt-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold py-2 rounded-lg hover:shadow-lg transition-all">
+                                                                Bắt đầu học →
+                                                            </button>
+                                                        </div>
+                                                        {/* Arrow */}
+                                                        <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-purple-200 transform rotate-45 ${showTooltipOnLeft ? 'left-full ml-[-8px] border-r-0 border-t-0' : 'right-full mr-[-8px] border-l-0 border-b-0'}`}></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Scroll indicator at bottom */}
+                                        {minorTopics.length > 5 && (
+                                            <div className="sticky bottom-4 left-1/2 -translate-x-1/2 w-fit mx-auto bg-white bg-opacity-90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border-2 border-purple-200 z-20">
+                                                <div className="text-purple-600 font-semibold text-sm flex items-center gap-2">
+                                                    <span>Cuộn để xem thêm ({minorTopics.length} bài học)</span>
+                                                    <span className="text-xl animate-bounce">↓</span>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-
-                                    {/* Enhanced scroll hint */}
-                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white bg-opacity-90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border-2 border-purple-200">
-                                        <div className="text-purple-600 font-semibold text-sm flex items-center gap-2 animate-bounce">
-                                            <span>Rê chuột vào các biểu tượng để xem chi tiết</span>
-                                            <span className="text-xl">👆</span>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -474,11 +590,22 @@ export default function HocTuMoiPage() {
 
                     {/* Leaderboard with Tabs */}
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg p-6 border-2 border-amber-300">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-2xl">🏆</span>
-                            <h3 className="font-bold text-lg bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                                Bảng Xếp Hạng
-                            </h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">🏆</span>
+                                <h3 className="font-bold text-lg bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                                    Bảng Xếp Hạng
+                                </h3>
+                            </div>
+                            {/* Reload Button */}
+                            <button
+                                onClick={handleRefreshLeaderboard}
+                                disabled={leaderboardTab === "score" ? isLoadingCourse : isLoadingStreak}
+                                className="p-1.5 text-gray-400 hover:text-amber-600 transition-all duration-300 disabled:opacity-30"
+                                title="Làm mới bảng xếp hạng"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${(leaderboardTab === "score" ? isLoadingCourse : isLoadingStreak) ? 'animate-spin' : ''}`} />
+                            </button>
                         </div>
 
                         {/* Tabs */}
@@ -486,17 +613,17 @@ export default function HocTuMoiPage() {
                             <button
                                 onClick={() => setLeaderboardTab("score")}
                                 className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-all duration-300 ${leaderboardTab === "score"
-                                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
-                                        : "bg-white text-gray-600 hover:bg-gray-100"
+                                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
+                                    : "bg-white text-gray-600 hover:bg-gray-100"
                                     }`}
                             >
-                                📊 Điểm
+                                ⭐ Điểm
                             </button>
                             <button
                                 onClick={() => setLeaderboardTab("streak")}
                                 className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-all duration-300 ${leaderboardTab === "streak"
-                                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md"
-                                        : "bg-white text-gray-600 hover:bg-gray-100"
+                                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md"
+                                    : "bg-white text-gray-600 hover:bg-gray-100"
                                     }`}
                             >
                                 🔥 Chuỗi học
@@ -519,14 +646,14 @@ export default function HocTuMoiPage() {
                                     <div
                                         key={entry.rank}
                                         className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${entry.isInTop === false && entry.rank > 5
-                                                ? 'bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-blue-400 shadow-md'
-                                                : 'bg-white hover:bg-gray-50'
+                                            ? 'bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-blue-400 shadow-md'
+                                            : 'bg-white hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${entry.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' :
-                                                entry.rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
-                                                    entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                                                        'bg-gray-200 text-gray-700'
+                                            entry.rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
+                                                entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+                                                    'bg-gray-200 text-gray-700'
                                             }`}>
                                             {entry.rank}
                                         </div>

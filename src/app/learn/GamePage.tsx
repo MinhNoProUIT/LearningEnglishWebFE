@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Clock, Trophy, Target, Zap, BookOpen, Star } from "lucide-react";
 import { useGetLevelStatisticsQuery } from "@/services/UserProgressService";
 
@@ -103,6 +103,8 @@ const baseGames = [
 
 export default function MochiHubPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const courseId = searchParams.get("courseId") || "";
     const [hoveredGame, setHoveredGame] = useState<string | null>(null);
 
     // Fetch level statistics from API
@@ -120,7 +122,9 @@ export default function MochiHubPage() {
     }, [levelStats]);
 
     const handleGameClick = (route: string) => {
-        router.push(route);
+        // Pass courseId to game page via URL
+        const gameUrl = courseId ? `${route}?courseId=${courseId}` : route;
+        router.push(gameUrl);
     };
 
     return (
