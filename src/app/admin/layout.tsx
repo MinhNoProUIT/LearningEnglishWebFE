@@ -11,9 +11,12 @@ import {
   ListItemText,
   AppBar,
   Toolbar,
+  Avatar,
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
   Typography,
   IconButton,
-  Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -34,6 +37,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectUser } from "@/redux/slices/authSlice";
 import { useLogoutMutation } from "@/services/AuthService";
+
+const theme = createTheme({
+  typography: {
+    fontFamily: '"Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          fontFamily: '"Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        },
+      },
+    },
+  },
+});
 
 const DRAWER_WIDTH = 280;
 
@@ -378,88 +396,91 @@ export default function AdminLayout({
   );
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* AppBar for mobile */}
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
-          display: { md: "none" },
-          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ display: "flex", minHeight: "100vh" }}>
+        {/* AppBar for mobile */}
+        <AppBar
+          position="fixed"
+          sx={{
+            width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+            ml: { md: `${DRAWER_WIDTH}px` },
+            display: { md: "none" },
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" noWrap component="div" fontWeight={600}>
+              Evolingo Admin
+            </Typography>
+          </Toolbar>
+        </AppBar>
+
+        {/* Sidebar */}
+        <Box
+          component="nav"
+          sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
+        >
+          {/* Mobile drawer */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: "block", md: "none" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
+                width: DRAWER_WIDTH,
+                border: "none",
+              },
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" fontWeight={600}>
-            Evolingo Admin
-          </Typography>
-        </Toolbar>
-      </AppBar>
+            {drawer}
+          </Drawer>
 
-      {/* Sidebar */}
-      <Box
-        component="nav"
-        sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
-      >
-        {/* Mobile drawer */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
+          {/* Desktop drawer */}
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: "none", md: "block" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
+                width: DRAWER_WIDTH,
+                border: "none",
+              },
+            }}
+            open
+          >
+            {drawer}
+          </Drawer>
+        </Box>
+
+        {/* Main content */}
+        <Box
+          component="main"
           sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: DRAWER_WIDTH,
-              border: "none",
-            },
+            flexGrow: 1,
+            p: 3,
+            width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+            mt: { xs: 8, md: 0 },
+            background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
+            minHeight: "100vh",
           }}
         >
-          {drawer}
-        </Drawer>
-
-        {/* Desktop drawer */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: DRAWER_WIDTH,
-              border: "none",
-            },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
+          {children}
+        </Box>
       </Box>
-
-      {/* Main content */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          mt: { xs: 8, md: 0 },
-          background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)",
-          minHeight: "100vh",
-        }}
-      >
-        {children}
-      </Box>
-    </Box>
+    </ThemeProvider>
   );
 }

@@ -1179,8 +1179,9 @@ export default function UserAdminPage() {
             <Typography
               variant="h3"
               sx={{
-                fontWeight: 800,
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                fontWeight: 700,
+                fontSize: "1.875rem",
+                background: "linear-gradient(to right, #2563eb, #9333ea, #db2777)",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -1588,9 +1589,8 @@ export default function UserAdminPage() {
         onConfirm={handleBlockConfirm}
         isLoading={isBlocking}
         title={userToBlock?.is_block ? "Mở khóa tài khoản" : "Khóa tài khoản"}
-        message={`Bạn có chắc chắn muốn ${
-          userToBlock?.is_block ? "mở khóa" : "khóa"
-        } tài khoản này không?`}
+        message={`Bạn có chắc chắn muốn ${userToBlock?.is_block ? "mở khóa" : "khóa"
+          } tài khoản này không?`}
         gradient={
           userToBlock?.is_block
             ? "linear-gradient(135deg, #20C997, #12B886)"

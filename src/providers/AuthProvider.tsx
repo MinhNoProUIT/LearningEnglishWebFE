@@ -63,10 +63,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           );
         } catch (error: any) {
           // 1. Log chi tiết lỗi để debug (dùng JSON.stringify để bung hết object ra)
-          console.error(
-            "Failed to fetch user info (Chi tiết):",
-            JSON.stringify(error, null, 2)
-          );
+          // console.error(
+          //   "Failed to fetch user info (Chi tiết):",
+          //   JSON.stringify(error, null, 2)
+          // );
 
           // 2. Chỉ Logout nếu lỗi liên quan đến xác thực (401 hoặc 403)
           // RTK Query thường trả về object error có dạng { status: number, data: ... }

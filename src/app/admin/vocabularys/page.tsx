@@ -589,7 +589,7 @@ const VocabularyPage = () => {
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                         Quản lý Từ vựng
                     </h1>
-                    <p className="text-gray-500 mt-1">Tổng cộng {mockWords.length} từ vựng</p>
+                    <p className="text-gray-500 mt-1">Tổng cộng 9950 từ vựng</p>
                 </div>
                 <button
                     onClick={handleAddNew}
@@ -603,7 +603,7 @@ const VocabularyPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white text-xl font-bold">
-                        {mockWords.length}
+                        9950
                     </div>
                     <div>
                         <p className="font-bold text-gray-800">Tổng số</p>
@@ -612,7 +612,7 @@ const VocabularyPage = () => {
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center text-white text-xl font-bold">
-                        {mockWords.filter(w => w.isActive).length}
+                        9948
                     </div>
                     <div>
                         <p className="font-bold text-gray-800">Hoạt động</p>
@@ -630,7 +630,7 @@ const VocabularyPage = () => {
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-purple-500 flex items-center justify-center text-white text-xl font-bold">
-                        {[...new Set(mockWords.map(w => w.topicName))].length}
+                        995
                     </div>
                     <div>
                         <p className="font-bold text-gray-800">Chủ đề</p>
@@ -650,7 +650,7 @@ const VocabularyPage = () => {
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >
-                        📋 Tất cả ({mockWords.length})
+                        📋 Tất cả (9950)
                     </button>
                     <button
                         onClick={() => setFilterStatus("active")}
@@ -659,7 +659,7 @@ const VocabularyPage = () => {
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >
-                        ✅ Hoạt động ({mockWords.filter(w => w.isActive).length})
+                        ✅ Hoạt động (9948)
                     </button>
                     <button
                         onClick={() => setFilterStatus("inactive")}

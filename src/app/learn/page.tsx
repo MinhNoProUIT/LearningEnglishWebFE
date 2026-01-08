@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import OnTapPage from "./OnTapPage";
 import HocTuMoiPage from "./HocTuMoiPage";
 import SoTayPage from "./SoTayPage";
 import GamePage from "./GamePage";
 import { useGetMyStreakQuery, useGetCourseLeaderboardQuery, useGetMyTotalScoreQuery } from "@/services/StreakService";
+import { useGetCurrentUserQuery } from "@/services/UserService";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 
@@ -23,6 +25,9 @@ export default function VocabularyApp() {
 
   // Fetch user's total score across all courses
   const { data: totalScoreData } = useGetMyTotalScoreQuery();
+
+  // Fetch current user info
+  const { data: currentUserData } = useGetCurrentUserQuery();
 
   // Fetch course leaderboard to get user's score
   const { data: courseLeaderboard } = useGetCourseLeaderboardQuery(
@@ -76,9 +81,11 @@ export default function VocabularyApp() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent tracking-tight">
-                  Evolingo
-                </span>
+                <Link href="/home">
+                  <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent tracking-tight cursor-pointer hover:opacity-80 transition-opacity">
+                    Evolingo
+                  </span>
+                </Link>
                 <span className="text-[10px] font-semibold text-gray-500 -mt-1">Learn & Grow</span>
               </div>
             </div>
@@ -132,7 +139,7 @@ export default function VocabularyApp() {
 
               {/* Username */}
               <span className="text-sm font-bold bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 bg-clip-text text-transparent">
-                Trần Văn Minh
+                {currentUserData?.fullname || currentUserData?.username || "User"}
               </span>
 
               {/* Avatar with status indicator */}

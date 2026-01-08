@@ -12,6 +12,31 @@ interface CreatePaymentResponse {
     Message: string;
 }
 
+interface User {
+    id: string;
+    username: string;
+    email: string;
+    avatar?: string;
+}
+
+export interface Transaction {
+    id: string;
+    user_id: string;
+    amount: number;
+    created_date: string;
+    order_code: string;
+    status: string;
+    paid_at: string | null;
+    description: string | null;
+    users?: User;
+}
+
+interface GetAllTransactionsResponse {
+    Success: boolean;
+    Data: Transaction[];
+    Message: string;
+}
+
 export const paymentApi = createApi({
     reducerPath: "paymentApi",
     baseQuery: createBaseQuery(apiPath),
@@ -26,7 +51,13 @@ export const paymentApi = createApi({
                 body,
             }),
         }),
+        getAllTransactions: builder.query<GetAllTransactionsResponse, void>({
+            query: () => ({
+                url: "/getAll",
+                method: "GET",
+            }),
+        }),
     }),
 });
 
-export const { useCreateCoursePaymentMutation } = paymentApi;
+export const { useCreateCoursePaymentMutation, useGetAllTransactionsQuery } = paymentApi;

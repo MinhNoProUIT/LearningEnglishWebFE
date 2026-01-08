@@ -5,24 +5,24 @@ import * as echarts from "echarts";
 
 // ==================== MOCK DATA ====================
 const mockStats = {
-  totalCourses: 8,
-  totalMajorTopics: 24,
-  totalMinorTopics: 156,
-  totalWords: 4852,
-  totalUsers: 1234,
-  wordsLearnedToday: 328,
-  activeUsersToday: 89,
-  completionRate: 67.5,
+  totalCourses: 6,
+  totalMajorTopics: 12,
+  totalMinorTopics: 995,
+  totalWords: 9950,
+  totalUsers: 15,
+  wordsLearnedToday: 1392000,
+  activeUsersToday: 15,
+  completionRate: 5.5,
 };
 
 const mockTrendData = [
-  { date: "T2", users: 65, words: 120 },
-  { date: "T3", users: 78, words: 145 },
-  { date: "T4", users: 82, words: 168 },
-  { date: "T5", users: 95, words: 210 },
-  { date: "T6", users: 110, words: 285 },
-  { date: "T7", users: 125, words: 320 },
-  { date: "CN", users: 89, words: 198 },
+  { date: "T2", users: 6, words: 62 },
+  { date: "T3", users: 7, words: 78 },
+  { date: "T4", users: 8, words: 82 },
+  { date: "T5", users: 10, words: 95 },
+  { date: "T6", users: 9, words: 110 },
+  { date: "T7", users: 14, words: 125 },
+  { date: "CN", users: 15, words: 198 },
 ];
 
 const mockCourseDistribution = [
@@ -36,47 +36,47 @@ const mockCourseDistribution = [
 // Revenue data by month, quarter, year
 const mockRevenueData = {
   monthly: [
-    { name: 'T1', value: 12500000 },
-    { name: 'T2', value: 15800000 },
-    { name: 'T3', value: 18200000 },
-    { name: 'T4', value: 14300000 },
-    { name: 'T5', value: 21500000 },
-    { name: 'T6', value: 25800000 },
-    { name: 'T7', value: 28900000 },
-    { name: 'T8', value: 32100000 },
-    { name: 'T9', value: 27600000 },
-    { name: 'T10', value: 35200000 },
-    { name: 'T11', value: 38500000 },
-    { name: 'T12', value: 45800000 },
+    { name: 'T1', value: 1392000 },
+    { name: 'T2', value: 0 },
+    { name: 'T3', value: 0 },
+    { name: 'T4', value: 0 },
+    { name: 'T5', value: 0 },
+    { name: 'T6', value: 0 },
+    { name: 'T7', value: 0 },
+    { name: 'T8', value: 0 },
+    { name: 'T9', value: 0 },
+    { name: 'T10', value: 0 },
+    { name: 'T11', value: 0 },
+    { name: 'T12', value: 0 },
   ],
   quarterly: [
-    { name: 'Q1', value: 46500000 },
-    { name: 'Q2', value: 61600000 },
-    { name: 'Q3', value: 88600000 },
-    { name: 'Q4', value: 119500000 },
+    { name: 'Q1', value: 1392000 },
+    { name: 'Q2', value: 0 },
+    { name: 'Q3', value: 0 },
+    { name: 'Q4', value: 0 },
   ],
   yearly: [
-    { name: '2022', value: 186000000 },
-    { name: '2023', value: 245000000 },
-    { name: '2024', value: 316200000 },
-    { name: '2025', value: 420000000 },
+    { name: '2023', value: 0 },
+    { name: '2024', value: 0 },
+    { name: '2025', value: 3900000 },
+    { name: '2026', value: 1392000 },
   ],
 };
 
 const mockRecentActivities = [
-  { id: 1, action: "Thêm từ vựng", detail: "50 từ mới vào chủ đề 'Động vật'", time: "5 phút trước", type: "add" },
+  { id: 1, action: "Thêm từ vựng", detail: "10 từ mới vào chủ đề 'Động vật'", time: "5 phút trước", type: "add" },
   { id: 2, action: "Người dùng mới", detail: "nguyenvana@gmail.com đã đăng ký", time: "15 phút trước", type: "user" },
-  { id: 3, action: "Hoàn thành khóa học", detail: "12 người hoàn thành TOEIC 450", time: "1 giờ trước", type: "complete" },
+  { id: 3, action: "Hoàn thành khóa học", detail: "1 người đăng ký TOEIC 450", time: "1 giờ trước", type: "complete" },
   { id: 4, action: "Cập nhật chủ đề", detail: "Sửa đổi chủ đề 'Thực vật'", time: "2 giờ trước", type: "edit" },
-  { id: 5, action: "Thêm khóa học", detail: "Thêm khóa học IELTS 6.0", time: "3 giờ trước", type: "add" },
+  { id: 5, action: "Thêm khóa học", detail: "Thêm khóa học IELTS 6.5", time: "3 giờ trước", type: "add" },
 ];
 
 const mockTopTopics = [
-  { name: "Động vật", learners: 456, words: 120 },
-  { name: "Thực vật", learners: 389, words: 85 },
-  { name: "Business", learners: 342, words: 200 },
-  { name: "Daily life", learners: 298, words: 150 },
-  { name: "Con người", learners: 256, words: 156 },
+  { name: "Động vật", learners: 12, words: 10 },
+  { name: "Thực vật", learners: 13, words: 10 },
+  { name: "Business", learners: 12, words: 10 },
+  { name: "Daily life", learners: 9, words: 10 },
+  { name: "Con người", learners: 5, words: 10 },
 ];
 
 // ==================== STAT CARD COMPONENT ====================
@@ -382,12 +382,14 @@ const AdminDashboard = () => {
           title="Tổng người dùng"
           value={mockStats.totalUsers}
           icon="👥"
+          trend={{ value: 100, isUp: true }}
+
           color="text-indigo-600"
           bgColor="bg-gradient-to-br from-indigo-50 to-indigo-100"
         />
         <StatCard
-          title="Từ học hôm nay"
-          value={mockStats.wordsLearnedToday}
+          title="Tổng số tiền thu vào"
+          value={mockStats.wordsLearnedToday.toLocaleString('vi-VN') + " VND"}
           icon="🎯"
           trend={{ value: 18, isUp: true }}
           color="text-pink-600"
@@ -490,7 +492,7 @@ const AdminDashboard = () => {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
-                        style={{ width: `${Math.min((topic.learners / 500) * 100, 100)}%` }}
+                        style={{ width: `100%` }}
                       />
                     </div>
                   </td>

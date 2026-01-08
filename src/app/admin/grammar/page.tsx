@@ -490,7 +490,8 @@ export default function GrammarAdminPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              fontSize: "1.875rem",
+              background: "linear-gradient(to right, #2563eb, #9333ea, #db2777)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",

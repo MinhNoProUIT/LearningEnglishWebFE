@@ -1614,8 +1614,8 @@ export default function GrammarDetailPage() {
                               quiz.difficulty === "easy"
                                 ? "linear-gradient(135deg, #20C997 0%, #12B886 100%)"
                                 : quiz.difficulty === "medium"
-                                ? "linear-gradient(135deg, #F59F00 0%, #F76707 100%)"
-                                : "linear-gradient(135deg, #FA5252 0%, #E03131 100%)",
+                                  ? "linear-gradient(135deg, #F59F00 0%, #F76707 100%)"
+                                  : "linear-gradient(135deg, #FA5252 0%, #E03131 100%)",
                           }}
                         />
                         <CardContent sx={{ p: 2.5 }}>
@@ -1628,14 +1628,14 @@ export default function GrammarDetailPage() {
                                   quiz.difficulty === "easy"
                                     ? alpha("#20C997", 0.15)
                                     : quiz.difficulty === "medium"
-                                    ? alpha("#F59F00", 0.15)
-                                    : alpha("#FA5252", 0.15),
+                                      ? alpha("#F59F00", 0.15)
+                                      : alpha("#FA5252", 0.15),
                                 color:
                                   quiz.difficulty === "easy"
                                     ? "#20C997"
                                     : quiz.difficulty === "medium"
-                                    ? "#F59F00"
-                                    : "#FA5252",
+                                      ? "#F59F00"
+                                      : "#FA5252",
                                 fontWeight: 700,
                                 fontSize: 14,
                               }}
@@ -1652,14 +1652,14 @@ export default function GrammarDetailPage() {
                                       quiz.difficulty === "easy"
                                         ? alpha("#20C997", 0.15)
                                         : quiz.difficulty === "medium"
-                                        ? alpha("#F59F00", 0.15)
-                                        : alpha("#FA5252", 0.15),
+                                          ? alpha("#F59F00", 0.15)
+                                          : alpha("#FA5252", 0.15),
                                     color:
                                       quiz.difficulty === "easy"
                                         ? "#20C997"
                                         : quiz.difficulty === "medium"
-                                        ? "#F59F00"
-                                        : "#FA5252",
+                                          ? "#F59F00"
+                                          : "#FA5252",
                                     fontWeight: 600,
                                   }}
                                 />
@@ -1754,8 +1754,8 @@ export default function GrammarDetailPage() {
           deleteTarget?.type === "rule"
             ? (deleteTarget.item as IGrammarRule).title
             : deleteTarget?.type === "video"
-            ? (deleteTarget.item as IGrammarVideo).title
-            : (deleteTarget?.item as IGrammarQuiz)?.question
+              ? (deleteTarget.item as IGrammarVideo).title
+              : (deleteTarget?.item as IGrammarQuiz)?.question
         }
       />
 

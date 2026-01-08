@@ -20,14 +20,14 @@ interface User {
 }
 
 const mockUsers: User[] = [
-    { id: 1, name: "Nguyễn Văn An", email: "an.nguyen@email.com", avatar: "👨‍💼", totalWords: 500, masteredWords: 420, streak: 45, points: 12500, studyTime: 1200, lastActive: "2 giờ trước", joinDate: "2024-01-15", level: "Advanced" },
-    { id: 2, name: "Trần Thị Bình", email: "binh.tran@email.com", avatar: "👩‍💻", totalWords: 450, masteredWords: 380, streak: 32, points: 10800, studyTime: 980, lastActive: "1 giờ trước", joinDate: "2024-02-20", level: "Intermediate" },
-    { id: 3, name: "Lê Hoàng Cường", email: "cuong.le@email.com", avatar: "👨‍🎓", totalWords: 600, masteredWords: 520, streak: 60, points: 15200, studyTime: 1500, lastActive: "30 phút trước", joinDate: "2024-01-05", level: "Advanced" },
-    { id: 4, name: "Phạm Minh Duy", email: "duy.pham@email.com", avatar: "👨‍🔬", totalWords: 300, masteredWords: 180, streak: 12, points: 5400, studyTime: 450, lastActive: "1 ngày trước", joinDate: "2024-03-10", level: "Beginner" },
-    { id: 5, name: "Hoàng Thu Hà", email: "ha.hoang@email.com", avatar: "👩‍🎨", totalWords: 550, masteredWords: 450, streak: 38, points: 11800, studyTime: 1100, lastActive: "3 giờ trước", joinDate: "2024-02-01", level: "Intermediate" },
-    { id: 6, name: "Vũ Đức Minh", email: "minh.vu@email.com", avatar: "👨‍💻", totalWords: 400, masteredWords: 320, streak: 25, points: 8900, studyTime: 780, lastActive: "5 giờ trước", joinDate: "2024-02-28", level: "Intermediate" },
-    { id: 7, name: "Ngô Thị Linh", email: "linh.ngo@email.com", avatar: "👩‍🏫", totalWords: 700, masteredWords: 650, streak: 90, points: 18500, studyTime: 2100, lastActive: "15 phút trước", joinDate: "2023-12-01", level: "Expert" },
-    { id: 8, name: "Đặng Quốc Bảo", email: "bao.dang@email.com", avatar: "👨‍🚀", totalWords: 280, masteredWords: 150, streak: 8, points: 4200, studyTime: 320, lastActive: "2 ngày trước", joinDate: "2024-04-01", level: "Beginner" },
+    { id: 1, name: "Nguyễn Văn An", email: "an.nguyen@email.com", avatar: "👨‍💼", totalWords: 500, masteredWords: 420, streak: 5, points: 50, studyTime: 1200, lastActive: "2 giờ trước", joinDate: "2024-01-15", level: "Advanced" },
+    { id: 2, name: "Trần Thị Bình", email: "binh.tran@email.com", avatar: "👩‍💻", totalWords: 450, masteredWords: 380, streak: 3, points: 35, studyTime: 980, lastActive: "1 giờ trước", joinDate: "2024-02-20", level: "Intermediate" },
+    { id: 3, name: "Lê Hoàng Cường", email: "cuong.le@email.com", avatar: "👨‍🎓", totalWords: 600, masteredWords: 520, streak: 3, points: 35, studyTime: 1500, lastActive: "30 phút trước", joinDate: "2024-01-05", level: "Advanced" },
+    { id: 4, name: "Phạm Minh Duy", email: "duy.pham@email.com", avatar: "👨‍🔬", totalWords: 300, masteredWords: 180, streak: 3, points: 30, studyTime: 450, lastActive: "1 ngày trước", joinDate: "2024-03-10", level: "Beginner" },
+    { id: 5, name: "Hoàng Thu Hà", email: "ha.hoang@email.com", avatar: "👩‍🎨", totalWords: 550, masteredWords: 450, streak: 2, points: 15, studyTime: 1100, lastActive: "3 giờ trước", joinDate: "2024-02-01", level: "Intermediate" },
+    { id: 6, name: "Vũ Đức Minh", email: "minh.vu@email.com", avatar: "👨‍💻", totalWords: 400, masteredWords: 320, streak: 2, points: 15, studyTime: 780, lastActive: "5 giờ trước", joinDate: "2024-02-28", level: "Intermediate" },
+    { id: 7, name: "Ngô Thị Linh", email: "linh.ngo@email.com", avatar: "👩‍🏫", totalWords: 700, masteredWords: 650, streak: 2, points: 10, studyTime: 2100, lastActive: "15 phút trước", joinDate: "2023-12-01", level: "Expert" },
+    { id: 8, name: "Đặng Quốc Bảo", email: "bao.dang@email.com", avatar: "👨‍🚀", totalWords: 280, masteredWords: 150, streak: 2, points: 5, studyTime: 320, lastActive: "2 ngày trước", joinDate: "2024-04-01", level: "Beginner" },
 ];
 
 // Heatmap data - Study time by day of week and hour
@@ -39,10 +39,10 @@ const hours = ['6h', '7h', '8h', '9h', '10h', '11h', '12h', '13h', '14h', '15h',
 days.forEach((day, dayIdx) => {
     hours.forEach((hour, hourIdx) => {
         // Peak hours: 7-9h (morning), 19-21h (evening)
-        let value = Math.floor(Math.random() * 30) + 10;
-        if (hourIdx >= 1 && hourIdx <= 3) value += 40; // Morning peak 7-9h
-        if (hourIdx >= 13 && hourIdx <= 15) value += 60; // Evening peak 19-21h
-        if (dayIdx >= 5) value += 20; // Weekend bonus
+        let value = Math.floor(Math.random() * 3);
+        if (hourIdx >= 1 && hourIdx <= 3) value += 4; // Morning peak 7-9h
+        if (hourIdx >= 13 && hourIdx <= 15) value += 6; // Evening peak 19-21h
+        if (dayIdx >= 5) value += 5; // Weekend bonus
         mockHeatmapData.push([dayIdx, hourIdx, value]);
     });
 });
@@ -425,8 +425,8 @@ const UserProgressPage = () => {
     };
 
     // Stats
-    const totalUsers = mockUsers.length;
-    const avgStreak = Math.round(mockUsers.reduce((sum, u) => sum + u.streak, 0) / totalUsers);
+    const totalUsers = 15;
+    const avgStreak = 3.2;
     const avgProgress = Math.round(mockUsers.reduce((sum, u) => sum + (u.masteredWords / u.totalWords) * 100, 0) / totalUsers);
     const activeToday = mockUsers.filter(u => u.lastActive.includes("phút") || u.lastActive.includes("giờ")).length;
 
@@ -636,12 +636,12 @@ const UserProgressPage = () => {
                         <StudyTimeHeatmap />
                     </div>
 
-                    {/* Sankey Diagram */}
+                    {/* Sankey Diagram
                     <div className="bg-white rounded-2xl shadow-lg p-6">
                         <h3 className="text-xl font-bold text-gray-800 mb-2">🗺️ Sankey Diagram - Luồng học tập</h3>
                         <p className="text-gray-500 text-sm mb-4">Người dùng di chuyển qua các khóa học và chủ đề như thế nào</p>
                         <SankeyDiagram />
-                    </div>
+                    </div> */}
                 </div>
             )}
 

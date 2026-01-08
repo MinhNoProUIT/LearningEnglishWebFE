@@ -1017,12 +1017,12 @@ const SectionCard: React.FC<SectionCardProps> = ({
         if (options && options.length > 0) {
           try {
             await replaceAllOptions({
-                questionId: editingQuestion.id,
-                options,
+              questionId: editingQuestion.id,
+              options,
             }).unwrap();
           } catch (optErr: any) {
-             console.error("Option update failed:", optErr);
-             throw optErr;
+            console.error("Option update failed:", optErr);
+            throw optErr;
           }
         }
         showToast("Cập nhật câu hỏi thành công!", "success");
@@ -1236,9 +1236,8 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-[10002] px-6 py-4 rounded-xl shadow-2xl text-white transform transition-all duration-300 animate-slide-up flex items-center gap-3 ${
-        type === "success" ? "bg-green-600" : "bg-red-600"
-      }`}
+      className={`fixed bottom-4 right-4 z-[10002] px-6 py-4 rounded-xl shadow-2xl text-white transform transition-all duration-300 animate-slide-up flex items-center gap-3 ${type === "success" ? "bg-green-600" : "bg-red-600"
+        }`}
     >
       <span className="text-xl">{type === "success" ? "✅" : "⚠️"}</span>
       <p className="font-medium">{message}</p>
@@ -1293,7 +1292,7 @@ export default function ExamDetailPage({
 
   // Queries & Mutations
   const { data: exam, isLoading: isExamLoading } = useAdminGetExamByIdQuery(id);
-  
+
   // Sections
   const { data: sections, refetch: refetchSections } =
     useGetSectionsByExamIdQuery(id);
@@ -1447,15 +1446,15 @@ export default function ExamDetailPage({
 
       // 2. Save Options (if provided)
       if (editingQuestion && options) {
-         try {
-            await replaceAllOptions({
-                questionId: savedQuestion.id,
-                options: options,
-            }).unwrap();
-         } catch (optErr: any) {
-             console.error("Option update failed:", optErr);
-             throw optErr;
-         }
+        try {
+          await replaceAllOptions({
+            questionId: savedQuestion.id,
+            options: options,
+          }).unwrap();
+        } catch (optErr: any) {
+          console.error("Option update failed:", optErr);
+          throw optErr;
+        }
       }
 
       showToast(editingQuestion ? "Cập nhật câu hỏi thành công!" : "Thêm câu hỏi mới thành công!", "success");
@@ -1531,11 +1530,10 @@ export default function ExamDetailPage({
               {exam.title}
             </h1>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                exam.is_active
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${exam.is_active
                   ? "bg-green-100 text-green-700"
                   : "bg-gray-100 text-gray-700"
-              }`}
+                }`}
             >
               {exam.is_active ? "Hoạt động" : "Ẩn"}
             </span>
@@ -1579,12 +1577,12 @@ export default function ExamDetailPage({
                   setIsSectionModalOpen(true);
                 }}
                 onDelete={() => {
-                    setDeleteData({
-                        type: "section",
-                        id: section.id,
-                        title: section.title || "Phần thi không tên"
-                    });
-                    setIsDeleteModalOpen(true);
+                  setDeleteData({
+                    type: "section",
+                    id: section.id,
+                    title: section.title || "Phần thi không tên"
+                  });
+                  setIsDeleteModalOpen(true);
                 }}
               />
             ))}
@@ -1620,20 +1618,19 @@ export default function ExamDetailPage({
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title={`Xóa ${
-          deleteData?.type === "section"
+        title={`Xóa ${deleteData?.type === "section"
             ? "phần thi"
             : deleteData?.type === "group"
-            ? "nhóm"
-            : "câu hỏi"
+            "nhóm"
+      "câu hỏi"
         }`}
-        message={`Bạn có chắc chắn muốn xóa "${deleteData?.title}"? Hành động này không thể hoàn tác.`}
-        onConfirm={() => {
-            if (deleteData?.type === "section") handleDeleteSection();
-            else if (deleteData?.type === "group") handleDeleteGroup();
-            else if (deleteData?.type === "question") handleDeleteQuestion();
-        }}
-        isLoading={isDeletingSection || isDeletingGroup || isDeletingQuestion}
+      message={`Bạn có chắc chắn muốn xóa "${deleteData?.title}"? Hành động này không thể hoàn tác.`}
+      onConfirm={() => {
+        if (deleteData?.type === "section") handleDeleteSection();
+        else if (deleteData?.type === "group") handleDeleteGroup();
+        else if (deleteData?.type === "question") handleDeleteQuestion();
+      }}
+      isLoading={isDeletingSection || isDeletingGroup || isDeletingQuestion}
       />
     </div>
   );

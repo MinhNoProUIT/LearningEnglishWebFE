@@ -73,16 +73,26 @@ export default function HomePage() {
   ];
 
   const recentActivities = [
-    { type: "test", title: "TOEIC Full Test 3", score: "875/990", date: "Hôm nay" },
-    { type: "vocab", title: "Business Vocabulary", words: 50, date: "Hôm qua" },
-    { type: "grammar", title: "Conditional Sentences", progress: 80, date: "2 ngày trước" },
+    {
+      type: "test",
+      title: "TOEIC Full Test 84",
+      score: "15/990",
+      date: "Hôm nay",
+    },
+    { type: "vocab", title: "Business Vocabulary", words: 10, date: "Hôm qua" },
+    {
+      type: "grammar",
+      title: "Conditional Sentences",
+      progress: 80,
+      date: "2 ngày trước",
+    },
   ];
 
   const stats = [
-    { label: "Bài test đã làm", value: "24", icon: <Target size={20} /> },
-    { label: "Từ vựng đã học", value: "1,250", icon: <BookOpen size={20} /> },
-    { label: "Streak hiện tại", value: "7 ngày", icon: <Zap size={20} /> },
-    { label: "Điểm cao nhất", value: "875", icon: <Award size={20} /> },
+    { label: "Bài test đã làm", value: "1", icon: <Target size={20} /> },
+    { label: "Từ vựng đã học", value: "46", icon: <BookOpen size={20} /> },
+    { label: "Streak hiện tại", value: "0 ngày", icon: <Zap size={20} /> },
+    { label: "Điểm cao nhất", value: "15", icon: <Award size={20} /> },
   ];
 
   return (
@@ -97,7 +107,11 @@ export default function HomePage() {
         }}
       >
         <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 4 } }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Box>
               <Typography variant="h4" fontWeight={800} color="white" mb={1}>
                 Xin chào!
@@ -205,10 +219,19 @@ export default function HomePage() {
                 >
                   {action.icon}
                 </Box>
-                <Typography variant="subtitle1" fontWeight={700} color="grey.900" mb={0.5}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  color="grey.900"
+                  mb={0.5}
+                >
                   {action.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ flex: 1 }}
+                >
                   {action.description}
                 </Typography>
               </Paper>
@@ -229,7 +252,12 @@ export default function HomePage() {
                 bgcolor: "white",
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
                 <Typography variant="h6" fontWeight={700} color="grey.900">
                   Hoạt động gần đây
                 </Typography>
@@ -252,9 +280,17 @@ export default function HomePage() {
                       border: "1px solid #e5e7eb",
                     }}
                   >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Box>
-                        <Typography variant="body2" fontWeight={600} color="grey.900">
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          color="grey.900"
+                        >
                           {activity.title}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">

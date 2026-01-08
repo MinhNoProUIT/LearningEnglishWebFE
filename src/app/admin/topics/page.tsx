@@ -28,12 +28,20 @@ const mockMajorTopics: MajorTopic[] = [
         courseId: 1,
         courseName: "TOEIC 450",
         icon: "📚",
-        totalWords: 456,
+        totalWords: 1000,
         minorTopics: [
-            { id: 101, name: "Động vật", wordCount: 120, difficulty: 1 },
-            { id: 102, name: "Thực vật", wordCount: 85, difficulty: 1 },
-            { id: 103, name: "Đồ vật", wordCount: 95, difficulty: 2 },
-            { id: 104, name: "Con người", wordCount: 156, difficulty: 2 },
+            { id: 101, name: "Động vật", wordCount: 100, difficulty: 1 },
+            { id: 102, name: "Thực vật", wordCount: 100, difficulty: 1 },
+            { id: 103, name: "Đồ vật", wordCount: 100, difficulty: 2 },
+            { id: 104, name: "Con người", wordCount: 100, difficulty: 2 },
+            { id: 105, name: "Bóng đá", wordCount: 100, difficulty: 1 },
+            { id: 106, name: "Thể thao", wordCount: 100, difficulty: 1 },
+            { id: 107, name: "Mua sắm", wordCount: 100, difficulty: 2 },
+            { id: 108, name: "Y tế", wordCount: 100, difficulty: 2 },
+            { id: 109, name: "Học tập", wordCount: 100, difficulty: 1 },
+            { id: 110, name: "Khoa học", wordCount: 100, difficulty: 1 },
+            { id: 111, name: "Giáo dục", wordCount: 100, difficulty: 2 },
+            { id: 112, name: "Thời tiết", wordCount: 100, difficulty: 2 },
         ],
     },
     {
@@ -392,21 +400,21 @@ const TopicsPage = () => {
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl">📁</div>
                     <div>
-                        <p className="text-2xl font-bold text-blue-600">{totalMajor}</p>
+                        <p className="text-2xl font-bold text-blue-600">12</p>
                         <p className="text-gray-500 text-sm">Chủ đề lớn</p>
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl">🏷️</div>
                     <div>
-                        <p className="text-2xl font-bold text-purple-600">{totalMinor}</p>
+                        <p className="text-2xl font-bold text-purple-600">995</p>
                         <p className="text-gray-500 text-sm">Chủ đề nhỏ</p>
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-lg flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">📝</div>
                     <div>
-                        <p className="text-2xl font-bold text-green-600">{totalWords.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-green-600">9950</p>
                         <p className="text-gray-500 text-sm">Tổng từ vựng</p>
                     </div>
                 </div>
