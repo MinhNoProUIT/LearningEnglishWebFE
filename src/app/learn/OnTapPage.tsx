@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import VocabDrilldownChart from "./VocabDrilldownChart";
-import { useGetMyStreakQuery, useCheckInMutation } from "@/services/StreakService";
+import { useGetMyStreakQuery, useCheckInMutation, useGetMyCoinsQuery } from "@/services/StreakService";
 import { useGetLevelStatisticsQuery } from "@/services/UserProgressService";
 
 // Styling for swaying animation
@@ -48,6 +48,9 @@ export default function OnTapPage() {
     // Fetch streak data from API
     const { data: streakData, isLoading } = useGetMyStreakQuery();
     const [checkIn, { isLoading: isCheckingIn }] = useCheckInMutation();
+
+    // Fetch user coins
+    const { data: coinsData, refetch: refetchCoins } = useGetMyCoinsQuery();
 
     // Fetch level statistics to calculate total learned words
     const { data: levelStats = [] } = useGetLevelStatisticsQuery();
@@ -117,6 +120,9 @@ export default function OnTapPage() {
                 setEarnedPoints(points);
                 setShowPointsAnimation(true);
                 setHasCheckedToday(true);
+
+                // Refetch coins to update display
+                refetchCoins();
 
                 // Show points animation for 5 seconds
                 setTimeout(() => {
@@ -342,6 +348,8 @@ export default function OnTapPage() {
                                 </div>
                             </div>
                         </div>
+
+
                     </aside>
                 </div>
             </div>

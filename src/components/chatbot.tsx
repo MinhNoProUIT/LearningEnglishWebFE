@@ -64,7 +64,10 @@ const ChatbotUI = () => {
   // Sync messages from API to local state
   useEffect(() => {
     if (messages.length > 0) {
-      setLocalMessages(messages);
+      // Deduplicate messages by ID to prevent "encountering two children with the same key" error
+      // This can happen if optimistic updates and API updates race or overlap
+      const uniqueMessages = Array.from(new Map(messages.map(m => [m.id, m])).values());
+      setLocalMessages(uniqueMessages);
     }
   }, [messages]);
 

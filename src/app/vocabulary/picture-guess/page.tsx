@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Clock, Trophy, Heart, Lightbulb, BookOpen } from "lucide-react";
-import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
+import { useGetAllWordsByLevelQuery, useUpdateProgressOnGameVictoryMutation } from "@/services/UserProgressService";
 
 // Vocabulary data
 interface VocabularyWord {
@@ -9,6 +10,7 @@ interface VocabularyWord {
     english: string;
     vietnamese: string;
     image: string;
+    originalWordId: string; // Store original word ID for API call
 }
 
 // Helper function to shuffle array and pick N items
@@ -20,6 +22,14 @@ function shuffleAndPick<T>(array: T[], count: number): T[] {
 type GameStatus = "intro" | "playing" | "victory" | "gameover";
 
 export default function PictureGuessGame() {
+    // Get courseId from URL to navigate back
+    const searchParams = useSearchParams();
+    const courseId = searchParams.get("courseId");
+    const returnUrl = courseId ? `/learn?courseId=${courseId}` : "/learn";
+
+    // Mutation for updating progress on game victory
+    const [updateProgressOnGameVictory, { isLoading: isUpdatingProgress }] = useUpdateProgressOnGameVictoryMutation();
+
     // Fetch Level 3 words from API
     const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(3);
 
@@ -32,6 +42,7 @@ export default function PictureGuessGame() {
             english: word.englishname.toUpperCase(),
             vietnamese: word.vietnamesename,
             image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&h=400&fit=crop",
+            originalWordId: word.id, // Keep original ID for API
         }));
 
         return shuffleAndPick(transformed, Math.min(10, transformed.length));
@@ -52,6 +63,25 @@ export default function PictureGuessGame() {
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
+
+    // Update progress when game is won
+    useEffect(() => {
+        if (gameStatus === "victory" && !hasUpdatedProgress && VOCABULARY_DATA.length > 0) {
+            const wordIds = VOCABULARY_DATA.map(w => w.originalWordId);
+
+            // Picture Guess game updates to Level 4 (next review: 14 days)
+            updateProgressOnGameVictory({ wordIds, targetLevel: 4 })
+                .unwrap()
+                .then((result) => {
+                    console.log("✅ Progress updated to level", result.target_level, ":", result);
+                    setHasUpdatedProgress(true);
+                })
+                .catch((error) => {
+                    console.error("❌ Failed to update progress:", error);
+                });
+        }
+    }, [gameStatus, hasUpdatedProgress, VOCABULARY_DATA, updateProgressOnGameVictory]);
 
     // Initialize word
     const initializeWord = (word: VocabularyWord) => {
@@ -453,7 +483,7 @@ export default function PictureGuessGame() {
                                 Chơi lại
                             </button>
                             <button
-                                onClick={() => window.location.href = "/vocabulary"}
+                                onClick={() => window.location.href = returnUrl}
                                 className="flex-1 py-4 border-2 border-white text-white font-bold text-xl rounded-xl hover:bg-white/10 transition-all"
                             >
                                 Về trang chủ
@@ -487,7 +517,7 @@ export default function PictureGuessGame() {
                                 Thử lại
                             </button>
                             <button
-                                onClick={() => window.location.href = "/vocabulary"}
+                                onClick={() => window.location.href = returnUrl}
                                 className="flex-1 py-4 border-2 border-white text-white font-bold text-xl rounded-xl hover:bg-white/10 transition-all"
                             >
                                 Về trang chủ

@@ -65,6 +65,20 @@ import { leaderboardApi } from "@/services/LeaderboardService";
 
 // User Custom Topic API (SoTay)
 import { userCustomTopicApi } from "@/services/UserCustomTopicService";
+// Writing API
+import { writingApi } from "@/services/WritingService";
+
+// Payment API
+import { paymentApi } from "@/services/PaymentService";
+
+// Post API
+import { postApi } from "@/services/PostService";
+
+// Notification API
+import { notificationApi } from "@/services/NotificationService";
+
+// Placement API
+import { placementApi } from "@/services/PlacementService";
 
 export const store = configureStore({
   reducer: {
@@ -119,6 +133,16 @@ export const store = configureStore({
     [leaderboardApi.reducerPath]: leaderboardApi.reducer,
     // User Custom Topic (SoTay)
     [userCustomTopicApi.reducerPath]: userCustomTopicApi.reducer,
+    // Writing API
+    [writingApi.reducerPath]: writingApi.reducer,
+    // Payment
+    [paymentApi.reducerPath]: paymentApi.reducer,
+    // Post
+    [postApi.reducerPath]: postApi.reducer,
+    // Notification
+    [notificationApi.reducerPath]: notificationApi.reducer,
+    // Placement
+    [placementApi.reducerPath]: placementApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -164,7 +188,17 @@ export const store = configureStore({
       // Leaderboard
       leaderboardApi.middleware,
       // User Custom Topic (SoTay)
-      userCustomTopicApi.middleware
+      userCustomTopicApi.middleware,
+      // Writing API
+      writingApi.middleware,
+      // Payment
+      paymentApi.middleware,
+      // Post
+      postApi.middleware,
+      // Notification
+      notificationApi.middleware,
+      // Placement
+      placementApi.middleware
     ),
 });
 

@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Clock, Trophy, Star, Home, Rocket } from "lucide-react";
-import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
+import { useGetAllWordsByLevelQuery, useUpdateProgressOnGameVictoryMutation } from "@/services/UserProgressService";
 
 // Vocabulary data structure
 interface Vocabulary {
@@ -12,6 +13,7 @@ interface Vocabulary {
   example: string;
   exampleTranslation: string;
   image: string;
+  originalWordId: string; // Store original word ID for API call
 }
 
 // Helper function to shuffle array and pick N items
@@ -39,6 +41,14 @@ interface Question {
 }
 
 export default function ReturnToEarthGame() {
+  // Get courseId from URL to navigate back
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get("courseId");
+  const returnUrl = courseId ? `/learn?courseId=${courseId}` : "/learn";
+
+  // Mutation for updating progress on game victory
+  const [updateProgressOnGameVictory, { isLoading: isUpdatingProgress }] = useUpdateProgressOnGameVictoryMutation();
+
   const GRID_SIZE = 8;
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [playerPos, setPlayerPos] = useState({ row: 0, col: 0 });
@@ -49,6 +59,7 @@ export default function ReturnToEarthGame() {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [questionsCorrect, setQuestionsCorrect] = useState(0);
+  const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
 
   // Fetch Level 4 words from API
   const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(4);
@@ -65,10 +76,29 @@ export default function ReturnToEarthGame() {
       example: word.example_sentence || "No example provided.",
       exampleTranslation: "",
       image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=500&fit=crop",
+      originalWordId: word.id, // Keep original ID for API
     }));
 
     return shuffleAndPick(transformed, Math.min(10, transformed.length));
   }, [apiWords]);
+
+  // Update progress when game is won
+  useEffect(() => {
+    if (gameStatus === "victory" && !hasUpdatedProgress && VOCABULARY_DATA.length > 0) {
+      const wordIds = VOCABULARY_DATA.map(w => w.originalWordId);
+
+      // Return to Earth game updates to Level 5 (next review: 30 days)
+      updateProgressOnGameVictory({ wordIds, targetLevel: 5 })
+        .unwrap()
+        .then((result) => {
+          console.log("✅ Progress updated to level", result.target_level, ":", result);
+          setHasUpdatedProgress(true);
+        })
+        .catch((error) => {
+          console.error("❌ Failed to update progress:", error);
+        });
+    }
+  }, [gameStatus, hasUpdatedProgress, VOCABULARY_DATA, updateProgressOnGameVictory]);
 
   // Start game
   const startGame = () => {
@@ -626,7 +656,7 @@ export default function ReturnToEarthGame() {
                 Chơi lại
               </button>
               <button
-                onClick={() => (window.location.href = "/vocabulary")}
+                onClick={() => (window.location.href = returnUrl)}
                 className="flex-1 py-4 border-2 border-white/30 text-white font-bold text-lg rounded-xl hover:bg-white/10 transition-all"
               >
                 Về trang chủ
@@ -670,7 +700,7 @@ export default function ReturnToEarthGame() {
                 Thử lại
               </button>
               <button
-                onClick={() => (window.location.href = "/vocabulary")}
+                onClick={() => (window.location.href = returnUrl)}
                 className="flex-1 py-4 border-2 border-white/30 text-white font-bold text-lg rounded-xl hover:bg-white/10 transition-all"
               >
                 Về trang chủ

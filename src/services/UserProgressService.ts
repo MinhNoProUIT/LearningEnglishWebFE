@@ -186,6 +186,20 @@ export const userProgressApi = createApi({
                 { type: "UserProgress" as const, id: `level-${level}` },
             ],
         }),
+
+        // POST /game-victory - Update progress when game is won
+        updateProgressOnGameVictory: builder.mutation<
+            IGameVictoryResult,
+            { wordIds: string[]; targetLevel?: number; minorTopicId?: string }
+        >({
+            query: ({ wordIds, targetLevel = 2, minorTopicId }) => ({
+                url: "game-victory",
+                method: "POST",
+                body: { word_ids: wordIds, target_level: targetLevel, minor_topic_id: minorTopicId },
+            }),
+            transformResponse: (response: ApiResponse<IGameVictoryResult>) => response.Data,
+            invalidatesTags: ["UserProgress", "LevelStatistics", "MinorTopicProgress"],
+        }),
     }),
 });
 
@@ -209,6 +223,16 @@ export interface IBatchMarkResult {
     topic_progress: IMinorTopicProgress;
 }
 
+export interface IGameVictoryResult {
+    successful: Array<{ word_id: string; success: boolean; new_level: number; next_review_at: string }>;
+    failed: Array<{ word_id: string; success: boolean; error: string }>;
+    total: number;
+    successCount: number;
+    failCount: number;
+    target_level: number;
+    next_review_at: string;
+}
+
 // ==================== EXPORT HOOKS ====================
 export const {
     useGetLevelStatisticsQuery,
@@ -223,4 +247,6 @@ export const {
     useGetMinorTopicProgressQuery,
     useGetMinorTopicsProgressByMajorQuery,
     useBatchMarkWordsAsLearnedMutation,
+    // Game victory hook
+    useUpdateProgressOnGameVictoryMutation,
 } = userProgressApi;

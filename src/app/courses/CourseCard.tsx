@@ -70,6 +70,7 @@ const CourseCard = ({ course, isOwned = false }: CourseCardProps) => {
 
     return (
         <Box
+            onClick={() => router.push(`/courses/${course.id}`)}
             sx={{
                 width: {
                     xs: "100%",

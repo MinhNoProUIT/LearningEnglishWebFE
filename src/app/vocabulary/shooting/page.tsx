@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Volume2, Trophy, Star, Target } from "lucide-react";
 import VocabularyReviewModal from "./VocabularyReviewModal";
-import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
+import { useGetAllWordsByLevelQuery, useUpdateProgressOnGameVictoryMutation } from "@/services/UserProgressService";
 
 // Vocabulary data structure
 interface Vocabulary {
@@ -13,6 +14,7 @@ interface Vocabulary {
     example: string;
     exampleTranslation: string;
     image: string;
+    originalWordId: string; // Store original word ID for API call
 }
 
 // Helper function to shuffle array and pick N items
@@ -54,6 +56,14 @@ interface Bullet {
 type GameState = "start" | "loading" | "playing" | "levelup" | "victory" | "nowords";
 
 export default function VocabularyShootingGame() {
+    // Get courseId from URL to navigate back
+    const searchParams = useSearchParams();
+    const courseId = searchParams.get("courseId");
+    const returnUrl = courseId ? `/learn?courseId=${courseId}` : "/learn";
+
+    // Mutation for updating progress on game victory
+    const [updateProgressOnGameVictory, { isLoading: isUpdatingProgress }] = useUpdateProgressOnGameVictoryMutation();
+
     // Fetch Level 2 words from API
     const { data: apiWords = [], isLoading } = useGetAllWordsByLevelQuery(2);
 
@@ -69,6 +79,7 @@ export default function VocabularyShootingGame() {
             example: word.example_sentence || "No example provided.",
             exampleTranslation: "",
             image: word.image_url || "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=400&h=500&fit=crop",
+            originalWordId: word.id, // Keep original ID for API
         }));
 
         return shuffleAndPick(transformed, Math.min(10, transformed.length));
@@ -84,6 +95,25 @@ export default function VocabularyShootingGame() {
     const [showScorePopup, setShowScorePopup] = useState<{ x: number; y: number; score: number } | null>(null);
     const [answerHistory, setAnswerHistory] = useState<{ wordId: number; isCorrect: boolean }[]>([]);
     const [showReviewModal, setShowReviewModal] = useState(false);
+    const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
+
+    // Update progress when game is won
+    useEffect(() => {
+        if (gameState === "victory" && !hasUpdatedProgress && vocabularyData.length > 0) {
+            const wordIds = vocabularyData.map(w => w.originalWordId);
+
+            // Shooting game updates to Level 3 (next review: 7 days)
+            updateProgressOnGameVictory({ wordIds, targetLevel: 3 })
+                .unwrap()
+                .then((result) => {
+                    console.log("✅ Progress updated to level", result.target_level, ":", result);
+                    setHasUpdatedProgress(true);
+                })
+                .catch((error) => {
+                    console.error("❌ Failed to update progress:", error);
+                });
+        }
+    }, [gameState, hasUpdatedProgress, vocabularyData, updateProgressOnGameVictory]);
 
     // Use refs for game loop state to avoid re-render loops
     const wordBubblesRef = useRef<WordBubble[]>([]);
@@ -811,7 +841,7 @@ export default function VocabularyShootingGame() {
                                 Chơi lại
                             </button>
                             <button
-                                onClick={() => window.location.href = "/vocabulary"}
+                                onClick={() => window.location.href = returnUrl}
                                 className="flex-1 py-4 border-2 border-white/30 text-white font-bold text-lg rounded-xl hover:bg-white/10 transition-all duration-300"
                             >
                                 Về trang chủ

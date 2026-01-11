@@ -1,13 +1,41 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import OnTapPage from "./OnTapPage";
 import HocTuMoiPage from "./HocTuMoiPage";
 import SoTayPage from "./SoTayPage";
 import GamePage from "./GamePage";
+import { useGetMyStreakQuery, useGetCourseLeaderboardQuery, useGetMyTotalScoreQuery } from "@/services/StreakService";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 export default function VocabularyApp() {
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get("courseId") || "";
   const [activePage, setActivePage] = useState("on-tap");
+
+  // Get current user from Redux store
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
+  // Fetch streak data for header
+  const { data: streakData } = useGetMyStreakQuery();
+
+  // Fetch user's total score across all courses
+  const { data: totalScoreData } = useGetMyTotalScoreQuery();
+
+  // Fetch course leaderboard to get user's score
+  const { data: courseLeaderboard } = useGetCourseLeaderboardQuery(
+    { courseId, limit: 100 },
+    { skip: !courseId }
+  );
+
+  // Find current user's score from leaderboard
+  const userCourseScore = useMemo(() => {
+    if (!courseLeaderboard || !currentUser?.id) return 0;
+    const userEntry = courseLeaderboard.find(entry => entry.user_id === currentUser.id);
+    return userEntry?.total_score ?? 0;
+  }, [courseLeaderboard, currentUser?.id]);
 
   // Navigation items
   const navItems = [
@@ -97,9 +125,9 @@ export default function VocabularyApp() {
             <div className="w-80 flex items-center justify-end space-x-4 group">
               {/* User stats badge */}
               <div className="hidden lg:flex items-center space-x-2 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm">
-                <span className="text-xs font-bold text-orange-600">🔥 125</span>
+                <span className="text-xs font-bold text-orange-600">🔥 {streakData?.current_streak ?? 0}</span>
                 <div className="w-1 h-1 bg-orange-400 rounded-full"></div>
-                <span className="text-xs font-bold text-blue-600">⭐ 8750</span>
+                <span className="text-xs font-bold text-blue-600">⭐ {totalScoreData?.total_score ?? 0}</span>
               </div>
 
               {/* Username */}

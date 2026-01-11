@@ -33,13 +33,13 @@ import { useGetAllTagsQuery } from "@/services/TagService";
 import { MediaType, IMediaListItem } from "@/models/Media";
 
 const theme = {
-  primary: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  primaryDark: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-  hero: "linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)",
+  primary: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+  primaryDark: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+  hero: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
   colors: {
-    primary: "#10b981",
-    primaryDark: "#059669",
-    primaryLight: "#34d399",
+    primary: "#22c55e",
+    primaryDark: "#16a34a",
+    primaryLight: "#4ade80",
   },
 };
 

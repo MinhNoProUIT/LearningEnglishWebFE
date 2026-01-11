@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Clock, Trophy, Heart } from "lucide-react";
-import { useGetAllWordsByLevelQuery } from "@/services/UserProgressService";
+import { useGetAllWordsByLevelQuery, useUpdateProgressOnGameVictoryMutation } from "@/services/UserProgressService";
 
 // Vocabulary data
 interface VocabularyPair {
     id: number;
     english: string;
     vietnamese: string;
+    originalWordId: string; // Store original word ID for API call
 }
 
 // Helper function to shuffle array and pick N items
@@ -20,8 +22,16 @@ type GameStatus = "intro" | "loading" | "playing" | "victory" | "gameover" | "no
 type MonkeyState = "idle" | "clapping" | "throwing";
 
 export default function SmartMonkeyGame() {
+    // Get courseId from URL to navigate back
+    const searchParams = useSearchParams();
+    const courseId = searchParams.get("courseId");
+    const returnUrl = courseId ? `/learn?courseId=${courseId}` : "/learn";
+
     // Fetch Level 1 words from API
     const { data: apiWords = [], isLoading, isError } = useGetAllWordsByLevelQuery(1);
+
+    // Mutation for updating progress on game victory
+    const [updateProgressOnGameVictory, { isLoading: isUpdatingProgress }] = useUpdateProgressOnGameVictoryMutation();
 
     // Transform API words to game format and pick max 10 random words
     const VOCABULARY_DATA: VocabularyPair[] = useMemo(() => {
@@ -32,6 +42,7 @@ export default function SmartMonkeyGame() {
             id: index + 1,
             english: word.englishname,
             vietnamese: word.vietnamesename,
+            originalWordId: word.id, // Keep original ID for API
         }));
 
         // Shuffle and pick max 10 words
@@ -50,8 +61,27 @@ export default function SmartMonkeyGame() {
     const [showBanana, setShowBanana] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [scrollOffset, setScrollOffset] = useState(0);
+    const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
     const boardRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Update progress when game is won
+    useEffect(() => {
+        if (gameStatus === "victory" && !hasUpdatedProgress && VOCABULARY_DATA.length > 0) {
+            const wordIds = VOCABULARY_DATA.map(w => w.originalWordId);
+
+            // Smart Monkey game updates to Level 2 (next review: 3 days)
+            updateProgressOnGameVictory({ wordIds, targetLevel: 2 })
+                .unwrap()
+                .then((result) => {
+                    console.log("✅ Progress updated to level", result.target_level, ":", result);
+                    setHasUpdatedProgress(true);
+                })
+                .catch((error) => {
+                    console.error("❌ Failed to update progress:", error);
+                });
+        }
+    }, [gameStatus, hasUpdatedProgress, VOCABULARY_DATA, updateProgressOnGameVictory]);
 
     // Initialize game
     const startGame = () => {
@@ -61,6 +91,7 @@ export default function SmartMonkeyGame() {
         setTimeElapsed(0);
         setMatchedWords(new Set());
         setIsProcessing(false);
+        setHasUpdatedProgress(false); // Reset for new game
         loadNextQuestion();
     };
 
@@ -602,7 +633,7 @@ export default function SmartMonkeyGame() {
                                 Chơi lại
                             </button>
                             <button
-                                onClick={() => window.location.href = "/vocabulary"}
+                                onClick={() => window.location.href = returnUrl}
                                 className="flex-1 py-4 border-2 border-white text-white font-bold text-xl rounded-xl hover:bg-white/10 transition-all"
                             >
                                 Về trang chủ
@@ -634,7 +665,7 @@ export default function SmartMonkeyGame() {
                                 Thử lại
                             </button>
                             <button
-                                onClick={() => window.location.href = "/vocabulary"}
+                                onClick={() => window.location.href = returnUrl}
                                 className="flex-1 py-4 border-2 border-white text-white font-bold text-xl rounded-xl hover:bg-white/10 transition-all"
                             >
                                 Về trang chủ
